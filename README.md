@@ -4,6 +4,8 @@
 
 !!!This is a work in progress!!!
 
+Start up the vms with 'vagrant up'... I only have chef running on www for now.
+
 You can bootstrap a node with
 
   chefctl -b
@@ -17,5 +19,3 @@ Currently it uses the prefix of the hostname to determine the active file, so "w
 This is heavily based on the facebook cookbooks.
 
 Unless you pass in '--no-update', the chefrun will clone/update the relevant git-repos which, for scale-chef requires you to have some keys loaded, but also requires you to be root. This sucks, but I haven't fixed it yet.
-
-
