@@ -1,18 +1,26 @@
 #!/bin/bash
 
+BOOTSTRAP=0
+DEBUG=0
+IMMEDIATE=0
+HUMAN=0
+DEFAULT_SPLAY=600
+UPDATE=0
+
+ROLE=$(hostname -s)
 CHEFDIR='/var/chef'
 [ -d $CHEFDIR ] || mkdir -p $CHEFDIR
-COOKBOOKDIR="$CHEFDIR/cookbooks"
-[ -d $COOKBOOKDIR ] || mkdir -p $COOKBOOKDIR
+REPODIR="$CHEFDIR/repo"
+[ -d $REPODIR ] || mkdir -p $REPODIR
 
 REPOS='
   https://github.com/facebook/chef-cookbooks.git
   git@github.com:socallinuxexpo/scale-chef.git
 '
 
-get_cookbooks() {
+get_repos() {
   for repo in $REPOS; do
-    cd $COOKBOOKDIR
+    cd $REPODIR
     echo "updating $repo"
     dir=$(basename $repo .git)
     if [ -d "$dir" ]; then
@@ -25,7 +33,98 @@ get_cookbooks() {
 
 }
 
-get_cookbooks
+bootstrap() {
+  cat >/etc/chef/client.rb <<EOF
+cookbook_path [
+  '/var/chef/repo/chef-cookbooks',
+  '/var/chef/repo/scale-chef/cookbooks',
+]
+role_path '/var/chef/repo/scale-chef/roles'
+EOF
 
-# todo: abstract out roles
-chef-client -z -c /etc/chef/client.rb -o 'fb_init,scale_apache'
+  cat >/etc/chef/runlist.json <<EOF
+{"run_list":["recipe[fb_init]"]}
+EOF
+}
+
+chef_run() {
+  extra_args="$*"
+  
+  sleep $SPLAY
+  if [ "$UPDATE" = 1 ]; then
+    get_repos
+  fi
+  chef-client -z -c /etc/chef/client.rb -j /etc/chef/runlist.json $extra_args
+}
+
+longopts='bootstrap,debug,help,immediate,noupdatesplay:,human'
+shortopts='bdhHisu:'
+
+opts=$(getopt -l $longopts -o $shortopts -- "$@")
+if [ $? -ne 0 ]; then
+  echo 'Failed to parse options'
+  exit 1
+fi
+
+eval set -- "$opts"
+
+while true; do
+  case "$1" in
+    --bootstrap|-b)
+      BOOTSTRAP=1
+      shift
+      ;;
+    --debug|-d)
+      DEBUG=1
+      shift
+      ;;
+    --human|-H)
+      HUMAN=1
+      shift
+      ;;
+    --immediate|-i)
+      IMMEDIATE=1
+      shift
+      ;;
+    --noupdate|-u)
+      UPDATE=0
+      shift
+      ;;
+    --splay|-s)
+      SPLAY="$2"
+      shift 2
+      ;;
+    --)
+      shift
+      break
+      ;;
+  esac
+done
+
+if [ "$BOOTSTRAP" = 1 ]; then
+  echo "Bootstrapping node"
+  bootstrap
+  exit 0
+fi
+      
+extra_chef_args="$*"
+
+# Splay and Immediate are mutually exclusive so work that out
+if [ -z "$SPLAY" ]; then
+  # No splay passed so respect immediate or default
+  if [ $IMMEDIATE -eq 1 ]; then
+    SPLAY=0
+  else
+    SPLAY=$DEFAULT_SPLAY
+  fi
+else
+  # Splay was passed so use it or error on nonsense
+  if [ $IMMEDIATE -eq 1 ]; then
+    echo -n 'Splay and Immediate options are mutually exclusive. You ' >&2
+    echo 'passed both. Try again.' >&2
+    exit 1
+  fi
+  # if we get here, the splay is whatever was passed
+fi
+
+chef_run "$extra_chef_args"

@@ -1,0 +1,6 @@
+cookbook_path [
+<% node['scale_chef_client']['cookbook_dirs'].each do |dir| %>
+  '<%= dir %>',
+<% end %>
+]
+role_path '<%= node['scale_chef_client']['role_dir'] %>'

@@ -12,7 +12,9 @@ include_recipe 'fb_init::site_settings'
 if node.debian? || node.ubuntu?
   include_recipe 'fb_apt'
 end
-# HERE: chef_client
+
+include_recipe 'scale_chef_client'
+
 if node.systemd?
   include_recipe 'fb_systemd'
 end
@@ -45,4 +47,4 @@ include_recipe 'fb_motd'
 # often want to setup cronjobs at runtime based on user attributes... they can
 # do that in a ruby_block or provider if this is at the end of the 'base
 # runlist'
-#include_recipe 'fb_cron'
+include_recipe 'fb_cron'
