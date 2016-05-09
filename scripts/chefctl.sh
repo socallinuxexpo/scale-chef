@@ -36,7 +36,7 @@ get_repos() {
 bootstrap() {
   cat >/etc/chef/client.rb <<EOF
 cookbook_path [
-  '/var/chef/repo/chef-cookbooks',
+  '/var/chef/repo/chef-cookbooks/cookbooks',
   '/var/chef/repo/scale-chef/cookbooks',
 ]
 role_path '/var/chef/repo/scale-chef/roles'
