@@ -11,11 +11,11 @@ clone github loaded into your agent (which will get forwarded into the VMs).
 
 You can also manually bootstrap a node with
 
-  chefctl -b
+  /vagrant/scripts/chefctl -b
 
 You can then run chef with:
 
-  chefctl -i
+  /vagrant/scripts/chefctl -i
 
 Currently it uses the prefix of the hostname to determine the active file, so "www1" will get a www.json role and "db4" would get a db.json role.
 
