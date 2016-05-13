@@ -1,9 +1,20 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-# eventually replace this with our own bootstrap
-provisioning_script =
-  "wget -qO- 'https://www.opscode.com/chef/install.sh' | bash"
+commands = [
+  # hack for https://github.com/mitchellh/vagrant/issues/1303
+  "echo 'Defaults env_keep += \"SSH_AUTH_SOCK\"' | sudo tee /etc/sudoers.d/agent",
+  # clone repo
+  "[ -x /bin/git ] || sudo yum install -y git",
+  "sudo mkdir -p /var/chef/repo",
+  "[ -d /root/.ssh ] || sudo mkdir -p -m 0700 /root/.ssh && ssh-keyscan -H github.com | sudo tee /root/.ssh/known_hosts",
+  "[ -d /var/chef/repo/scale-chef/.git ] || sudo git clone git@github.com:socallinuxexpo/scale-chef.git /var/chef/repo/scale-chef",
+  # bootstrap chef
+  "[ -f /etc/chef/client.rb ] || sudo /var/chef/repo/scale-chef/scripts/chefctl.sh -b",
+  # run chef
+  "sudo /var/chef/repo/scale-chef/scripts/chefctl.sh -i",
+]
+provisioning_script = commands.join("; ")
 
 required_plugins = [
   "vagrant-cachier",
@@ -28,23 +39,25 @@ Vagrant.configure("2") do |config|
     raise "vagrant-hostmanager plugin not found"
   end
 
+  config.ssh.forward_agent = true
+
   config.vm.box = 'bento/centos-7.2'
 
   config.vm.define "www" do |v|
     v.vm.hostname = "www"
     v.vm.network :private_network, ip: "172.16.1.10"
-    v.vm.provision "shell", inline: provisioning_script
+    v.vm.provision "shell", inline: provisioning_script, privileged: false
   end
 
   config.vm.define "db" do |v|
     v.vm.hostname = "db"
     v.vm.network :private_network, ip: "172.16.1.11"
-    v.vm.provision "shell", inline: provisioning_script
+    v.vm.provision "shell", inline: provisioning_script, privileged: false
   end
 
   config.vm.define "ldap" do |v|
     v.vm.hostname = "ldap"
     v.vm.network :private_network, ip: "172.16.1.12"
-    v.vm.provision "shell", inline: provisioning_script
+    v.vm.provision "shell", inline: provisioning_script, privileged: false
   end
 end
