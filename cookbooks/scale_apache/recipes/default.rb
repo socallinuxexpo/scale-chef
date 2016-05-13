@@ -25,7 +25,6 @@ end
   end
 end
 
-
 %w{
   /home/drupal
 }.each do |docroot|
@@ -40,6 +39,12 @@ end
 # but if we don't *have* the site yet, deploy it
 execute '/usr/local/bin/deploy_site' do
   creates '/home/drupal/scale-drupal'
+end
+
+template '/home/drupal/httpdocs/sites/default/settings.php' do
+  owner 'root'
+  group 'apache'
+  mode '0640'
 end
 
 cookbook_file '/etc/httpd/sf_bundle.crt' do
