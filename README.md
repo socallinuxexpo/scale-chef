@@ -4,9 +4,12 @@
 
 !!!This is a work in progress!!!
 
-Start up the vms with 'vagrant up'... I only have chef running on www for now.
+Start up the VMs with `vagrant up` -- this will bootstrap the nodes and run
+chef for the first time. Run `vagrant provision $vm` to rerun chef and 
+`vagrant ssh $vm` to get a shell. This assumes you have a ssh key that can
+clone github loaded into your agent (which will get forwarded into the VMs).
 
-You can bootstrap a node with
+You can also manually bootstrap a node with
 
   chefctl -b
 

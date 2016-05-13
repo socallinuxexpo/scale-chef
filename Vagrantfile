@@ -4,13 +4,10 @@
 commands = [
   # hack for https://github.com/mitchellh/vagrant/issues/1303
   "echo 'Defaults env_keep += \"SSH_AUTH_SOCK\"' | sudo tee /etc/sudoers.d/agent",
-  # clone repo
-  "[ -x /bin/git ] || sudo yum install -y git",
-  "sudo mkdir -p /var/chef/repo",
+  # add github ssh hostkey
   "[ -d /root/.ssh ] || sudo mkdir -p -m 0700 /root/.ssh && ssh-keyscan -H github.com | sudo tee /root/.ssh/known_hosts",
-  "[ -d /var/chef/repo/scale-chef/.git ] || sudo git clone git@github.com:socallinuxexpo/scale-chef.git /var/chef/repo/scale-chef",
   # bootstrap chef
-  "[ -f /etc/chef/client.rb ] || sudo /var/chef/repo/scale-chef/scripts/chefctl.sh -b",
+  "[ -f /etc/chef/client.rb ] || sudo /vagrant/scripts/chefctl.sh -b",
   # run chef
   "sudo /var/chef/repo/scale-chef/scripts/chefctl.sh -i",
 ]
