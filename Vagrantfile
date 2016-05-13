@@ -52,9 +52,9 @@ Vagrant.configure("2") do |config|
     v.vm.provision "shell", inline: provisioning_script, privileged: false
   end
 
-  config.vm.define "ldap" do |v|
-    v.vm.hostname = "ldap"
-    v.vm.network :private_network, ip: "172.16.1.12"
-    v.vm.provision "shell", inline: provisioning_script, privileged: false
-  end
+  #config.vm.define "ldap" do |v|
+  #  v.vm.hostname = "ldap"
+  #  v.vm.network :private_network, ip: "172.16.1.12"
+  #  v.vm.provision "shell", inline: provisioning_script, privileged: false
+  #end
 end
