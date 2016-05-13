@@ -30,11 +30,13 @@ get_repos() {
       git clone $repo
     fi
   done
-
 }
 
 bootstrap() {
-  cat >/etc/chef/client.rb <<EOF
+  [ ! -d /opt/chef ] && \
+    wget -qO- 'https://www.opscode.com/chef/install.sh' | bash
+  mkdir -p /etc/chef $CHEFDIR $REPODIR
+  cat > /etc/chef/client.rb <<EOF
 cookbook_path [
   '/var/chef/repo/chef-cookbooks/cookbooks',
   '/var/chef/repo/scale-chef/cookbooks',
@@ -45,6 +47,8 @@ EOF
   cat >/etc/chef/runlist.json <<EOF
 {"run_list":["recipe[fb_init]"]}
 EOF
+  [ -x /bin/git ] || yum install -y git
+  get_repos
 }
 
 chef_run() {
