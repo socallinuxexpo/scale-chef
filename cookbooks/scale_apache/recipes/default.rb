@@ -25,6 +25,26 @@ end
   end
 end
 
+%w{
+  /home/drupal
+  /home/drupal/httpdocs
+}.each do |docroot|
+  directory docroot do
+    owner 'root'
+    group 'root'
+    mode '0755'
+  end
+end
+
+cookbook_file '/etc/httpd/sf_bundle.crt' do
+  owner 'root'
+  group 'root'
+  mode '0644'
+  notifies :restart, 'service[httpd]'
+end
+
+include_recipe 'scale_apache::dev'
+
 service 'httpd' do
   action [:enable, :start]
 end
