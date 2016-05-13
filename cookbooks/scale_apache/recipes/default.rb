@@ -7,7 +7,7 @@
 # All rights reserved - Do Not Redistribute
 #
 
-package ['httpd', 'mod_ssl'] do
+package ['httpd', 'mod_ssl', 'php'] do
   action :upgrade
   notifies :restart, 'service[httpd]'
 end
@@ -25,15 +25,21 @@ end
   end
 end
 
+
 %w{
   /home/drupal
-  /home/drupal/httpdocs
 }.each do |docroot|
   directory docroot do
     owner 'root'
     group 'root'
     mode '0755'
   end
+end
+
+# We don't want to deploy the site on every single run,
+# but if we don't *have* the site yet, deploy it
+execute '/usr/local/bin/deploy_site' do
+  creates '/home/drupal/scale-drupal'
 end
 
 cookbook_file '/etc/httpd/sf_bundle.crt' do

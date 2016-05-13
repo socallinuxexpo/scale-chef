@@ -40,16 +40,17 @@ ServerName www.socallinuxexpo.org
 	RewriteCond %{REQUEST_URI} ^/scale/14x/(user|cfp)/
 	RewriteRule ^/(.*) https://www.socallinuxexpo.org/$1 [L,R,NE]
 
-	DocumentRoot /home/drupal/httpdocs
+	DocumentRoot /home/drupal/scale-drupal/httpdocs
 	<Directory />
 		Options FollowSymLinks
 		AllowOverride None
 	</Directory>
-	<Directory /home/drupal/httpdocs/>
+	<Directory /home/drupal/scale-drupal/httpdocs/>
 		Options Indexes FollowSymLinks MultiViews
 		AllowOverride all
 		Order allow,deny
 		allow from all
+    Require all granted
 	</Directory>
 
 	<Directory /home/webroot/>
@@ -57,6 +58,7 @@ ServerName www.socallinuxexpo.org
 		AllowOverride all
 		Order allow,deny
 		allow from all
+    Require all granted
 	</Directory>
 
 	ScriptAlias /cgi-bin/ /usr/lib/cgi-bin/

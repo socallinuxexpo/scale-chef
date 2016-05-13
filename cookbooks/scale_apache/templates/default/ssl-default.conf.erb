@@ -1,26 +1,26 @@
 <IfModule mod_ssl.c>
 <VirtualHost _default_:443>
-        ServerAdmin webmaster@socallinuxexpo.org
-        Alias /past /home/webroot/past
-        Alias /scale5x /home/webroot/scale5x
-        Alias /scale6x /home/webroot/scale6x
-        Alias /scale7x /home/webroot/scale7x
-        Alias /scale7x-audio /home/webroot/scale7x-audio
-        Alias /scale8x /home/webroot/scale8x
-        Alias /scale9x /home/webroot/scale9x
-        Alias /scale9x-media /home/webroot/scale9x-media
-        Alias /scale10x /home/webroot/scale10x
-        Alias /scale10x-supporting /home/webroot/scale10x-supporting
-        Alias /scale11x /home/webroot/scale11x
-        Alias /scale11x-supporting /home/webroot/scale11x-supporting
-        Alias /scale12x /home/webroot/scale12x
-        Alias /scale12x-supporting /home/webroot/scale12x-supporting
-        RewriteEngine On
-        RewriteCond %{HTTP_HOST} ^cfp.socallinuxexpo.org [NC]
-        RewriteRule ^/(.*) https://www.socallinuxexpo.org/cfp/ [L,R,NE]
-        RewriteCond %{HTTP_HOST} !^www.socallinuxexpo.org [NC]
-        RewriteCond %{HTTP_HOST} !^$
-        RewriteRule ^/(.*) https://www.socallinuxexpo.org/$1 [L,R,NE]
+  ServerAdmin webmaster@socallinuxexpo.org
+  Alias /past /home/webroot/past
+  Alias /scale5x /home/webroot/scale5x
+  Alias /scale6x /home/webroot/scale6x
+  Alias /scale7x /home/webroot/scale7x
+  Alias /scale7x-audio /home/webroot/scale7x-audio
+  Alias /scale8x /home/webroot/scale8x
+  Alias /scale9x /home/webroot/scale9x
+  Alias /scale9x-media /home/webroot/scale9x-media
+  Alias /scale10x /home/webroot/scale10x
+  Alias /scale10x-supporting /home/webroot/scale10x-supporting
+  Alias /scale11x /home/webroot/scale11x
+  Alias /scale11x-supporting /home/webroot/scale11x-supporting
+  Alias /scale12x /home/webroot/scale12x
+  Alias /scale12x-supporting /home/webroot/scale12x-supporting
+  RewriteEngine On
+  RewriteCond %{HTTP_HOST} ^cfp.socallinuxexpo.org [NC]
+  RewriteRule ^/(.*) https://www.socallinuxexpo.org/cfp/ [L,R,NE]
+  RewriteCond %{HTTP_HOST} !^www.socallinuxexpo.org [NC]
+  RewriteCond %{HTTP_HOST} !^$
+  RewriteRule ^/(.*) https://www.socallinuxexpo.org/$1 [L,R,NE]
 	RewriteCond %{REQUEST_URI} ^/$
 	#RewriteRule ^/(.*) https://www.socallinuxexpo.org/scale13x [L,R,NE]
 	RewriteRule ^/(.*) https://www.socallinuxexpo.org/scale/14x [L,R,NE]
@@ -29,26 +29,28 @@
 	RewriteCond %{REQUEST_URI} ^/scale13x/
 	RewriteRule ^/scale13x/(.*) https://www.socallinuxexpo.org/scale/13x/$1 [L,R=301,NE]
 
-        DocumentRoot /home/drupal/httpdocs
+  DocumentRoot /home/drupal/scale-drupal/httpdocs
 
 	<Directory />
 		Options FollowSymLinks
 		AllowOverride None
 	</Directory>
 
-        <Directory /home/drupal/httpdocs/>
-                Options Indexes FollowSymLinks MultiViews
-                AllowOverride all
-                Order allow,deny
-                allow from all
-        </Directory>
+  <Directory /home/drupal/scale-drupal/httpdocs/>
+    Options Indexes FollowSymLinks MultiViews
+    AllowOverride all
+    Order allow,deny
+    allow from all
+    Require all granted
+  </Directory>
 
-        <Directory /home/webroot/>
-                Options Indexes FollowSymLinks MultiViews
-                AllowOverride all
-                Order allow,deny
-                allow from all
-        </Directory>
+  <Directory /home/webroot/>
+    Options Indexes FollowSymLinks MultiViews
+    AllowOverride all
+    Order allow,deny
+    allow from all
+    Require all granted
+  </Directory>
 
 	ScriptAlias /cgi-bin/ /usr/lib/cgi-bin/
 	<Directory "/usr/lib/cgi-bin">

@@ -1,0 +1,9 @@
+#!/bin/bash
+
+cd /home/drupal
+if [ -d /home/drupal/httpdocs ]; then
+  cd /home/drupal/httpdocs
+  git pull
+else
+  git clone https://github.com/socallinuxexpo/scale-drupal
+fi
