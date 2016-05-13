@@ -41,7 +41,7 @@ execute '/usr/local/bin/deploy_site' do
   creates '/home/drupal/scale-drupal'
 end
 
-template '/home/drupal/httpdocs/sites/default/settings.php' do
+template '/home/drupal/scale-drupal/httpdocs/sites/default/settings.php' do
   owner 'root'
   group 'apache'
   mode '0640'
