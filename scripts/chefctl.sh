@@ -6,6 +6,7 @@ IMMEDIATE=0
 HUMAN=0
 DEFAULT_SPLAY=600
 UPDATE=1
+VAGRANT=0
 
 ROLE=$(hostname -s)
 CHEFDIR='/var/chef'
@@ -32,6 +33,11 @@ get_repos() {
   done
 }
 
+copy_from_vagrant() {
+  rm -rf $REPODIR/scale-chef/cookbooks/
+  rsync -avz /varant/cookbooks/ $REPODIR/scale-chef/cookbooks/
+}
+
 bootstrap() {
   [ ! -d /opt/chef ] && \
     wget -qO- 'https://www.opscode.com/chef/install.sh' | bash
@@ -56,7 +62,11 @@ chef_run() {
   
   sleep $SPLAY
   if [ "$UPDATE" = 1 ]; then
-    get_repos
+    if [ $VAGRANT -eq 1 ]; then
+      copy_from_vagrant
+    else
+      get_repos
+    fi
   fi
   chef-client -z -c /etc/chef/client.rb -j /etc/chef/runlist.json $extra_args
 }
@@ -80,6 +90,10 @@ while true; do
       ;;
     --debug|-d)
       DEBUG=1
+      shift
+      ;;
+    --vagrant|-V)
+      VAGRANT=1
       shift
       ;;
     --human|-H)
