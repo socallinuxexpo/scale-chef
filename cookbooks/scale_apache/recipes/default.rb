@@ -35,6 +35,13 @@ end
   end
 end
 
+cookbook_file '/usr/local/bin/deploy_site' do
+  source 'deploy_site'
+  owner 'root'
+  group 'root'
+  mode '0755'
+end
+
 # We don't want to deploy the site on every single run,
 # but if we don't *have* the site yet, deploy it
 execute '/usr/local/bin/deploy_site' do
