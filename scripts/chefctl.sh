@@ -35,7 +35,7 @@ get_repos() {
 
 copy_from_vagrant() {
   rm -rf $REPODIR/scale-chef/cookbooks/
-  rsync -avz /varant/cookbooks/ $REPODIR/scale-chef/cookbooks/
+  rsync -avz /vagrant/cookbooks/ $REPODIR/scale-chef/cookbooks/
 }
 
 bootstrap() {
@@ -71,8 +71,8 @@ chef_run() {
   chef-client -z -c /etc/chef/client.rb -j /etc/chef/runlist.json $extra_args
 }
 
-longopts='bootstrap,debug,help,immediate,noupdatesplay:,human'
-shortopts='bdhHisu:'
+longopts='bootstrap,debug,help,immediate,noupdatesplay:,human,vagrant'
+shortopts='bdhHisu:V'
 
 opts=$(getopt -l $longopts -o $shortopts -- "$@")
 if [ $? -ne 0 ]; then
