@@ -7,7 +7,16 @@
 # All rights reserved - Do Not Redistribute
 #
 
-package ['httpd', 'mod_ssl', 'php'] do
+pkgs = %w{
+  httpd
+  mod_ssl
+  php
+  php-gd
+  php-mysql
+  php-pdo
+}
+
+package pkgs do
   action :upgrade
   notifies :restart, 'service[httpd]'
 end
