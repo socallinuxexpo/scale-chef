@@ -71,6 +71,13 @@ cookbook_file '/etc/httpd/sf_bundle.crt' do
   notifies :restart, 'service[httpd]'
 end
 
+# enforce perms
+file '/etc/drupal_secrets' do
+  owner 'root'
+  group 'root'
+  mode '0600'
+end
+
 include_recipe 'scale_apache::dev'
 
 service 'httpd' do

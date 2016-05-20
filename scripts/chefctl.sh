@@ -34,8 +34,7 @@ get_repos() {
 }
 
 copy_from_vagrant() {
-  rm -rf $REPODIR/scale-chef/cookbooks/
-  rsync -avz /vagrant/cookbooks/ $REPODIR/scale-chef/cookbooks/
+  rsync -avz --delete /vagrant/cookbooks/ $REPODIR/scale-chef/cookbooks/
 }
 
 bootstrap() {
