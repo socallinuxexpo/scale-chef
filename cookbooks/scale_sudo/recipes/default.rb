@@ -8,8 +8,7 @@ package 'sudo' do
   action :upgrade
 end
 
-# template '/etc/sudoers' do
-template '/var/tmp/sudoers' do
+template '/etc/sudoers' do
   source 'sudoers.erb'
   mode '0440'
   owner 'root'
