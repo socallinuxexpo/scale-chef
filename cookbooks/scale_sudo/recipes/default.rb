@@ -4,10 +4,6 @@
 # Recipe:: default
 #
 
-if node['fb_init']['vagrant']
-  node.default['scale_sudo']['users']['vagrant'] = 'ALL=NOPASSWD: ALL'
-end
-
 package 'sudo' do
   action :upgrade
 end
