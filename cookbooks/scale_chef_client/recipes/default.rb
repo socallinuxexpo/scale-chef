@@ -39,5 +39,5 @@ end
 
 node.default['fb_cron']['jobs']['chef'] = {
   'time' => '*/15 * * * *',
-  'command' => '/var/chef/repos/scale-chef/scripts/chefctl -i'
+  'command' => '/var/chef/repos/scale-chef/scripts/chefctl.sh -i'
 }
