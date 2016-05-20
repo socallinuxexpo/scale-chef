@@ -1,6 +1,6 @@
 # vim: syntax=ruby:expandtab:shiftwidth=2:softtabstop=2:tabstop=2
 #
-# Cookbook Name:: wn_sudo
+# Cookbook Name:: scale_sudo
 # Recipe:: default
 #
 
