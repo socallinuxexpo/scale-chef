@@ -1,0 +1,25 @@
+<% sudo = node['scale_sudo'].to_hash -%>
+# This file is managed by Chef
+
+Defaults  <%= sudo['defaults'].join(', ') %>
+
+# Host aliases
+<% aliases = sudo['aliases'] %>
+<% aliases['host'].sort.each do |name, list| %>
+Host_Alias <%= name.upcase -%> = <%= list %>
+<% end -%>
+
+# User aliases
+<% aliases['user'].sort.each do |name, list| %>
+User_Alias <%= name.upcase -%> = <%= list %>
+<% end -%>
+
+# Command aliases
+<% aliases['command'].sort.each do |name, list| %>
+Cmnd_Alias <%= name.upcase -%> = <%= list %>
+<% end -%>
+
+# Users
+<% sudo['users'].sort.each do |user, spec| %>
+<%= user -%> <%= spec %>
+<% end -%>
