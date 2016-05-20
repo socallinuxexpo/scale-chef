@@ -21,6 +21,8 @@ You can then run chef with:
 /vagrant/scripts/chefctl.sh -i
 ```
 
+For development, use the `-V` flag to pull from your local repo (which is mounted into the VM on `/vagrant`) instead of pulling from github.
+
 Currently it uses the prefix of the hostname to determine the active file, so "www1" will get a www.json role and "db4" would get a db.json role.
 
 This is heavily based on the [facebook cookbooks](https://github.com/facebook/chef-cookbooks).

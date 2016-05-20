@@ -7,7 +7,6 @@ default['scale_sudo'] = {
     'command' => {},
   },
   'defaults' => [
-    'requiretty',
     '!visiblepw',
     'always_set_home',
     'env_reset',
