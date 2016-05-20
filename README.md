@@ -31,12 +31,8 @@ put it under `/home/webroot` and make sure it's owned by `root:root`.
 
 To get the database up and running, get a dump, add
 
-  CREATE DATABASE drupal;
-  USE drupal;
-
-before the first `CREATE TABLE`, then run
-
-  mysql -U mysql < dump.sql
+  mysqladmin create drupal
+  mysql -U drupal < dump.sql
 
 then setup a grant for the drupal user with
 
