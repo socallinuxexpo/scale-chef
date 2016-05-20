@@ -2,7 +2,7 @@ d = {}
 if File.exists?('/etc/drupal_secrets')
   File.read('/etc/drupal_secrets').each_line do |line|
     k, v = line.strip.split(/\s*=\s*/)
-    d[k.downcase] = v.downcase
+    d[k.downcase] = v
   end
 end
 
