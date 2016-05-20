@@ -23,6 +23,11 @@ This is heavily based on the [facebook cookbooks](https://github.com/facebook/ch
 
 Unless you pass in '--no-update', the chefrun will clone/update the relevant git-repos which, for scale-chef requires you to have some keys loaded, but also requires you to be root. This sucks, but I haven't fixed it yet.
 
+To get the webserver up and running, get a copy of the dynamic content (the 
+stuff under `httpdocs/sites/default/files`), copy it to 
+`/home/drupal/scale-drupal/httpdocs/sites/default/files` and make sure it's
+owned by `root:apache`.
+
 To get the database up and running, get a dump, add
 
   CREATE DATABASE drupal;
