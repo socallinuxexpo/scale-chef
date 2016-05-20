@@ -40,21 +40,15 @@ Vagrant.configure("2") do |config|
 
   config.vm.box = 'bento/centos-7.2'
 
-  config.vm.define "www" do |v|
-    v.vm.hostname = "www"
+  config.vm.define "www1" do |v|
+    v.vm.hostname = "www1"
     v.vm.network :private_network, ip: "172.16.1.10"
     v.vm.provision "shell", inline: provisioning_script, privileged: false
   end
 
-  config.vm.define "db" do |v|
-    v.vm.hostname = "db"
+  config.vm.define "db1" do |v|
+    v.vm.hostname = "db1"
     v.vm.network :private_network, ip: "172.16.1.11"
     v.vm.provision "shell", inline: provisioning_script, privileged: false
   end
-
-  #config.vm.define "ldap" do |v|
-  #  v.vm.hostname = "ldap"
-  #  v.vm.network :private_network, ip: "172.16.1.12"
-  #  v.vm.provision "shell", inline: provisioning_script, privileged: false
-  #end
 end

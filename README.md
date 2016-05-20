@@ -11,11 +11,15 @@ clone github loaded into your agent (which will get forwarded into the VMs).
 
 You can also manually bootstrap a node with
 
-  /vagrant/scripts/chefctl -b
+```
+/vagrant/scripts/chefctl.sh -b
+```
 
 You can then run chef with:
 
-  /vagrant/scripts/chefctl -i
+```
+/vagrant/scripts/chefctl.sh -i
+```
 
 Currently it uses the prefix of the hostname to determine the active file, so "www1" will get a www.json role and "db4" would get a db.json role.
 
@@ -31,13 +35,15 @@ put it under `/home/webroot` and make sure it's owned by `root:root`.
 
 To get the database up and running, get a dump, add
 
-    mysqladmin create drupal
-    mysql -U drupal < dump.sql
+```
+mysqladmin create drupal
+zcat /vagrant/SCALE14x-2016-04-24T17-26-57.mysql.gz | mysql -U drupal
+```
 
 then setup a grant for the drupal user with
 
 ```
-GRANT ALL PRIVILEGES ON drupal.* TO drupal@www IDENTIFIED BY 'thisisadevpassword' WITH GRANT OPTION;
+GRANT ALL PRIVILEGES ON drupal.* TO drupal@www1 IDENTIFIED BY 'thisisadevpassword' WITH GRANT OPTION;
 ```
 
 ## Production secrets
