@@ -36,4 +36,13 @@ To get the database up and running, get a dump, add
 
 then setup a grant for the drupal user with
 
-  GRANT ALL PRIVILEGES ON drupal.* TO drupal@www IDENTIFIED BY 'thisisadevpassword' WITH GRANT OPTION;
+```
+GRANT ALL PRIVILEGES ON drupal.* TO drupal@www IDENTIFIED BY 'thisisadevpassword' WITH GRANT OPTION;
+```
+
+## Production secrets
+
+For production machines use the `scale-secrets` repo, to manually setup the following secrets:
+
+* www/ssl/apache.pem -> /etc/httpd/apache.pem
+* www/drupal_secrets -> /etc/drupal_secrets
