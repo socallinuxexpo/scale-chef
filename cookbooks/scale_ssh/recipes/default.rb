@@ -20,17 +20,14 @@ end
 
 scale_ssh_keys 'setup keys'
 
-execute 'copy vagrant key' do
-  only_if { File.exists?('/home/vagrant/.ssh/authorized_keys') }
-  command 'cp /home/vagrant/.ssh/authorized_keys /etc/ssh/authorized_keys/vagrant'
-  creates '/etc/ssh/authorized_keys/vagrant'
-end
-
+# If we're on vagrant, we need to copy the key to the new location
 file '/etc/ssh/authorized_keys/vagrant' do
-  only_if { File.exists?('/etc/ssh/authorized_keys/vagrant') }
+  only_if { File.exists?('/home/vagrant/.ssh/authorized_keys') }
+  content lazy { File.read('/home/vagrant/.ssh/authorized_keys') }
   owner 'root'
   group 'root'
   mode '0644'
+  action :create_if_missing
 end
 
 template '/etc/ssh/sshd_config' do
