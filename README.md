@@ -46,6 +46,8 @@ then setup a grant for the drupal user with
 GRANT ALL PRIVILEGES ON drupal.* TO drupal@www1 IDENTIFIED BY 'thisisadevpassword' WITH GRANT OPTION;
 ```
 
+To not get redirects you should edit `/home/drupal/scale-drupal/httpdocs/.htaccess` and remove the www rewrite rules.
+
 ## Production secrets
 
 For production machines use the `scale-secrets` repo, to manually setup the following secrets:
