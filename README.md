@@ -46,7 +46,7 @@ then setup a grant for the drupal user with
 GRANT ALL PRIVILEGES ON drupal.* TO drupal@www1 IDENTIFIED BY 'thisisadevpassword' WITH GRANT OPTION;
 ```
 
-To not get redirects you should edit `/home/drupal/scale-drupal/httpdocs/.htaccess` and remove the www rewrite rules.
+To not get redirects you should edit `/home/drupal/scale-drupal/httpdocs/.htaccess` and remove the www rewrite rules. The cookbooks assume you are in dev mode if there are no prod secrets, but if you are testing with prod secrets you can force no redirects by touching `/etc/no_prod_redirects`
 
 ## Production secrets
 
