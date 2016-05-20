@@ -26,7 +26,8 @@ Unless you pass in '--no-update', the chefrun will clone/update the relevant git
 To get the webserver up and running, get a copy of the dynamic content (the 
 stuff under `httpdocs/sites/default/files`), copy it to 
 `/home/drupal/scale-drupal/httpdocs/sites/default/files` and make sure it's
-owned by `root:apache`.
+owned by `root:apache`. Also get a copy of the static websites (`webroot`),
+put it under `/home/webroot` and make sure it's owned by `root:root`.
 
 To get the database up and running, get a dump, add
 
