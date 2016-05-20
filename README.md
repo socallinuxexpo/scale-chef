@@ -42,7 +42,7 @@ mysqladmin create drupal
 zcat /vagrant/SCALE14x-2016-04-24T17-26-57.mysql.gz | mysql -U drupal
 ```
 
-then setup a grant for the drupal user with
+then setup a grant for the drupal user with (inside of `mysql -U mysql`):
 
 ```
 GRANT ALL PRIVILEGES ON drupal.* TO drupal@www1 IDENTIFIED BY 'thisisadevpassword' WITH GRANT OPTION;
