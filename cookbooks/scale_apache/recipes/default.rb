@@ -14,6 +14,7 @@ pkgs = %w{
   php-gd
   php-mysql
   php-pdo
+  php-xml
 }
 
 package pkgs do
