@@ -22,3 +22,16 @@ Currently it uses the prefix of the hostname to determine the active file, so "w
 This is heavily based on the [facebook cookbooks](https://github.com/facebook/chef-cookbooks).
 
 Unless you pass in '--no-update', the chefrun will clone/update the relevant git-repos which, for scale-chef requires you to have some keys loaded, but also requires you to be root. This sucks, but I haven't fixed it yet.
+
+To get the database up and running, get a dump, add
+
+  CREATE DATABASE drupal;
+  USE drupal;
+
+before the first `CREATE TABLE`, then run
+
+  mysql -U mysql < dump.sql
+
+then setup a grant for the drupal user with
+
+  GRANT ALL PRIVILEGES ON drupal.* TO drupal@www IDENTIFIED BY 'thisisadevpassword' WITH GRANT OPTION;
