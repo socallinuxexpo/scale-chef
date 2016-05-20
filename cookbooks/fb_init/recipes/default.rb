@@ -18,7 +18,10 @@ include_recipe 'scale_chef_client'
 if node.systemd?
   include_recipe 'fb_systemd'
 end
-# HERE: ssh
+
+include_recipe 'scale_users'
+
+include_recipe 'scale_ssh'
 #include_recipe 'fb_modprobe'
 #include_recipe 'fb_securetty'
 #include_recipe 'fb_hosts'

@@ -1,0 +1,16 @@
+# This is managed by Chef
+
+<%
+  node['scale_ssh']['sshd_config'].to_hash.each do |key, vals|
+    unless vals.is_a?(Array)
+      vals = [vals]
+    end
+    vals.each do |val|
+      if val.is_a?(TrueClass)
+        val = 'yes'
+      elsif val.is_a?(FalseClass)
+        val = 'no'
+      end -%>
+<%=   key %> <%= val %>
+<%  end 
+  end -%>

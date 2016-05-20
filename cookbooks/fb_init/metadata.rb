@@ -9,6 +9,8 @@ long_description IO.read(File.join(File.dirname(__FILE__), 'README.md'))
 version '0.0.1'
 %w{
   scale_chef_client
+  scale_ssh
+  scale_users
   fb_cron
   fb_fstab
   fb_helpers
