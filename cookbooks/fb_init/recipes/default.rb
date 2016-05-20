@@ -41,7 +41,7 @@ include_recipe 'fb_sysctl'
 #include_recipe 'fb_logrotate'
 # HERE: autofs
 # HERE: tmpclean
-# HERE: sudo
+include_recipe 'scale_sudo'
 # HERE: ntp
 include_recipe 'fb_motd'
 
