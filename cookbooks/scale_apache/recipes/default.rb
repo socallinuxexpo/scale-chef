@@ -83,3 +83,5 @@ include_recipe 'scale_apache::dev'
 service 'httpd' do
   action [:enable, :start]
 end
+
+node.default['fb_systemd']['timesyncd']['enable'] = false
