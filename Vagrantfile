@@ -7,7 +7,7 @@ commands = [
   # add github ssh hostkey
   "[ -d /root/.ssh ] || sudo mkdir -p -m 0700 /root/.ssh && ssh-keyscan -H github.com | sudo tee /root/.ssh/known_hosts",
   # bootstrap chef
-  "[ -f /etc/chef/client.rb ] || sudo /vagrant/scripts/chefctl.sh -b",
+  "sudo /vagrant/scripts/chefctl.sh -b",
   # run chef
   "sudo /var/chef/repo/scale-chef/scripts/chefctl.sh -i",
 ]
@@ -43,6 +43,8 @@ Vagrant.configure("2") do |config|
   config.vm.define "www1" do |v|
     v.vm.hostname = "www1"
     v.vm.network :private_network, ip: "172.16.1.10"
+    v.vm.network "forwarded_port", guest: 80, host: 8080
+    v.vm.network "forwarded_port", guest: 443, host: 8443
     v.vm.provision "shell", inline: provisioning_script, privileged: false
   end
 

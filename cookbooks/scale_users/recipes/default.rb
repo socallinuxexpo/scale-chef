@@ -11,6 +11,9 @@ admins = {
   'dcavalca' => '1001',
   'phil' => '1002',
   'bwann' => '1003',
+  'ilan' => '1004',
+  'bala' => '1005',
+  'josh' => '1006',
 }
 
 admins.each do |user, uid|
@@ -38,4 +41,16 @@ node.default['scale_ssh']['keys']['dcavalca'] = [
 ]
 node.default['scale_ssh']['keys']['phil'] = [
   'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC/4f1jzzMrKtRv3VrikBIA5INrW94iHlKD7+4Iq/yGhMMI19eqz987j/9FWZ+X7UrYGbQ22vBSUDSbTGlYBF5H6mXYeEBHPPrp5CVkRNTi6QxNwGuqsh4gsKHLuUJNNHsyOsB1JO49K/sF897e2XvfmitAxKszL1H1PkJ2vvtajeaauIwq8AmJvUNsRwUXBVxzUtKMbfTAtGmTjQWi/U1Yy7G6UV2UTgQjn0dB/R000tO6ghPGEtUAf+GJPj5iKYKR4UAeuB76+BTzxSkK1uFoh0FPQqqO30NjYMWf9qI7+KjU5kvPA995aRDTBPOa1zp/LUpfaJQrmV26T91Rh0RVScL/A+HawZMqpiGrRM/2QBU2id/IFBQje+AHGjq6ZI8R44lKBkw1884BUPofblYt8TPatcX3Evlm+Od9CpDgvlK0BFxMSHG6jcDU+BQY6o23uSYSYehl05hG/M4La5jv/2CIaaCLdySi9/DW5r8iee4fi8j7Q+GI+eUOWwxKBk1/VwYqodk9nnb+TtdiE2aOuJHEPkYDsLXj5ITav4KPYxNUh4mvWs6m3EC0zSHRu9g7GfRAKLBlBzlyHxCZ8/VP9jh8Jj1tyWJbAc16WkXbcjf3yNrbtwUpvShBYw4H11evEwTk6S2RB5aGL7LVE/+xmo27xbnPUIkZhBzclCykdw== phil@ipom.com 2/18/16'
+]
+
+node.default['scale_ssh']['keys']['ilan'] = [
+  'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCbsmmelU0LNMncpMV7Gwv00e7CO8f/A8ZPKFGSko86+na6iLXmbvdPYp4b/h3cnHRyex/gPzW8uyzGVE5aJZQXCDnA1GyoYtKfCjkVmPGWV4qt+3qMUwhxaFfgnxbyUI+ETWVi1gaPOJsB71YEAm1y9LdVZ1rKwWQQb5jNBNHTHSdbUqUEVacoGl6ZMtGPlwR0dgMOI3nLpspBmBn3Y8DY7FE7vbYQncECsOPQphS5vVNgj7ksNjHMKLcV06rH2E4NRiEUjRQPetSQymldtbk+HZzuB50wM+Kg83cS/dCxzj8SQJ6ELc9rZg/x1oalUHiRlPD48BTR7opmCJDiqIbR'
+]
+
+node.default['scale_ssh']['keys']['bala'] = [
+  'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDE2slzn7hC4jtnLQmiIIHWr4Qb6DqI4sqk1RPJEtcTmZiihdAzraBkdjsG2ARR4EyfGws3LXrc+3ZIiHJjUttpYiTY7T9GvZ9cpTOz5sC+88FIDIb2t1+FMiCExq7Pdg0p7Sq1erSFkwqSbEI43O3c2PXyPXVzdh4YjimOU1hfaqbZ3YtiotRPU9H56yqOzg/GLFnIj6mED9skZt7O7/gqPZaEiRfy8dXEVx2J2X70LAAcMb+3bQyu2cTeKULMWIhW757hSZcu5WL3H4o7UQhw87pr/qtTwINpY/O571nPieuQPvLS9MS72PihR8mJ4P5TnT/CBGdWxVP9xGOAm2y7 hriday@Hridays-Air'
+]
+
+node.default['scale_ssh']['keys']['jhoblitt'] = [
+  'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCSktxAqLJWTUX63vNrJKyyJWxgtO/3DmRPy7KqDlLko+NAGvk2boc0KkZpD44aPsBxfZnl5gKuRQXb71gMoHk7qF5XsT/DTHxadhtWTSZiHfhZJ4CrkHuiu/8HGUbp5ENrIYIqhyhN5PydJyEW5NfPvRg7n2O5XXZENq+KtxMqBujuXzm9HOese8FTck3nlUnkqz3ObNRyeOCqIXPNukpRDSNRrFY7D8P2Y1/QLeixPzXd6pMkra9gnOPjrs/X9z2lGRaiyhMrraPtBWMlgf2dnN/PjC38T8vC0/xZq0P1N9G5n0swNe961Xr74/gsFvoh004A1aerWhcFnk1+yf79 jhoblitt@cpan.org'
 ]

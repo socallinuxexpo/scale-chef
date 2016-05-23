@@ -16,6 +16,7 @@ end
 include_recipe 'scale_chef_client'
 
 if node.systemd?
+  node.default['fb_systemd']['timesyncd']['enable'] = false
   include_recipe 'fb_systemd'
 end
 
