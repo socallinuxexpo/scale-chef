@@ -58,6 +58,32 @@ execute '/usr/local/bin/deploy_site' do
   creates '/home/drupal/scale-drupal'
 end
 
+# Ensure existance of drupal directories
+%w{
+ /home/drupal/scale-drupal/httpdocs
+ /home/drupal/scale-drupal/httpdocs/sites
+ /home/drupal/scale-drupal/httpdocs/sites/default
+}.each do |tmpdir|
+  directory tmpdir do
+    owner 'root'
+    group 'root'
+    mode '0755'
+  end
+end
+
+# Ensure existance of tmp directories required by drupal
+%w{
+ /home/drupal/scale-drupal/httpdocs/sites/default/files
+ /home/drupal/scale-drupal/httpdocs/sites/default/files/css
+ /home/drupal/scale-drupal/db
+}.each do |tmpdir|
+  directory tmpdir do
+    owner 'root'
+    group 'apache'
+    mode '0775'
+  end
+end
+
 template '/home/drupal/scale-drupal/httpdocs/sites/default/settings.php' do
   owner 'root'
   group 'apache'
