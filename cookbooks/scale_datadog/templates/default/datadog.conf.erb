@@ -1,0 +1,6 @@
+# This file is managed by Chef, do not edit!
+
+[Main]
+<% node['scale_datadog']['config'].each do |key, val| -%>
+<%=  key %>: <%= val %>
+<% end -%>
