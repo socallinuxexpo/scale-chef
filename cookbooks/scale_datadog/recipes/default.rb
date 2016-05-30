@@ -32,7 +32,7 @@ end
 template '/etc/dd-agent/datadog.conf' do
   source 'datadog.conf.erb'
   owner 'root'
-  group 'root'
+  group 'dd-agent'
   mode '0640'
   notifies :restart, 'service[datadog-agent]'
 end
