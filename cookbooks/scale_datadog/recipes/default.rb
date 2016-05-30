@@ -37,6 +37,19 @@ template '/etc/dd-agent/datadog.conf' do
   notifies :restart, 'service[datadog-agent]'
 end
 
+Dir.glob('/etc/dd-agent/conf.d/*.yaml').each do |f|
+  basename = File.basename(f, '.yaml')
+  file f do
+    not_if { node['scale_datadog']['monitors'].keys.include?(basename) }
+    action :delete
+    notifies :restart, 'service[datadog-agent]'
+  end
+end
+
+scale_datadog_monitor_configs 'update monitor configs' do
+  notifies :restart, 'service[datadog-agent]'
+end
+
 service 'datadog-agent' do
   only_if { node['scale_datadog']['config']['api_key'] }
   action [:enable, :start]
