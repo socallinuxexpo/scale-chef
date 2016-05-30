@@ -10,3 +10,14 @@ node.default['scale_chef_client']['role_dir'] =
 if node.vagrant?
   node.default['scale_sudo']['users']['vagrant'] = 'ALL=NOPASSWD: ALL'
 end
+
+d = {}
+if File.exists?('/etc/datadog_secrets')
+  File.read('/etc/datadog_secrets').each_line do |line|
+    k, v = line.strip.split(/\s*=\s*/)
+    d[k.downcase] = v
+  end
+  if d['api_key']
+    node.default['scale_datadog']['api_key'] = d['api_key']
+  end
+end
