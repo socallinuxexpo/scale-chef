@@ -52,10 +52,21 @@ cookbook_file '/usr/local/bin/deploy_site' do
   mode '0755'
 end
 
+cookbook_file '/usr/local/bin/deploy_legacy_sites' do
+  source 'deploy_legacy_sites'
+  owner 'root'
+  group 'root'
+  mode '0755'
+end
+
 # We don't want to deploy the site on every single run,
 # but if we don't *have* the site yet, deploy it
 execute '/usr/local/bin/deploy_site' do
   creates '/home/drupal/scale-drupal'
+end
+
+execute '/usr/local/bin/deploy_legacy_sites' do
+  creates '/home/webroot/'
 end
 
 # Ensure existance of drupal directories
@@ -63,6 +74,7 @@ end
  /home/drupal/scale-drupal/httpdocs
  /home/drupal/scale-drupal/httpdocs/sites
  /home/drupal/scale-drupal/httpdocs/sites/default
+ /home/webroot/
 }.each do |tmpdir|
   directory tmpdir do
     owner 'root'
