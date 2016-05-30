@@ -1,0 +1,9 @@
+#!/bin/bash
+
+cd /home/
+if [ -d /home/webroot ]; then
+  cd /home/webroot/
+  git pull
+else
+  git clone https://github.com/socallinuxexpo/scale-legacy-web.git /home/webroot/
+fi
