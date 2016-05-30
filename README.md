@@ -56,3 +56,4 @@ For production machines use the `scale-secrets` repo, to manually setup the foll
 
 * www/ssl/apache.pem -> /etc/httpd/apache.pem
 * www/drupal_secrets -> /etc/drupal_secrets
+* common/datadog_secrets -> /etc/datadog_secrets
