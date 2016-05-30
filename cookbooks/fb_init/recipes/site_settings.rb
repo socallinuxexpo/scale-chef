@@ -18,6 +18,6 @@ if File.exists?('/etc/datadog_secrets')
     d[k.downcase] = v
   end
   if d['api_key']
-    node.default['scale_datadog']['api_key'] = d['api_key']
+    node.default['scale_datadog']['config']['api_key'] = d['api_key']
   end
 end
