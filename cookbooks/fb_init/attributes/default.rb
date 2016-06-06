@@ -4,6 +4,4 @@
 tier = node['fqdn'].split('.')[0].tr('0-9', '')
 default['tier'] = tier
 
-default['fb_init'] = {
-  'vagrant' => File.exists?('/vagrant'),
-}
+default['fb_init'] = {}

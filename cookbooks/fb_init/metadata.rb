@@ -9,6 +9,7 @@ long_description IO.read(File.join(File.dirname(__FILE__), 'README.md'))
 version '0.0.1'
 %w{
   scale_chef_client
+  scale_datadog
   scale_sudo
   scale_ssh
   scale_users
