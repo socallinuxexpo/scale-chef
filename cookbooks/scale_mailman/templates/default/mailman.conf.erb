@@ -1,0 +1,26 @@
+
+ScriptAlias /cgi-bin/mailman/ /usr/lib/mailman/cgi-bin/
+Alias /pipermail/ /var/lib/mailman/archives/public/
+Alias /images/mailman/ /usr/lib/mailman/icons/
+
+<Directory /usr/lib/mailman/cgi-bin/>
+    AllowOverride None
+    Options ExecCGI
+    AddHandler cgi-script .cgi
+    Order allow,deny
+    Allow from all
+    Require all granted
+</Directory>
+<Directory /var/lib/mailman/archives/public/>
+    Options FollowSymlinks
+    AllowOverride None
+    Order allow,deny
+    Allow from all
+    Require all granted
+</Directory>
+<Directory /usr/lib/mailman/icons/>
+    AllowOverride None
+    Order allow,deny
+    Allow from all
+    Require all granted
+</Directory>
