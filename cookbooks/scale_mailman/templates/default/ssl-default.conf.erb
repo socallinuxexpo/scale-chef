@@ -1,0 +1,43 @@
+<IfModule mod_ssl.c>
+<VirtualHost _default_:443>
+	ServerAdmin listmaster@linuxfests.org
+	DocumentRoot /var/www/html/
+        DirectoryIndex index.php index.html
+	<Directory />
+		Options FollowSymLinks
+		AllowOverride None
+	</Directory>
+	<Directory /var/www/html/>
+		Options Indexes FollowSymLinks MultiViews
+		AllowOverride None
+		Order allow,deny
+		allow from all
+                Require all granted
+	</Directory>
+
+	ErrorLog /var/log/httpd/ssl_error.log
+
+	LogLevel warn
+
+	CustomLog /var/log/httpd/ssl_access.log combined
+
+	#   SSL Engine Switch:
+	#   Enable/Disable SSL for this virtual host.
+	SSLEngine on
+        SSLCertificateFile    /etc/httpd/apache.pem
+	SSLCertificateChainFile /etc/httpd/sf_bundle.crt
+	<FilesMatch "\.(cgi|shtml|phtml|php)$">
+		SSLOptions +StdEnvVars
+	</FilesMatch>
+	<Directory /var/www/cgi-bin>
+		SSLOptions +StdEnvVars
+	</Directory>
+
+	BrowserMatch "MSIE [2-6]" \
+		nokeepalive ssl-unclean-shutdown \
+		downgrade-1.0 force-response-1.0
+	# MSIE 7 and newer should be able to use keepalive
+	BrowserMatch "MSIE [17-9]" ssl-unclean-shutdown
+
+</VirtualHost>
+</IfModule>
