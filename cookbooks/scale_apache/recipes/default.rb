@@ -110,6 +110,17 @@ template '/usr/local/bin/backup-drupal-static.sh' do
   source 'backup-drupal-static.sh.erb'
 end
 
+template '/usr/local/bin/restore-drupal-static.py' do
+  owner 'root'
+  group 'root'
+  mode '0755'
+  source 'restore-drupal-static.py.erb'
+end
+
+execute '/usr/local/bin/restore-drupal-static.py' do
+  creates '/home/drupal/scale-drupal/httpdocs/sites/default/files'
+end
+
 cookbook_file '/etc/httpd/sf_bundle.crt' do
   owner 'root'
   group 'root'
