@@ -178,14 +178,14 @@
  * @endcode
  */
 $databases = array (
-  'default' => 
+  'default' =>
   array (
-    'default' => 
+    'default' =>
     array (
       'database' => 'drupal',
       'username' => 'drupal',
       'password' => '<%= node['scale_apache']['drupal_password'] %>',
-      'host' => 'db1',
+      'host' => '<%= node['scale_apache']['mysql_host'] %>',
       'port' => '',
       'driver' => 'mysql',
       'prefix' => '',
