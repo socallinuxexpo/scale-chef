@@ -14,6 +14,7 @@ admins = {
   'ilan' => '1004',
   'bala' => '1005',
   'jhoblitt' => '1006',
+  'ron' => '1007'
 }
 
 admins.each do |user, uid|
