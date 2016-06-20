@@ -15,6 +15,7 @@ pkgs = %w{
   php-mysql
   php-pdo
   php-xml
+  python-boto
 }
 
 package pkgs do
@@ -102,6 +103,24 @@ template '/home/drupal/scale-drupal/httpdocs/sites/default/settings.php' do
   mode '0640'
 end
 
+template '/usr/local/bin/backup-drupal-static.sh' do
+  owner 'root'
+  group 'root'
+  mode '0755'
+  source 'backup-drupal-static.sh.erb'
+end
+
+template '/usr/local/bin/restore-drupal-static.py' do
+  owner 'root'
+  group 'root'
+  mode '0755'
+  source 'restore-drupal-static.py.erb'
+end
+
+execute '/usr/local/bin/restore-drupal-static.py' do
+  creates '/home/drupal/scale-drupal/httpdocs/sites/default/files'
+end
+
 cookbook_file '/etc/httpd/sf_bundle.crt' do
   owner 'root'
   group 'root'
@@ -115,6 +134,11 @@ file '/etc/drupal_secrets' do
   group 'root'
   mode '0600'
 end
+
+node.default['fb_cron']['jobs']['drupal_backup'] = {
+  'time' => '30 0,12 * * *',
+  'command' => '/usr/local/bin/backup-drupal-static.sh'
+}
 
 include_recipe 'scale_apache::dev'
 

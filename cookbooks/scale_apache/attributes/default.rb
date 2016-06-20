@@ -9,5 +9,7 @@ end
 default['scale_apache'] = {
   'drupal_hash_salt' => d['drupal_hash_salt'] || 'thisisadevhashsalt',
   'drupal_password' => d['drupal_password'] || 'thisisadevpassword',
+  's3_aws_access_key_id' => d['s3_aws_access_key_id'] || 'thisisadevkey',
+  's3_aws_secret_access_key' => d['s3_aws_secret_access_key'] || 'thisisadevsecret',
   'want_prod_redirects' => !d.empty? && !File.exists?('/etc/no_prod_redirects'),
 }
