@@ -12,5 +12,6 @@ default['scale_apache'] = {
   's3_aws_access_key_id' => d['s3_aws_access_key_id'] || 'thisisadevkey',
   's3_aws_secret_access_key' => d['s3_aws_secret_access_key'] || 'thisisadevsecret',
   'mysql_host' => d['mysql_host'] || 'db1',
+  'drupal_database' => d['drupal_database'] || 'drupal',
   'want_prod_redirects' => !d.empty? && !File.exists?('/etc/no_prod_redirects'),
 }
