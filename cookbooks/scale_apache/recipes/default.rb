@@ -146,3 +146,17 @@ include_recipe 'scale_apache::dev'
 service 'httpd' do
   action [:enable, :start]
 end
+
+node.default['scale_datadog']['monitors']['apache'] = {
+  "init_config"=>nil,
+  "instances"=>[{"apache_status_url"=>"http://localhost/server-status?auto"}]
+}
+
+node.default['scale_datadog']['monitors']['dns_check'] = {
+   "init_config"=>{"default_timeout"=>4},
+   "instances"=>[{"hostname"=>"www.socallinuxexpo.org", "nameserver"=>"8.8.8.8", "timeout"=>8}]
+}
+
+node.default['scale_datadog']['monitors']['linux_proc_extras'] = {
+  "init_config"=>nil, "instances"=>[{"tags"=>[]}]
+}
