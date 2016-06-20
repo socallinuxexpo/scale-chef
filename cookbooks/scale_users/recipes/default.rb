@@ -54,3 +54,7 @@ node.default['scale_ssh']['keys']['bala'] = [
 node.default['scale_ssh']['keys']['jhoblitt'] = [
   'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCSktxAqLJWTUX63vNrJKyyJWxgtO/3DmRPy7KqDlLko+NAGvk2boc0KkZpD44aPsBxfZnl5gKuRQXb71gMoHk7qF5XsT/DTHxadhtWTSZiHfhZJ4CrkHuiu/8HGUbp5ENrIYIqhyhN5PydJyEW5NfPvRg7n2O5XXZENq+KtxMqBujuXzm9HOese8FTck3nlUnkqz3ObNRyeOCqIXPNukpRDSNRrFY7D8P2Y1/QLeixPzXd6pMkra9gnOPjrs/X9z2lGRaiyhMrraPtBWMlgf2dnN/PjC38T8vC0/xZq0P1N9G5n0swNe961Xr74/gsFvoh004A1aerWhcFnk1+yf79 jhoblitt@cpan.org'
 ]
+
+node.default['scale_ssh']['keys']['ron'] = [
+  'ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAwfPsFGX4aLsFSCYYtzIvxF0vmvf0+EJ4kWZGDzUPBhJEhVzeTLw60Y9q3Nv9ApktpiELL0rsYKYLAQkycO9feB7wG6IUsBTPLbumb4hF9V0MXpOUPewluM5qOw5YRa64j0KYrPMwbcP4sA2tOCgs9rP4mSOeIBXPh7bHFM6ryzSuri0ZCC2uEx0hE9MvBWnkL6B2GUnUAFLDkjc46QO44oshr3ejAqn8eyMX/09eSDcsbLv6aix5eFpnxwYQXkjZ6ZcEpVx61/17+GOM5vRiAt+svQW0BH+Ss0AW+t5TAwqsRLrz/q8SZDbtgbarzPqS/I82YLKbSw9Lp8axRPmVUw== rgolan@tabu'
+]
