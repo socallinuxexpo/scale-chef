@@ -8,6 +8,7 @@
 #
 
 pkgs = %w{
+  git
   httpd
   mod_ssl
   php
