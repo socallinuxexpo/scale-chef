@@ -16,6 +16,7 @@ pkgs = %w{
   php-mysql
   php-pdo
   php-xml
+  php-mbstring
   python-boto
 }
 
