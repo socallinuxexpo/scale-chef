@@ -17,4 +17,5 @@ s3put --access_key ${S3KEY} --secret_key ${S3SECRET} --bucket ${BUCKET} --prefix
 
 if [ $? -eq 0 ]; then
   rm "${TMPFILE}/${TARGET}"
+  rmdir "${TMPFILE}"
 fi
