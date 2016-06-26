@@ -1,0 +1,3 @@
+[submodule "cookbooks/tarball"]
+	path = cookbooks/tarball
+	url = git@github.com:ooyala/tarball-chef-cookbook.git
