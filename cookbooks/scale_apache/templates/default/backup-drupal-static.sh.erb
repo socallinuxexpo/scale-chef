@@ -14,3 +14,7 @@ tar cfz $TMPFILE/${TARGET} -C /home/drupal/scale-drupal/httpdocs/sites/default/ 
 
 echo "Uploading backup...."
 s3put --access_key ${S3KEY} --secret_key ${S3SECRET} --bucket ${BUCKET} --prefix ${TMPFILE} --key_prefix static/$DATE/ ${TMPFILE}/${TARGET}
+
+if [ $? -eq 0 ]; then
+  rm "${TMPFILE}/${TARGET}"
+fi
