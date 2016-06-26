@@ -1,6 +1,15 @@
-ServerName www.socallinuxexpo.org
+<VirtualHost *:80>
+    ServerName localhost
+    <Location /server-status>
+       SetHandler server-status
+       Order Deny,Allow
+       Deny from all
+       Allow from localhost
+    </Location>
+</VirtualHost>
 
 <VirtualHost *:80>
+    ServerName www.socallinuxexpo.org
     ServerAdmin webmaster@socallinuxexpo.org
     Alias /past /home/webroot/past
     Alias /scale5x /home/webroot/scale5x

@@ -11,9 +11,9 @@ action :update do
       owner 'dd-agent'
       group 'root'
       mode '0644'
-      variables(
-        @config => config,
-      )
+      variables({
+        :config => config
+      })
     end
   end
 end
