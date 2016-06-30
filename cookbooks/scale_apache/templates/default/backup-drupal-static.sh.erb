@@ -6,8 +6,8 @@ DATE=`date +%Y/%m/%d`
 TIME=`date +%H-%M-%S`
 TARGET="drupal-static_${HOSTNAME}_${TIME}.tar.gz"
 
-S3KEY="<%= node['scale_apache']['s3_aws_access_key_id'] %>"
-S3SECRET="<%= node['scale_apache']['s3_aws_secret_access_key'] %>"
+S3KEY="AKIAJFKLHCWBTGAYBUYQ"
+S3SECRET="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"
 
 echo "Starting backup...."
 tar cfz $TMPFILE/${TARGET} -C /home/drupal/scale-drupal/httpdocs/sites/default/ files
