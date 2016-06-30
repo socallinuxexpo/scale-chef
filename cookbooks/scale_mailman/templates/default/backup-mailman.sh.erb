@@ -1,0 +1,27 @@
+#!/bin/bash
+
+BUCKET="scale-mailman-backups"
+TMPFILE=`mktemp -d`
+DATE=`date +%Y/%m/%d`
+TIME=`date +%H-%M-%S`
+
+S3KEY="<%= node['scale_mailman']['s3_aws_access_key_id'] %>"
+S3SECRET="<%= node['scale_mailman']['s3_aws_secret_access_key'] %>"
+
+echo "Starting backup...."
+tar cfz $TMPFILE/mailman-archives_${HOSTNAME}_${TIME}.tar.gz -C /var/lib/mailman/ archives
+tar cfz $TMPFILE/mailman-configs_${HOSTNAME}_${TIME}.tar.gz -C /var/lib/mailman/ {data,lists}
+
+echo "Uploading backup...."
+
+for type in archives configs
+do
+  s3put --access_key ${S3KEY} --secret_key ${S3SECRET} --bucket ${BUCKET} --prefix ${TMPFILE} --key_prefix ${type}/$DATE/ ${TMPFILE}/mailman-${type}_${HOSTNAME}_${TIME}.tar.gz
+
+  if [ $? -eq 0 ]; then
+    echo "Upload of mailman-${type} complete";
+    rm "${TMPFILE}/mailman-archives_${HOSTNAME}_${TIME}.tar.gz"
+  fi
+done
+
+rmdir "${TMPFILE}"

@@ -3,3 +3,4 @@
 *.rej
 Gemfile.lock
 .vagrant
+.chef/*.pem
