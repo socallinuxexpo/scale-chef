@@ -51,4 +51,10 @@ Vagrant.configure("2") do |config|
     v.vm.network :private_network, ip: "172.16.1.11"
     v.vm.provision "shell", inline: provisioning_script, privileged: false
   end
+
+  config.vm.define "lists1" do |v|
+    v.vm.hostname = "lists1"
+    v.vm.network :private_network, ip: "172.16.1.12"
+    v.vm.provision "shell", inline: provisioning_script, privileged: false
+  end
 end
