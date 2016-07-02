@@ -80,7 +80,7 @@ template '/usr/local/bin/restore-mailman.py' do
 end
 
 execute '/usr/local/bin/restore-mailman.py' do
-  creates '/var/lib/mailman/lists'
+  creates '/var/lib/mailman/lists/archives'
 end
 
 template '/usr/local/bin/backup-mailman.sh' do
