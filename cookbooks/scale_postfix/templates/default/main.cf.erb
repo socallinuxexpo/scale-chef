@@ -1,0 +1,8 @@
+# This file is maintained by Chef, do not modify.
+
+<% node['scale_postfix']['main.cf'].to_hash.each do |key, val| %>
+<%   if val.is_a?(Array) %>
+<%     val = val.join(', ') %>
+<%   end %>
+<%=  key %> = <%= val %>
+<% end %>

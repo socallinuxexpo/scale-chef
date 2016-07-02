@@ -13,6 +13,7 @@ version '0.0.1'
   scale_sudo
   scale_ssh
   scale_users
+  scale_postfix
   fb_cron
   fb_fstab
   fb_helpers

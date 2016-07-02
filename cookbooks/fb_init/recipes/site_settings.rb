@@ -21,3 +21,13 @@ if File.exists?('/etc/datadog_secrets')
     node.default['scale_datadog']['config']['api_key'] = d['api_key']
   end
 end
+
+{
+  'decode' => 'root',
+  'abuse' => 'postmaster',
+  'spam' => 'postmaster',
+  'root' => 'root@socallinuxexpo.org',
+  'scale-voicemail' => 'scale-chairs',
+}.each do |src, dst|
+  node.default['scale_postfix']['aliases'][src] = dst
+end

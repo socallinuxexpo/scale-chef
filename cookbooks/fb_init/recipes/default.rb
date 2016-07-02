@@ -31,7 +31,7 @@ include_recipe 'scale_ssh'
 include_recipe 'fb_sysctl'
 # HERE: networking
 #include_recipe 'fb_syslog'
-# HERE: postfix
+include_recipe 'scale_postfix'
 # HERE: nfs
 #include_recipe 'fb_swap'
 # WARNING!

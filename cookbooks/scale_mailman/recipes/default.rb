@@ -3,8 +3,6 @@
 # Recipe:: default
 #
 
-#TODO: POSTFIX should probably move to a generic postfix cookbook
-
 pkgs = %w{
   httpd
   mod_ssl
@@ -155,7 +153,29 @@ node.default['fb_cron']['jobs']['mailman_cull_bad_shunt'] = {
 }
 
 include_recipe 'scale_apache::dev'
-include_recipe 'scale_mailman::postfix'
+
+node.default['scale_postfix']['main.cf']['alias_maps'] <<
+  'hash:/var/lib/mailman/data/aliases'
+
+{
+  'mydestination' =>
+    'lists.linuxfests.org, $myhostname, localhost.$mydomain, localhost',
+  'mydomain' => 'lists.linuxfests.org',
+}.each do |conf, val|
+  node.default['scale_postfix']['main.cf'][conf] = val
+end
+
+template '/var/lib/mailman/data/aliases' do
+  owner 'root'
+  group 'root'
+  mode '0644'
+  notifies :run, 'execute[update mailman aliases]', :immediately
+end
+
+execute 'update mailman aliases' do
+  command 'postalias /var/lib/mailman/data/aliases'
+  action :nothing
+end
 
 service 'mailman' do
   action [:enable, :start]
