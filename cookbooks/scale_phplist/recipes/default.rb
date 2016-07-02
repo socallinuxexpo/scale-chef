@@ -16,7 +16,7 @@ package pkgs do
 end
 
 remote_file "#{Chef::Config['file_cache_path']}/phplist-3.2.5.tgz" do
-  source "https://s3.amazonaws.com/scale-packages/phplist-3.2.5.tgz"
+  source 'https://s3.amazonaws.com/scale-packages/phplist-3.2.5.tgz'
   owner 'root'
   group 'root'
   mode '0644'
@@ -31,14 +31,14 @@ tarball_x "#{Chef::Config['file_cache_path']}/phplist-3.2.5.tgz" do
   action :extract
 end
 
-template "/usr/local/phplist-3.2.5/public_html/lists/config/config.php" do
+template '/usr/local/phplist-3.2.5/public_html/lists/config/config.php' do
   owner 'root'
   group 'apache'
   mode '0640'
 end
 
 link '/var/www/html/lists' do
-  to "/usr/local/phplist-3.2.5/public_html/lists"
+  to '/usr/local/phplist-3.2.5/public_html/lists'
 end
 
 service 'httpd' do

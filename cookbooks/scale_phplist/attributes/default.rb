@@ -15,7 +15,8 @@ default['scale_phplist'] = {
 if node.vagrant?
   default['scale_apache']['mysql_host'] = 'db1'
 else
-  default['scale_apache']['mysql_host'] = '26b289196faa9f09e8b99de13aa19528986e9b68.rackspaceclouddb.com'
+  default['scale_apache']['mysql_host'] =
+    '26b289196faa9f09e8b99de13aa19528986e9b68.rackspaceclouddb.com'
 end
 
 default[scale_phplist]['version'] = '3.2.5'
