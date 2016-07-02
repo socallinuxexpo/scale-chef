@@ -27,8 +27,12 @@ get_repos() {
     if [ -d "$dir" ]; then
       cd $dir
       git pull
+      git submodule init
+      git submodule update
     else
       git clone $repo
+      git submodule init
+      git submodule update
     fi
   done
 }
@@ -58,7 +62,7 @@ EOF
 
 chef_run() {
   extra_args="$*"
-  
+
   sleep $SPLAY
   if [ "$UPDATE" = 1 ]; then
     if [ $VAGRANT -eq 1 ]; then
@@ -123,7 +127,7 @@ if [ "$BOOTSTRAP" = 1 ]; then
   bootstrap
   exit 0
 fi
-      
+
 extra_chef_args="$*"
 
 # Splay and Immediate are mutually exclusive so work that out
