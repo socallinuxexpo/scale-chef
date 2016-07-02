@@ -27,8 +27,14 @@
     RewriteRule ^ http%{ENV:protossl}://www.%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 <% end %>
     RewriteCond %{REQUEST_URI} ^/$
-    #RewriteRule ^/(.*) https://www.socallinuxexpo.org/scale13x [L,R,NE]
-    RewriteRule ^/(.*) https://www.socallinuxexpo.org/scale/14x [L,R,NE]
+    RewriteRule ^/(.*) https://www.socallinuxexpo.org/scale/15x [L,R,NE]
+    RewriteRule ^/(.*) http://www.socallinuxexpo.org/scale/15x [L,R,NE]
+    RewriteCond %{REQUEST_URI} ^/scale14x$
+    RewriteRule ^/(.*) http://www.socallinuxexpo.org/scale/14x [L,R,NE]
+    RewriteCond %{REQUEST_URI} ^/scale14x/
+    RewriteRule ^/scale14x/(.*) http://www.socallinuxexpo.org/scale/14x/$1 [L,R=301,NE]
+    RewriteCond %{REQUEST_URI} ^/scale15x$
+    RewriteRule ^/(.*) http://www.socallinuxexpo.org/scale/15x [L,R,NE]
     RewriteCond %{REQUEST_URI} ^/scale13x$
     RewriteRule ^/(.*) https://www.socallinuxexpo.org/scale/13x [L,R=301,NE]
     RewriteCond %{REQUEST_URI} ^/scale13x/
