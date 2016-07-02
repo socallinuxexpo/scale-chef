@@ -160,7 +160,7 @@ node.default['scale_postfix']['main.cf']['alias_maps'] <<
 {
   'mydestination' =>
     'lists.linuxfests.org, $myhostname, localhost.$mydomain, localhost',
-  'mydomain' => 'lists.linuxfests.org',
+  'mydomain' => 'linuxfests.org',
 }.each do |conf, val|
   node.default['scale_postfix']['main.cf'][conf] = val
 end
