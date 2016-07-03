@@ -32,11 +32,12 @@ cookbook_file '/var/www/html/index.html' do
   mode '0644'
 end
 
-cookbook_file "#{Chef::Config['file_cache_path']}/mailman-2.1.21-1.fc25.x86_64.rpm" do
-  source 'mailman-2.1.21-1.fc25.x86_64.rpm'
+remote_file "#{Chef::Config['file_cache_path']}/mailman-2.1.21-1.fc25.x86_64.rpm" do
+  source 'https://s3.amazonaws.com/scale-packages/mailman-2.1.21-1.fc25.x86_64.rpm'
   owner 'root'
   group 'root'
   mode '0644'
+  action :create
 end
 
 %w{
