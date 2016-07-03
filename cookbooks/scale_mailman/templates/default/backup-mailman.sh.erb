@@ -16,7 +16,7 @@ echo "Uploading backup...."
 
 for type in archives configs
 do
-  s3put --access_key ${S3KEY} --secret_key ${S3SECRET} --bucket ${BUCKET} --prefix ${TMPFILE} --key_prefix ${type}/$DATE/ ${TMPFILE}/mailman-${type}_${HOSTNAME}_${TIME}.tar.gz
+  s3put --region=us-east-1 --access_key ${S3KEY} --secret_key ${S3SECRET} --bucket ${BUCKET} --prefix ${TMPFILE} --key_prefix ${type}/$DATE/ ${TMPFILE}/mailman-${type}_${HOSTNAME}_${TIME}.tar.gz
 
   if [ $? -eq 0 ]; then
     echo "Upload of mailman-${type} complete";
