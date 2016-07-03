@@ -1,4 +1,14 @@
 <VirtualHost *:80>
+    ServerName localhost
+    <Location /server-status>
+       SetHandler server-status
+       Order Deny,Allow
+       Deny from all
+       Allow from localhost
+    </Location>
+</VirtualHost>
+
+<VirtualHost *:80>
         ServerAdmin listmaster@linuxfests.org
         #Redirect permanent / https://lists.linuxfests.org/
         RewriteEngine on
