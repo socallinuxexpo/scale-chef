@@ -44,3 +44,18 @@ end
 file '/etc/aliases' do
   action :delete
 end
+
+file '/etc/aliases.db' do
+  action :delete
+end
+
+node.default['scale_datadog']['monitors']['postfix'] = {
+  'init_config' => nil,
+  'instances' => [{
+    'directory' => '/var/spool/postfix',
+    'queues' => ['incoming', 'active', 'deferred'],
+  }],
+}
+
+node.default['scale_sudo']['users']['dd-agent'] =
+  'ALL=(ALL) NOPASSWD:/usr/bin/find /var/spool/postfix/ -type f'
