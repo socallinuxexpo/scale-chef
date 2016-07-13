@@ -185,3 +185,27 @@ end
 service 'httpd' do
   action [:enable, :start]
 end
+
+node.default['scale_datadog']['monitors']['apache'] = {
+  'init_config' => nil,
+  'instances' => [{ 'apache_status_url' =>
+      'http://localhost/server-status?auto' }],
+}
+
+node.default['scale_datadog']['monitors']['dns_check'] = {
+  'init_config' => { 'default_timeout' => 4 },
+  'instances' => [{ 'hostname' => 'lists.linuxfests.org',
+                    'nameserver' => '8.8.8.8',
+                    'timeout' => 8 }],
+}
+
+node.default['scale_datadog']['monitors']['linux_proc_extras'] = {
+  'init_config' => nil, 'instances' => [{ 'tags' => [] }]
+}
+
+node.default['scale_datadog']['monitors']['http_check'] = {
+  'init_config' => nil,
+  'instances' => [{ 'name' => 'lists.linuxfests.org',
+                    'url' => 'http://lists.linuxfests.org',
+                    'timeout' => 2 }],
+}
