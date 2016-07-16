@@ -17,6 +17,9 @@ if File.exists?('/etc/datadog_secrets')
     k, v = line.strip.split(/\s*=\s*/)
     d[k.downcase] = v
   end
+  if d['application_key']
+    node.default['scale_datadog']['config']['application_key'] = d['application_key']
+  end
   if d['api_key']
     node.default['scale_datadog']['config']['api_key'] = d['api_key']
   end
