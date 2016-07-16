@@ -4,6 +4,7 @@ default['scale_datadog'] = {
   'config' => {
     'dd_url' => 'https://app.datadoghq.com',
     'api_key' => nil,
+    'application_key' => nil,
     'log_to_syslog' => 'no',
   },
   'monitors' => {},
