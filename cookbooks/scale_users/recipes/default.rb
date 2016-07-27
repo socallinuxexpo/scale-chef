@@ -14,7 +14,8 @@ admins = {
   'ilan' => '1004',
   'bala' => '1005',
   'jhoblitt' => '1006',
-  'ron' => '1007'
+  'ron' => '1007',
+  'leiz' => '1008'
 }
 
 admins.each do |user, uid|
@@ -58,4 +59,8 @@ node.default['scale_ssh']['keys']['jhoblitt'] = [
 
 node.default['scale_ssh']['keys']['ron'] = [
   'ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAwfPsFGX4aLsFSCYYtzIvxF0vmvf0+EJ4kWZGDzUPBhJEhVzeTLw60Y9q3Nv9ApktpiELL0rsYKYLAQkycO9feB7wG6IUsBTPLbumb4hF9V0MXpOUPewluM5qOw5YRa64j0KYrPMwbcP4sA2tOCgs9rP4mSOeIBXPh7bHFM6ryzSuri0ZCC2uEx0hE9MvBWnkL6B2GUnUAFLDkjc46QO44oshr3ejAqn8eyMX/09eSDcsbLv6aix5eFpnxwYQXkjZ6ZcEpVx61/17+GOM5vRiAt+svQW0BH+Ss0AW+t5TAwqsRLrz/q8SZDbtgbarzPqS/I82YLKbSw9Lp8axRPmVUw== rgolan@tabu'
+]
+
+node.default['scale_ssh']['keys']['leiz'] = [
+  'ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAv0JJzVcYGxpCJ7FqnCvr2LjY0fSC0Ehwb4vuU2CsO50h9M+1br1tQoxWM2ynHle71OLTuvaoBPB1D7FlcyMcvL9DoSjJVXezPYlyrdup9obX17svGaA8VE4x8hyD9PXPwVs8x9hAmF4cCC28nDu/WMY3MfEkT8yFghsl4hBEGlTKUIYiG17Xf5Ty3jfcsaJrqhsGbcqlt5FN9+ytDFpLY0pB+0IDQAAlq/e5RoeE9xh7s+XIzZOl3cnAiFOhyUHvvEIWPTaeNf5unGQk4CRjvre4+dID+sJP8ORCANhHxtH8iH9jixQQLQQEuK6aGxS2okwxIiEvmUCNY105H4oDoQ== thestig@flea'
 ]
