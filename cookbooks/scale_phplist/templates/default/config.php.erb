@@ -72,7 +72,7 @@ Settings for handling bounces
 
 # Handling bounces. Check README.bounces for more info
 # This can be 'pop' or 'mbox'
-$bounce_protocol = <%= node['scale_phplist']['bounce_protocol'] %>;
+$bounce_protocol = "<%= node['scale_phplist']['bounce_protocol'] %>";
 
 # set this to 0, if you set up a cron to download bounces regularly by using the
 # commandline option. If this is 0, users cannot run the page from the web
@@ -90,9 +90,7 @@ $bounce_mailbox_password = <%= node['scale_phplist']['bounce_mailbox_password'] 
 # one. To do that, add a # before the first line and take off the one before the
 # second line
 
-#$bounce_mailbox_port = "110/pop3/notls";
-$bounce_mailbox_port = <%= node['scale_phplist']['bounce_mailbox_port'] %>;
-#$bounce_mailbox_port = "110/pop3";
+$bounce_mailbox_port = "<%= node['scale_phplist']['bounce_mailbox_port'] %>";
 
 # when the protocol is mbox specify this one
 # it needs to be a local file in mbox format, accessible to your webserver user

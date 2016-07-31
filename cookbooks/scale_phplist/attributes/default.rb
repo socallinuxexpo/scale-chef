@@ -18,4 +18,4 @@ default['scale_phplist'] = {
 
 default['scale_phplist']['version'] = '3.2.5'
 default['scale_phplist']['bounce_protocol'] = 'pop'
-default['scale_phplist']['bounce_mailbox_port'] = '587/pop3/tls'
+default['scale_phplist']['bounce_mailbox_port'] = '995/pop3/ssl'
