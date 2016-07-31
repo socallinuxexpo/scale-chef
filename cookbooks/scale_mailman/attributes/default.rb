@@ -13,7 +13,7 @@ default['scale_mailman'] = {
   's3_aws_secret_access_key' => d['s3_aws_secret_access_key'] || 'thisisadevsecret',
 }
 
-default['scale_mailman']['listmaster'] = "ilan@linuxfests.org"
+default['scale_mailman']['listmaster'] = "ilan@linuxfests.org,listmaster@linuxfests.org"
 
 default['scale_mailman']['lists'] = [
     "board",

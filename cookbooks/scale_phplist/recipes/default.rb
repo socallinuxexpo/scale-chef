@@ -8,6 +8,7 @@ pkgs = %w{
   mod_ssl
   php
   php-mysql
+  php-imap
 }
 
 package pkgs do

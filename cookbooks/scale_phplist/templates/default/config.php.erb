@@ -72,7 +72,7 @@ Settings for handling bounces
 
 # Handling bounces. Check README.bounces for more info
 # This can be 'pop' or 'mbox'
-$bounce_protocol = 'pop';
+$bounce_protocol = <%= node['scale_phplist']['bounce_protocol'] %>;
 
 # set this to 0, if you set up a cron to download bounces regularly by using the
 # commandline option. If this is 0, users cannot run the page from the web
@@ -81,16 +81,17 @@ $bounce_protocol = 'pop';
 define ("MANUALLY_PROCESS_BOUNCES",1);
 
 # when the protocol is pop, specify these three
-$bounce_mailbox_host = 'localhost';
-$bounce_mailbox_user = 'popuser';
-$bounce_mailbox_password = 'password';
+$bounce_mailbox_host = <%= node['scale_phplist']['bounce_mailbox_host'] %>;
+$bounce_mailbox_user = <%= node['scale_phplist']['bounce_mailbox_user'] %>;
+$bounce_mailbox_password = <%= node['scale_phplist']['bounce_mailbox_password'] %>;
 
 # the "port" is the remote port of the connection to retrieve the emails
 # the default should be fine but if it doesn't work, you can try the second
 # one. To do that, add a # before the first line and take off the one before the
 # second line
 
-$bounce_mailbox_port = "110/pop3/notls";
+#$bounce_mailbox_port = "110/pop3/notls";
+$bounce_mailbox_port = <%= node['scale_phplist']['bounce_mailbox_port'] %>;
 #$bounce_mailbox_port = "110/pop3";
 
 # when the protocol is mbox specify this one
@@ -163,7 +164,7 @@ $blacklist_gracetime = 5;
 # this needs to be the same for every request. This may not work with
 # network situations where you connect via multiple proxies, so you can
 # switch off the checking by setting this to 0
-define("CHECK_SESSIONIP",1);
+define("CHECK_SESSIONIP",0);
 
 # if you use passwords, you can store them encrypted or in plain text
 # if you want to encrypt them, set this one to 1
@@ -719,20 +720,7 @@ $tmpdir = '/tmp';
 # select the database module to use
 # anyone wanting to submit other database modules is
 # very welcome!
-$database_module = "mysql.inc";
-
-# you can store sessions in the database instead of the default place by assigning
-# a tablename to this value. The table will be created and will not use any prefixes
-# this only works when using mysql and only for administrator sessions
-# $SessionTableName = "phplistsessions";
-
-# there is now support for the use of ADOdb http://php.weblogs.com/ADODB
-# this is still experimental, and any findings should be reported in the
-# bugtracker
-# in order to use it, define the following settings:
-#$database_module = 'adodb.inc';
-#$adodb_inc_file = '/path/to/adodb_inc.php';
-#$adodb_driver = 'mysql';
+$database_module = "mysqli.inc";
 
 # if you want more trouble, make this 63 (very unlikely you will like the result)
 $error_level = error_reporting(0);
