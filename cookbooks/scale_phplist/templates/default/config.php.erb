@@ -720,20 +720,7 @@ $tmpdir = '/tmp';
 # select the database module to use
 # anyone wanting to submit other database modules is
 # very welcome!
-$database_module = "mysql.inc";
-
-# you can store sessions in the database instead of the default place by assigning
-# a tablename to this value. The table will be created and will not use any prefixes
-# this only works when using mysql and only for administrator sessions
-# $SessionTableName = "phplistsessions";
-
-# there is now support for the use of ADOdb http://php.weblogs.com/ADODB
-# this is still experimental, and any findings should be reported in the
-# bugtracker
-# in order to use it, define the following settings:
-#$database_module = 'adodb.inc';
-#$adodb_inc_file = '/path/to/adodb_inc.php';
-#$adodb_driver = 'mysql';
+$database_module = "mysqli.inc";
 
 # if you want more trouble, make this 63 (very unlikely you will like the result)
 $error_level = error_reporting(0);
