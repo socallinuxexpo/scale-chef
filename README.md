@@ -59,6 +59,7 @@ On All Hosts:
 
 On role[lists]:
 * lists/lists_secrets -> /etc/lists_secrets
+* www/ssl/apache.pem -> /etc/httpd/apache.pem
 
 On role[www]:
 * www/ssl/apache.pem -> /etc/httpd/apache.pem

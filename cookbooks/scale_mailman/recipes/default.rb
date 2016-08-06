@@ -155,6 +155,8 @@ node.default['fb_cron']['jobs']['mailman_cull_bad_shunt'] = {
 
 include_recipe 'scale_apache::dev'
 
+node.default['scale_postfix']['aliases']['listmaster'] = 'listmaster@linuxfests.org'
+
 node.default['scale_postfix']['main.cf']['alias_maps'] <<
   'hash:/var/lib/mailman/data/aliases'
 
