@@ -34,5 +34,6 @@ default['scale_mailman']['lists'] = [
     "scale-community",
     "scale-planning",
     "scale-volunteers",
-    "tech"
+    "tech",
+    "open-infra-day"
 ]
