@@ -44,7 +44,7 @@ include_recipe 'scale_postfix'
 include_recipe 'scale_sudo'
 # HERE: ntp
 include_recipe 'fb_motd'
-if !node.vagrant?
+unless node.vagrant?
   include_recipe 'scale_datadog'
   include_recipe 'scale_datadog::dd-handler'
 end
