@@ -38,14 +38,14 @@ put it under `/home/webroot` and make sure it's owned by `root:root`.
 To get the database up and running, get a dump, add
 
 ```
-mysqladmin create drupal
-zcat /vagrant/SCALE14x-2016-04-24T17-26-57.mysql.gz | mysql -U drupal
+mysqladmin create scale_drupal
+zcat /vagrant/SCALE14x-2016-04-24T17-26-57.mysql.gz | mysql -U scale_drupal
 ```
 
 then setup a grant for the drupal user with (inside of `mysql -U mysql`):
 
 ```
-GRANT ALL PRIVILEGES ON drupal.* TO drupal@www1 IDENTIFIED BY 'thisisadevpassword' WITH GRANT OPTION;
+GRANT ALL PRIVILEGES ON drupal.* TO 'drupal'@'scale-www1' IDENTIFIED BY 'thisisadevpassword' WITH GRANT OPTION;
 ```
 
 To not get redirects you should edit `/home/drupal/scale-drupal/httpdocs/.htaccess` and remove the www rewrite rules. The cookbooks assume you are in dev mode if there are no prod secrets, but if you are testing with prod secrets you can force no redirects by touching `/etc/no_prod_redirects`
