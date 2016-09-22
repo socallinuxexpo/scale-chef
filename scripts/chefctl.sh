@@ -75,8 +75,8 @@ chef_run() {
     -j /etc/chef/runlist.json $extra_args
 }
 
-longopts='bootstrap,debug,help,immediate,noupdatesplay:,human,vagrant'
-shortopts='bdhHisu:V'
+longopts='bootstrap,debug,help,immediate,noupdate,splay:,human,vagrant'
+shortopts='bdhHis:uV'
 
 opts=$(getopt -l $longopts -o $shortopts -- "$@")
 if [ $? -ne 0 ]; then

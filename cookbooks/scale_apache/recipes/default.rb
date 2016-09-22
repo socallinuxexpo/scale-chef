@@ -95,59 +95,83 @@ common_config = {
 }
 
 rewrites = {
-  '^/(.*) https://www.socallinuxexpo.org/cfp/ [L,R,NE]' => [
-    '%{HTTP_HOST} ^cfp.socallinuxexpo.org [NC]',
-  ],
-  '^/(.*) http://www.socallinuxexpo.org/$1 [L,R,NE]' => [
-    '%{HTTP_HOST} !^www.socallinuxexpo.org [NC]',
-    '%{HTTP_HOST} !^$',
-  ],
-  '^ http%{ENV:protossl}://www.%{HTTP_HOST}%{REQUEST_URI} [L,R=301]' => [
-    '%{HTTP_HOST} .',
-    '%{HTTP_HOST} !^www\. [NC]',
-  ],
-  '^/(.*) http://www.socallinuxexpo.org/scale/15x [L,R,NE]' => [
-    '%{REQUEST_URI} ^/$',
-    '%{REQUEST_URI} ^/scale15x$',
-  ],
-  '^/(.*) http://www.socallinuxexpo.org/scale/14x [L,R,NE]' => [
-    '%{REQUEST_URI} ^/scale14x$',
-  ],
-  '^/scale14x/(.*) http://www.socallinuxexpo.org/scale/14x/$1 [L,R=301,NE]' => [
-    '%{REQUEST_URI} ^/scale14x/',
-  ],
-  '^/(.*) http://www.socallinuxexpo.org/scale/13x [L,R=301,NE]' => [
-    '%{REQUEST_URI} ^/scale13x$',
-  ],
-  '^/scale13x/(.*) http://www.socallinuxexpo.org/scale/13x/$1 [L,R=301,NE]' => [
-    '%{REQUEST_URI} ^/scale13x/',
-  ],
+  'CFPs' => {
+    'rule' => '^/(.*) https://www.socallinuxexpo.org/cfp/ [L,R,NE]',
+    'conditions' => [
+      '%{HTTP_HOST} ^cfp.socallinuxexpo.org [NC]'
+    ],
+  },
+  'not our host' => {
+     'rule' => '^/(.*) http://www.socallinuxexpo.org/$1 [L,R,NE]',
+     'conditions' => [
+       '%{HTTP_HOST} !^www.socallinuxexpo.org [NC]',
+       '%{HTTP_HOST} !^$',
+     ],
+  },
+  'always ensure www' => {
+    'rule' => '^ http%{ENV:protossl}://www.%{HTTP_HOST}%{REQUEST_URI} [L,R=301]',
+    'conditions' => [
+      '%{HTTP_HOST} .',
+      '%{HTTP_HOST} !^www\. [NC]',
+    ],
+  },
+  'redirect / to current site' => {
+    'rule' => '^/(.*) http://www.socallinuxexpo.org/scale/15x [L,R,NE]',
+    'conditions' => [
+      '%{REQUEST_URI} ^/$',
+    ],
+  },
+  'redirect short url to proper url' => {
+    'rule' => '^/(.*) http://www.socallinuxexpo.org/scale/15x [L,R,NE]',
+    'conditions' => [
+      '%{REQUEST_URI} ^/scale15x$',
+    ],
+  },
+  'scale 14x' => {
+    'rule' => '^/(.*) http://www.socallinuxexpo.org/scale/14x [L,R,NE]',
+    'conditions' => [
+      '%{REQUEST_URI} ^/scale14x$',
+    ],
+  },
+  'scale 14x 2' => {
+    'rule' => '^/scale14x/(.*) http://www.socallinuxexpo.org/scale/14x/$1 [L,R=301,NE]',
+    'conditions' => [
+      '%{REQUEST_URI} ^/scale14x/',
+    ],
+  },
+  'scale 13x' => {
+    'rule' => '^/(.*) http://www.socallinuxexpo.org/scale/13x [L,R,NE]',
+    'conditions' => [
+      '%{REQUEST_URI} ^/scale13x$',
+    ],
+  },
+  'scale 13x 2' => {
+    'rule' => '^/scale13x/(.*) http://www.socallinuxexpo.org/scale/13x/$1 [L,R=301,NE]',
+    'conditions' => [
+      '%{REQUEST_URI} ^/scale13x/',
+    ],
+  },
 }
 
 node.default['fb_apache']['sites']['*:80'] = common_config
 node.default['fb_apache']['sites']['*:80']['_rewrites'] = rewrites
 
-# some HTTP overrides
 {
-  '^/(.*) https://www.socallinuxexpo.org/$1 [L,R,NE]' => [
-    '%{REQUEST_URI} ^/(user|cfp)$',
-    '%{REQUEST_URI} ^/scale/14x/(user|cfp)$',
-    '%{REQUEST_URI} ^/(user|cfp)/',
-  ],
-  '/(.*) https://www.socallinuxexpo.org/$1 [L,R,NE]' => [
-    '%{REQUEST_URI} ^/scale/14x/(user|cfp)/',
-  ],
-}.each do |key, val|
-  node.default['fb_apache']['sites']['*:80']['_rewrites'][key] = val
+  'cfp1' => '%{REQUEST_URI} ^/(user|cfp)$',
+  'cfp2' => '%{REQUEST_URI} ^/scale/14x/(user|cfp)$',
+  'cfp3' => '%{REQUEST_URI} ^/(user|cfp)/',
+  'cfp4' => '%{REQUEST_URI} ^/scale/14x/(user|cfp)/',
+}.each do |name, condition|
+  node.default['fb_apache']['sites']['*:80']['_rewrites'][name] = {
+    'rule' => '^/(.*) https://www.socallinuxexpo.org/$1 [L,R,NE]',
+    'conditions' => [condition],
+  }
 end
 
-# munge for http
+# munge for https
 rewritekeys = rewrites.keys
-rewritekeys.each do |key|
-  val = rewrites[key]
-  newkey = key.sub(' http://', ' https://')
-  rewrites.delete(key)
-  rewrites[newkey] = val
+rewritekeys.each do |name|
+  rewrites[name]['rule'].sub!(' http://', ' https://')
 end
 
 node.default['fb_apache']['sites']['_default_:443'] = common_config
