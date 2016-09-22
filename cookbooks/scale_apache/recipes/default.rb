@@ -92,38 +92,40 @@ common_config = {
     'Deny' => 'from all',
     'Allow' => 'from 127.0.0.0/255.0.0.0 ::1/128',
   },
-  '_rewrites' => {
-    '^/(.*) https://www.socallinuxexpo.org/cfp/ [L,R,NE]' => [
-      '%{HTTP_HOST} ^cfp.socallinuxexpo.org [NC]',
-    ],
-    '^/(.*) http://www.socallinuxexpo.org/$1 [L,R,NE]' => [
-      '%{HTTP_HOST} !^www.socallinuxexpo.org [NC]',
-      '%{HTTP_HOST} !^$',
-    ],
-    '^ http%{ENV:protossl}://www.%{HTTP_HOST}%{REQUEST_URI} [L,R=301]' => [
-      '%{HTTP_HOST} .',
-      '%{HTTP_HOST} !^www\. [NC]',
-    ],
-    '^/(.*) http%{ENV:protossl}://www.socallinuxexpo.org/scale/15x [L,R,NE]' => [
-      '%{REQUEST_URI} ^/$',
-      '%{REQUEST_URI} ^/scale15x$',
-    ],
-    '^/(.*) http%{ENV:protossl}://www.socallinuxexpo.org/scale/14x [L,R,NE]' => [
-      '%{REQUEST_URI} ^/scale14x$',
-    ],
-    '^/scale14x/(.*) http%{ENV:protossl}://www.socallinuxexpo.org/scale/14x/$1 [L,R=301,NE]' => [
-      '%{REQUEST_URI} ^/scale14x/',
-    ],
-    '^/(.*) http%{ENV:protossl}://www.socallinuxexpo.org/scale/13x [L,R=301,NE]' => [
-      '%{REQUEST_URI} ^/scale13x$',
-    ],
-    '^/scale13x/(.*) http://www.socallinuxexpo.org/scale/13x/$1 [L,R=301,NE]' => [
-      '%{REQUEST_URI} ^/scale13x/',
-    ],
-  },
+}
+
+rewrites = {
+  '^/(.*) https://www.socallinuxexpo.org/cfp/ [L,R,NE]' => [
+    '%{HTTP_HOST} ^cfp.socallinuxexpo.org [NC]',
+  ],
+  '^/(.*) http://www.socallinuxexpo.org/$1 [L,R,NE]' => [
+    '%{HTTP_HOST} !^www.socallinuxexpo.org [NC]',
+    '%{HTTP_HOST} !^$',
+  ],
+  '^ http%{ENV:protossl}://www.%{HTTP_HOST}%{REQUEST_URI} [L,R=301]' => [
+    '%{HTTP_HOST} .',
+    '%{HTTP_HOST} !^www\. [NC]',
+  ],
+  '^/(.*) http://www.socallinuxexpo.org/scale/15x [L,R,NE]' => [
+    '%{REQUEST_URI} ^/$',
+    '%{REQUEST_URI} ^/scale15x$',
+  ],
+  '^/(.*) http://www.socallinuxexpo.org/scale/14x [L,R,NE]' => [
+    '%{REQUEST_URI} ^/scale14x$',
+  ],
+  '^/scale14x/(.*) http://www.socallinuxexpo.org/scale/14x/$1 [L,R=301,NE]' => [
+    '%{REQUEST_URI} ^/scale14x/',
+  ],
+  '^/(.*) http://www.socallinuxexpo.org/scale/13x [L,R=301,NE]' => [
+    '%{REQUEST_URI} ^/scale13x$',
+  ],
+  '^/scale13x/(.*) http://www.socallinuxexpo.org/scale/13x/$1 [L,R=301,NE]' => [
+    '%{REQUEST_URI} ^/scale13x/',
+  ],
 }
 
 node.default['fb_apache']['sites']['*:80'] = common_config
+node.default['fb_apache']['sites']['*:80']['_rewrites'] = rewrites
 
 # some HTTP overrides
 {
@@ -139,7 +141,17 @@ node.default['fb_apache']['sites']['*:80'] = common_config
   node.default['fb_apache']['sites']['*:80']['_rewrites'][key] = val
 end
 
+# munge for http
+rewritekeys = rewrites.keys
+rewritekeys.each do |key|
+  val = rewrites[key]
+  newkey = key.sub(' http://', ' https://')
+  rewrites.delete(key)
+  rewrites[newkey] = val
+end
+
 node.default['fb_apache']['sites']['_default_:443'] = common_config
+node.default['fb_apache']['sites']['_default_:443']['_rewrites'] = rewrites
 
 # some SSL overrides
 {
