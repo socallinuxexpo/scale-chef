@@ -163,19 +163,24 @@ node.default['fb_apache']['sites']['*:80']['_rewrites'] = rewrites
   'cfp4' => '%{REQUEST_URI} ^/scale/14x/(user|cfp)/',
 }.each do |name, condition|
   node.default['fb_apache']['sites']['*:80']['_rewrites'][name] = {
+    # yes these are supposed to be ssl
     'rule' => '^/(.*) https://www.socallinuxexpo.org/$1 [L,R,NE]',
     'conditions' => [condition],
   }
 end
 
-# munge for https
-rewritekeys = rewrites.keys
-rewritekeys.each do |name|
-  rewrites[name]['rule'].sub!(' http://', ' https://')
+# munged for https
+# note we don't just dup because dup doesn't deeply-copy enough
+sslrewrites = {}
+rewrites.each do |name, ruleset|
+  sslrewrites[name] = {
+    'rule' => rewrites[name]['rule'].sub(' http://', ' https://'),
+    'conditions' => rewrites[name]['conditions'],
+  }
 end
 
 node.default['fb_apache']['sites']['_default_:443'] = common_config
-node.default['fb_apache']['sites']['_default_:443']['_rewrites'] = rewrites
+node.default['fb_apache']['sites']['_default_:443']['_rewrites'] = sslrewrites
 
 # some SSL overrides
 {
