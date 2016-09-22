@@ -71,7 +71,8 @@ chef_run() {
       get_repos
     fi
   fi
-  chef-client -z -c /etc/chef/client.rb -j /etc/chef/runlist.json $extra_args
+  chef-client --no-fork -z -c /etc/chef/client.rb \
+    -j /etc/chef/runlist.json $extra_args
 }
 
 longopts='bootstrap,debug,help,immediate,noupdatesplay:,human,vagrant'
