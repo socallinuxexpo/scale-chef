@@ -14,6 +14,7 @@ version '0.0.1'
   scale_ssh
   scale_users
   scale_postfix
+  scale_yum
   fb_cron
   fb_fstab
   fb_helpers

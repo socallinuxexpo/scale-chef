@@ -8,7 +8,9 @@
 # this should be first.
 include_recipe 'fb_init::site_settings'
 
-# HERE: yum
+if node.centos?
+  include_recipe 'scale_yum'
+end
 if node.debian? || node.ubuntu?
   include_recipe 'fb_apt'
 end
