@@ -45,3 +45,20 @@ node.default['scale_datadog']['monitors']['postfix'] = {
 
 node.default['scale_sudo']['users']['dd-agent'] =
   'ALL=(ALL) NOPASSWD:/usr/bin/find /var/spool/postfix/ -type f'
+
+d = {}
+if File.exists?('/etc/lists_secrets')
+  File.read('/etc/lists_secrets').each_line do |line|
+    k, v = line.strip.split(/\s*=\s*/)
+    d[k.downcase] = v
+  end
+end
+
+node.default['scale_phplist']['mysql_db'] = d['mysql_db']
+node.default['scale_phplist']['mysql_user'] = d['mysql_user']
+node.default['scale_phplist']['mysql_password'] = d['mysql_password']
+node.default['scale_phplist']['mysql_host'] = d['mysql_host']
+node.default['scale_phplist']['bounce_mailbox_host'] = d['bounce_mailbox_host']
+node.default['scale_phplist']['bounce_mailbox_user'] = d['bounce_mailbox_user']
+node.default['scale_phplist']['bounce_mailbox_password'] = 
+  d['bounce_mailbox_password']

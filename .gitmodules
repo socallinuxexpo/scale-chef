@@ -1,6 +1,3 @@
-[submodule "cookbooks/tarball"]
-	path = cookbooks/tarball
-	url = git@github.com:ooyala/tarball-chef-cookbook.git
 [submodule "cookbooks/chef_handler"]
 	path = cookbooks/chef_handler
 	url = git@github.com:chef-cookbooks/chef_handler.git

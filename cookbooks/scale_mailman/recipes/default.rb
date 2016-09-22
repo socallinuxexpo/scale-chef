@@ -3,9 +3,31 @@
 # Recipe:: default
 #
 
+include_recipe 'scale_apache::simple'
+
+allow_all = {
+  'AllowOverride' => 'None',
+  'Order' => 'allow,deny',
+  'Allow' => 'from all',
+  'Require' => 'all granted',
+}
+{
+  'ScriptAlias' => '/cgi-bin/mailman/ /usr/lib/mailman/cgi-bin/',
+  'Alias /pipermail/' => '/var/lib/mailman/archives/public/',
+  'Alias /images/mailman/' => '/usr/lib/mailman/icons/',
+  'Directory /usr/lib/mailman/cgi-bin/' => {
+    'Options' => 'ExecCGI',
+    'AddHandler' => 'cgi-script .cgi',
+  }.merge!(allow_all),
+  'Directory /var/lib/mailman/archives/public/' => {
+    'Options' => 'FollowSymlinks',
+  }.merge!(allow_all),
+  'Directory /usr/lib/mailman/icons/' => allow_all,
+}.each do |key, val|
+  node.default['fb_apache']['sites']['*:80'][key] = val
+end
+
 pkgs = %w{
-  httpd
-  mod_ssl
   php
   php-gd
   php-mysql
@@ -16,13 +38,7 @@ pkgs = %w{
 }
 package pkgs do
   action :upgrade
-  notifies :restart, 'service[httpd]'
-end
-
-directory '/var/www/html/' do
-  owner 'root'
-  group 'root'
-  mode '0755'
+  notifies :restart, 'service[apache]'
 end
 
 cookbook_file '/var/www/html/index.html' do
@@ -33,6 +49,7 @@ cookbook_file '/var/www/html/index.html' do
 end
 
 remote_file "#{Chef::Config['file_cache_path']}/mailman-2.1.21-1.fc25.x86_64.rpm" do
+  not_if { File.exists?('/usr/lib/mailman/bin/mailmanctl') }
   source 'https://s3.amazonaws.com/scale-packages/mailman-2.1.21-1.fc25.x86_64.rpm'
   owner 'root'
   group 'root'
@@ -40,36 +57,8 @@ remote_file "#{Chef::Config['file_cache_path']}/mailman-2.1.21-1.fc25.x86_64.rpm
   action :create
 end
 
-%w{
-  httpd.conf
-}.each do |conf|
-  template "/etc/httpd/conf/#{conf}" do
-    owner 'root'
-    group 'root'
-    mode  '0644'
-    notifies :restart, 'service[httpd]'
-  end
-end
-
-%w{
-  default.conf
-  ssl-default.conf
-  mailman.conf
-}.each do |conf|
-  template "/etc/httpd/conf.d/#{conf}" do
-    owner 'root'
-    group 'root'
-    mode '0644'
-    notifies :restart, 'service[httpd]'
-  end
-end
-#
-cookbook_file '/etc/httpd/sf_bundle.crt' do
-  cookbook 'scale_apache'
-  source 'sf_bundle.crt'
-end
-
 package 'mailman' do
+  not_if { File.exists?('/usr/lib/mailman/bin/mailmanctl') }
   source "#{Chef::Config['file_cache_path']}/mailman-2.1.21-1.fc25.x86_64.rpm"
 end
 
@@ -181,10 +170,6 @@ execute 'update mailman aliases' do
 end
 
 service 'mailman' do
-  action [:enable, :start]
-end
-
-service 'httpd' do
   action [:enable, :start]
 end
 
