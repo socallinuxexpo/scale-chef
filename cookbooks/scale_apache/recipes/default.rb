@@ -104,39 +104,46 @@ common_config = {
       '%{HTTP_HOST} .',
       '%{HTTP_HOST} !^www\. [NC]',
     ],
-    '^/(.*) http://www.socallinuxexpo.org/scale/15x [L,R,NE]' => [
+    '^/(.*) http%{ENV:protossl}://www.socallinuxexpo.org/scale/15x [L,R,NE]' => [
       '%{REQUEST_URI} ^/$',
       '%{REQUEST_URI} ^/scale15x$',
     ],
-    '^/(.*) https://www.socallinuxexpo.org/scale/14x [L,R,NE]' => [
+    '^/(.*) http%{ENV:protossl}://www.socallinuxexpo.org/scale/14x [L,R,NE]' => [
       '%{REQUEST_URI} ^/scale14x$',
     ],
-    '^/scale14x/(.*) https://www.socallinuxexpo.org/scale/14x/$1 [L,R=301,NE]' => [
+    '^/scale14x/(.*) http%{ENV:protossl}://www.socallinuxexpo.org/scale/14x/$1 [L,R=301,NE]' => [
       '%{REQUEST_URI} ^/scale14x/',
     ],
-    '^/(.*) http://www.socallinuxexpo.org/scale/13x [L,R=301,NE]' => [
+    '^/(.*) http%{ENV:protossl}://www.socallinuxexpo.org/scale/13x [L,R=301,NE]' => [
       '%{REQUEST_URI} ^/scale13x$',
     ],
     '^/scale13x/(.*) http://www.socallinuxexpo.org/scale/13x/$1 [L,R=301,NE]' => [
       '%{REQUEST_URI} ^/scale13x/',
     ],
-    '^/(.*) https://www.socallinuxexpo.org/$1 [L,R,NE]' => [
-      '%{REQUEST_URI} ^/(user|cfp)$',
-      '%{REQUEST_URI} ^/scale/14x/(user|cfp)$',
-      '%{REQUEST_URI} ^/(user|cfp)/',
-    ],
-    '/(.*) https://www.socallinuxexpo.org/$1 [L,R,NE]' => [
-      '%{REQUEST_URI} ^/scale/14x/(user|cfp)/',
-    ],
   },
 }
 
 node.default['fb_apache']['sites']['*:80'] = common_config
+
+# some HTTP overrides
+{
+  '^/(.*) https://www.socallinuxexpo.org/$1 [L,R,NE]' => [
+    '%{REQUEST_URI} ^/(user|cfp)$',
+    '%{REQUEST_URI} ^/scale/14x/(user|cfp)$',
+    '%{REQUEST_URI} ^/(user|cfp)/',
+  ],
+  '/(.*) https://www.socallinuxexpo.org/$1 [L,R,NE]' => [
+    '%{REQUEST_URI} ^/scale/14x/(user|cfp)/',
+  ],
+}.each do |key, val|
+  node.default['fb_apache']['sites']['*:80']['_rewrites'][key] = val
+end
+
 node.default['fb_apache']['sites']['_default_:443'] = common_config
 
 # some SSL overrides
 {
-  'ErrorLog' => '/var/log/httpd/error.log',
+  'ErrorLog' => '/var/log/httpd/ssl_error.log',
   'CustomLog' => '/var/log/httpd/ssl_access.log combined',
 	'SSLEngine' => 'on',
   'SSLProtocol' => 'all -SSLv2 -SSLv3',
