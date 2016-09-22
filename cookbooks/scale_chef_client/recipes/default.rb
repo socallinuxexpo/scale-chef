@@ -24,11 +24,15 @@ ruby_block 'reload_client_config' do
   action :nothing
 end
 
-template '/etc/chef/client.rb' do
+template '/etc/chef/client-prod.rb' do
   owner 'root'
   group 'root'
   mode '0644'
   notifies :create, 'ruby_block[reload_client_config]', :immediately
+end
+
+link '/etc/chef/client.rb' do
+  to '/etc/chef/client-prod.rb'
 end
 
 template '/etc/chef/runlist.json' do

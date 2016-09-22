@@ -1,0 +1,3 @@
+#!/bin/bash
+
+taste-tester $@ -c taste-tester.conf
