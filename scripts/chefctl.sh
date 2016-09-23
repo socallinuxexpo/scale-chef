@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -u
+
 BOOTSTRAP=0
 DEBUG=0
 IMMEDIATE=0
@@ -7,17 +9,38 @@ HUMAN=0
 DEFAULT_SPLAY=600
 UPDATE=1
 VAGRANT=0
+QUIET=0
+WHYRUN=0
+COLOR=0
+SPLAY=''
 
+RUNLIST_FILE='/etc/chef/runlist.json'
+CHEF_CONFIG='/etc/chef/client.rb'
+CHEF_CLIENT='/usr/bin/chef-client'
+CHEF_ARGS="--no-fork -z -j $RUNLIST_FILE -c $CHEF_CONFIG"
+LOCKFILE=/var/lock/subsys/$(basename $0 .sh)
+LOCK_FD_OUT="$LOCKFILE"
+LOCK_TIMEOUT=1800
+STAMPFILE='/etc/chef/test_timestamp'
 ROLE=$(hostname -s)
 CHEFDIR='/var/chef'
 [ -d $CHEFDIR ] || mkdir -p $CHEFDIR
 REPODIR="$CHEFDIR/repo"
 [ -d $REPODIR ] || mkdir -p $REPODIR
+OUTPUTS="$CHEFDIR/outputs"
+[ -d $OUTPUTS ] || mkdir -p $OUTPUTS
+LASTLINK_OUT=$OUTPUTS/chef.last.out
+CURLINK_OUT=$OUTPUTS/chef.cur.out
+FIRST_RUN_SAVE=$OUTPUTS/chef.first.out
 
 REPOS='
   https://github.com/facebook/chef-cookbooks.git
   git@github.com:socallinuxexpo/scale-chef.git
 '
+
+[ -r /var/chef/repo/scale-chef/scripts/stop_chef_lib.sh ] && \
+  . /var/chef/repo/scale-chef/scripts/stop_chef_lib.sh
+
 
 get_repos() {
   for repo in $REPOS; do
@@ -38,20 +61,23 @@ get_repos() {
 }
 
 copy_from_vagrant() {
-  rsync -avz --delete /vagrant/cookbooks/ $REPODIR/scale-chef/cookbooks/
+  for d in cookbooks roles scripts; do
+    rsync -avz --delete /vagrant/$d/ $REPODIR/scale-chef/$d/
+  done
 }
 
 bootstrap() {
   [ ! -d /opt/chef ] && \
     wget -qO- 'https://www.opscode.com/chef/install.sh' | bash
-  mkdir -p /etc/chef $CHEFDIR $REPODIR
-  cat > /etc/chef/client.rb <<EOF
+  mkdir -p /etc/chef $CHEFDIR $REPODIR $OUTDIR
+  cat > /etc/chef/client-prod.rb <<EOF
 cookbook_path [
   '/var/chef/repo/chef-cookbooks/cookbooks',
   '/var/chef/repo/scale-chef/cookbooks',
 ]
 role_path '/var/chef/repo/scale-chef/roles'
 EOF
+  ln -sf /etc/chef/client-prod.rb /etc/chef/client.rb
 
   cat >/etc/chef/runlist.json <<EOF
 {"run_list":["recipe[fb_init]"]}
@@ -60,10 +86,94 @@ EOF
   get_repos
 }
 
+gen_logdate() {
+  date +%Y%m%d.%H%M.%s
+}
+
+wait_for_lock() {
+  flock -w $LOCK_TIMEOUT -n 200
+  lock_acquired=$?
+  return $lock_acquired
+}
+
+try_lock() {
+  flock -n 200
+  lock_acquired=$?
+  return $lock_acquired
+}
+
+obtain_lock() {
+  if [ $IMMEDIATE -eq 1 ]; then
+    # Kill *other* chefctl instances if they are sleeping
+    stop_or_wait_for_chef 'skip_self'
+  fi
+
+  try_lock
+  lock_acquired=$?
+  if [ $lock_acquired -ne 0 ]; then
+    message="$LOCKFILE is locked, waiting up to $LOCK_TIMEOUT seconds."
+    warn "$message"
+    wait_for_lock
+    lock_acquired=$?
+
+    if [ $lock_acquired -ne 0 ]; then
+      message="Unable to lock $LOCKFILE"
+      warn "$message"
+      exit 1
+    fi
+  fi
+}
+
+_run() {
+  extra_args="$1"
+  log="$2"
+  if [ "$DEBUG" -eq 1 ]; then
+    extra_args="-l debug $extra_args"
+  elif [ "$HUMAN" -eq 1 ]; then
+    extra_args="-l fatal -F doc $extra_args"
+  fi
+
+  if [ "$WHYRUN" -eq 1 ]; then
+    extra_args="--why-run $extra_args"
+  fi
+
+  if [ "$COLOR" -eq 0 ]; then
+    extra_args="--no-color $extra_args"
+  fi
+
+  cmd="$CHEF_CLIENT $CHEF_ARGS $extra_args"
+  if [ "$DEBUG" -eq 1 ]; then
+    echo "Running: $cmd"
+  fi
+  (
+    [ "$SPLAY" -gt 0 ] && sleep $(($RANDOM % $SPLAY))
+    if [ "$QUIET" -eq 1 ]; then
+      $cmd >>$log 2>&1
+    else
+      # we need the real return status
+      set -o pipefail
+      $cmd 2>&1 | tee -a $log
+    fi
+    # don't leak fd200 -- otherwise if chef-client starts a daemon, it could
+    # have ended up holding the lock forever.
+  ) 200< /dev/null 200> /dev/null
+}
+
+_keeptesting() {
+  now=$(date +%s)
+  stamp=$(stat -c %y $STAMPFILE)
+  stamp_time=$(date +%s -d "$stamp")
+  touch_opts="-d 'now + 1 hour' $STAMPFILE"
+  remaining=$((stamp_time - now))
+  if [ 0 -lt $remaining ] && [ $remaining -lt 3600 ]; then
+    echo 'chef_test mode ends in < 1 hour, extending back to 1 hour'
+    eval "touch $touch_opts"
+  fi
+}
+
 chef_run() {
   extra_args="$*"
 
-  sleep $SPLAY
   if [ "$UPDATE" = 1 ]; then
     if [ $VAGRANT -eq 1 ]; then
       copy_from_vagrant
@@ -71,8 +181,43 @@ chef_run() {
       get_repos
     fi
   fi
-  chef-client --no-fork -z -c /etc/chef/client.rb \
-    -j /etc/chef/runlist.json $extra_args
+
+  cmd="$CHEF_CLIENT $CHEF_ARGS"
+  if [ "$DEBUG" -eq 1 ]; then
+    echo "Running: $cmd"
+  fi
+
+  (
+    obtain_lock
+
+    # If this is an immediate run and we're in test mode, check if we should
+    # extend the test period.
+    if [ $SPLAY -eq 0 ] && [ -f $STAMPFILE ]; then
+      _keeptesting
+    fi
+
+    logdate=$(gen_logdate)
+    out=$OUTPUTS/chef.$logdate.out
+
+    touch $out
+    ln -sf $out $CURLINK_OUT
+
+    _run "$extra_args" "$out"
+    retval=$?
+
+    ln -sf $out $LASTLINK_OUT
+
+    # if we are the first run, save the output
+    if [ ! -e $FIRST_RUN_SAVE ]; then
+      num_outs=$(ls $OUTPUTS/chef.2* | wc -l)
+      if [ "$num_outs" -eq 1 ]; then
+        cp $out $FIRST_RUN_SAVE
+      fi
+    fi
+    exit $retval
+
+  ) 200> $LOCK_FD_OUT
+  retval=$?
 }
 
 longopts='bootstrap,debug,help,immediate,noupdate,splay:,human,vagrant'
@@ -96,6 +241,10 @@ while true; do
       DEBUG=1
       shift
       ;;
+    --color|-c)
+      COLOR=1
+      shift
+      ;;
     --vagrant|-V)
       VAGRANT=1
       shift
@@ -108,8 +257,17 @@ while true; do
       IMMEDIATE=1
       shift
       ;;
+    --why-run|-n)
+      WHYRUN=1
+      HUMAN=1
+      shift
+      ;;
     --noupdate|-u)
       UPDATE=0
+      shift
+      ;;
+    --quiet|-q)
+      QUIET=1
       shift
       ;;
     --splay|-s)
