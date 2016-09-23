@@ -1,80 +1,19 @@
-# scale_chef_client Cookbook
+scale_chef_client Cookbook
+==========================
+Simple cookbook to setup the chef client.
 
-TODO: Enter the cookbook description here.
+Requirements
+------------
 
-e.g.
-This cookbook makes your favorite breakfast sandwich.
+Attributes
+----------
+* node['scale_chef_client']['cookbook_dirs']
+* node['scale_chef_client']['role_dir']
 
-## Requirements
+Usage
+-----
+`scale_chef_client` assumes a [Taste Tester](https://github.com/facebook/taste-tester) model and thus sets `/etc/chef/client.rb` as a symlink to `/etc/chef/client-prod.rb`.
 
-TODO: List your cookbook requirements. Be sure to include any requirements this cookbook has on platforms, libraries, other cookbooks, packages, operating systems, etc.
+The `client-prod.rb` is a template and sets up a minimal chef-solo-compatible config using the attributes specified above.
 
-e.g.
-### Platforms
-
-- SandwichOS
-
-### Chef
-
-- Chef 12.0 or later
-
-### Cookbooks
-
-- `toaster` - scale_chef_client needs toaster to brown your bagel.
-
-## Attributes
-
-TODO: List your cookbook attributes here.
-
-e.g.
-### scale_chef_client::default
-
-<table>
-  <tr>
-    <th>Key</th>
-    <th>Type</th>
-    <th>Description</th>
-    <th>Default</th>
-  </tr>
-  <tr>
-    <td><tt>['scale_chef_client']['bacon']</tt></td>
-    <td>Boolean</td>
-    <td>whether to include bacon</td>
-    <td><tt>true</tt></td>
-  </tr>
-</table>
-
-## Usage
-
-### scale_chef_client::default
-
-TODO: Write usage instructions for each cookbook.
-
-e.g.
-Just include `scale_chef_client` in your node's `run_list`:
-
-```json
-{
-  "name":"my_node",
-  "run_list": [
-    "recipe[scale_chef_client]"
-  ]
-}
-```
-
-## Contributing
-
-TODO: (optional) If this is a public cookbook, detail the process for contributing. If this is a private cookbook, remove this section.
-
-e.g.
-1. Fork the repository on Github
-2. Create a named feature branch (like `add_component_x`)
-3. Write your change
-4. Write tests for your change (if applicable)
-5. Run the tests, ensuring they all pass
-6. Submit a Pull Request using Github
-
-## License and Authors
-
-Authors: TODO: List authors
-
+In addition, `/etc/chef/runlist.json` is a Chef additional attributes file with a runlist in it. This runlist is always `recipe[fb_init]` followed by `role[$TIER]` where $TIER is `node['tier']` which is populated, currently, by `fb_init`'s attributes file (but should be moved to Ohai).
