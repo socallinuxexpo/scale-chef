@@ -1,7 +1,6 @@
-# vim: syntax=ruby:expandtab:shiftwidth=2:softtabstop=2:tabstop=2
 name 'scale_sudo'
-maintainer ''
-maintainer_email ''
+maintainer 'Southern California Linux Expo'
+maintainer_email 'noreply@socallinuxexpo.org'
 license 'All rights reserved'
 description 'Installs/Configures sudo'
 source_url 'https://github.com/socallinuxexpo/scale-chef'
