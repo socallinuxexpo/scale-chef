@@ -50,6 +50,8 @@ node.default['fb_apache']['sites']['*:80'] = vhost_config
 }.each do |key, val|
   node.default['fb_apache']['sites']['*:80'][key] = val
 end
+
+node.default['fb_apache']['sites']['_default_:443'] = vhost_config
 {
   'ErrorLog' => '/var/log/httpd/ssl_error.log',
   'CustomLog' => '/var/log/httpd/ssl_access.log combined',
@@ -67,5 +69,5 @@ end
   # MSIE 7 and newer should be able to use keepalive
   'BrowserMatch "MSIE [17-9]"' => 'ssl-unclean-shutdown',
 }.each do |key, val|
-  node.default['fb_apache']['sites']['_default_:443'] = vhost_config
+  node.default['fb_apache']['sites']['_default_:443'][key] = val
 end
