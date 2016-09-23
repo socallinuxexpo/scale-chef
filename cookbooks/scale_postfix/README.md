@@ -14,6 +14,8 @@ Usage
 -----
 This cookbook is designed to be used with the Facebook cookbooks and follows in that style. Schedule it in fb_init where the comment denotes.
 
+This may be contribued to Facebook's chef-cookbooks at some point if we flush out support more.
+
 ### main.cf
 Any value in main.cf can be representeded under the `main.cf` hash. If the value is an array, the values will be joined as comma-separated strings, per postfix's expectation.
 
