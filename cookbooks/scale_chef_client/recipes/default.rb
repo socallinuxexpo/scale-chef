@@ -11,10 +11,16 @@ package 'chef' do
   action :upgrade
 end
 
-directory '/etc/chef' do
-  owner 'root'
-  group 'root'
-  mode '0755'
+%w{
+  /var/chef
+  /var/chef/outputs
+  /etc/chef
+}.each do |dir|
+  directory dir do
+    owner 'root'
+    group 'root'
+    mode '0755'
+  end
 end
 
 ruby_block 'reload_client_config' do
@@ -41,7 +47,35 @@ template '/etc/chef/runlist.json' do
   mode '0644'
 end
 
-node.default['fb_cron']['jobs']['chef'] = {
-  'time' => '*/15 * * * *',
-  'command' => '/var/chef/repo/scale-chef/scripts/chefctl.sh -i'
-}
+link '/usr/local/sbin/chefctl' do
+  to '/var/chef/repo/scale-chef/scripts/chefctl.sh'
+end
+
+link '/usr/local/sbin/stop_chef_temporarily' do
+  to '/var/chef/repo/scale-chef/scripts/stop_chef_temporarily'
+end
+
+{
+  'chef' => {
+    'time' => '*/15 * * * *',
+    'command' => '/usr/bin/test -f /var/chef/cron.default.override -o ' +
+      '-f /etc/chef/test_timestamp || /usr/local/sbin/chefctl -q'
+  },
+  'taste-untester' => {
+    'time' => '*/5 * * * *',
+    'command' => '/usr/local/sbin/taste-untester',
+  },
+  'remove override files' => {
+    'time' => '*/5 * * * *',
+    'command' => '/usr/bin/find /var/chef/ -maxdepth 1 ' +
+      '-name cron.default.override -mmin +60 -exec /bin/rm -f {} \;'
+  },
+  # keep two weeks of chef run logs
+  'cleanup chef logs' => {
+    'time' => '1 1 * * *',
+    'command' => '/usr/bin/find /var/chef/outputs -maxdepth 1 ' +
+      '-name chef.2* -mtime +14 -exec /bin/rm -f {} \;'
+  },
+}.each do |name, job|
+  node.default['fb_cron']['jobs'][name] = job
+end
