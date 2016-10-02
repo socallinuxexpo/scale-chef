@@ -7,6 +7,10 @@
 # All rights reserved - Do Not Redistribute
 #
 
+package 'drush' do
+  action :upgrade
+end
+
 cookbook_file '/usr/local/bin/deploy_site' do
   source 'deploy_site'
   owner 'root'
