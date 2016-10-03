@@ -15,9 +15,6 @@ get_chefctl_procs() {
 
 get_chefclient_procs() {
   opts=''
-  if [ "$OS" = 'Darwin' ]; then
-    opts='-f'
-  fi
   pgrep $opts chef-client
 }
 
