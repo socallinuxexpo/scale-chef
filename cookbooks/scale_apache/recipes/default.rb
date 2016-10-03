@@ -220,7 +220,7 @@ pkgs = %w{
   php-pdo
   php-xml
   php-mbstring
-  python-boto
+  python2-boto
 }
 
 package pkgs do
