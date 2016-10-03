@@ -289,7 +289,7 @@ fi
 
 grep -q 'taste-tester' /etc/chef/client.rb
 ret=$?
-if [ $? -eq 0 ]; then
+if [ $ret -eq 0 ]; then
   LOCAL_MODE=0
 fi
 
