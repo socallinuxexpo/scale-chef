@@ -33,12 +33,12 @@ You'll need virtualbox installed (or some other backend for vagrant, we recommen
 
 From there you can `vagrant ssh scale-www1` or whatever else. You should use the `-V` flag to `chefctl` so that it will pull from your repo. In otherwords development looks like this:
 
-* WINDOW 1: <edit some stuff>
+* WINDOW 1: edit some stuff
 
 * WINDOW 2: `vagrant ssh scale-www1`
 * WINDOW 2: `/vagrant/scripts/chefctl.sh -iV`
 
-* WINDOW 1: <fix stuff>
+* WINDOW 1: fix stuff
 
 * WINDOW 2: `/vagrant/scripts/chefctl.sh -iV`
 
@@ -52,6 +52,8 @@ To use taste-tester you will want to install [RVM](https://rvm.io/). If you're n
 You won't need to do the `install` ever again (until you change versions), but you'll want to run `rvm use 2.3.0` to update your environment to use the RVM ruby (do `rvm reset` to go back).
 
 Then you can install the development dependencies by running `bundle install`.
+
+Also note you will need an actual account on SCALE systems to do taste-testing. This means if you're a SCALE staff, file an Issue to get access with a public key and desired username included. If you're not, then a staff member will test your diff for you (please allow some time for someone to do this).
  
 #### Usage
 
