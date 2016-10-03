@@ -3,6 +3,10 @@
 # Recipe:: default
 #
 
+node.default['fb_iptables']['filter']['INPUT']['rules']['allow_smtp'] = {
+  'rule' => '-p tcp -m tcp -m conntrack --ctstate NEW --dport 25 -j ACCEPT',
+}
+
 include_recipe 'scale_apache::simple'
 
 allow_all = {

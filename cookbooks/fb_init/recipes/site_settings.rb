@@ -62,3 +62,5 @@ node.default['scale_phplist']['bounce_mailbox_host'] = d['bounce_mailbox_host']
 node.default['scale_phplist']['bounce_mailbox_user'] = d['bounce_mailbox_user']
 node.default['scale_phplist']['bounce_mailbox_password'] = 
   d['bounce_mailbox_password']
+
+include_recipe 'fb_init::iptables_settings'

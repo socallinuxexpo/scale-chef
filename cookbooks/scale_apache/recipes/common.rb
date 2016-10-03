@@ -18,3 +18,14 @@ cookbook_file '/etc/httpd/sf_bundle.crt' do
   group 'root'
   mode '0644'
 end
+
+{
+  'allow_https' =>
+    '-p tcp -m tcp -m conntrack --ctstate NEW --dport 443 -j ACCEPT',
+  'allow_http' =>
+    '-p tcp -m tcp -m conntrack --ctstate NEW --dport 80 -j ACCEPT',
+}.each do |key, val|
+  node.default['fb_iptables']['filter']['INPUT']['rules'][key] = {
+    'rule' => val,
+  }
+end
