@@ -23,6 +23,7 @@ end
 
 include_recipe 'scale_users'
 
+include_recipe 'fb_nsswitch'
 include_recipe 'scale_ssh'
 #include_recipe 'fb_modprobe'
 #include_recipe 'fb_securetty'
