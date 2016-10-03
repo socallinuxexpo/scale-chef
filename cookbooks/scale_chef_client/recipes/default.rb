@@ -62,22 +62,22 @@ end
   'chef' => {
     'time' => '*/15 * * * *',
     'command' => '/usr/bin/test -f /var/chef/cron.default.override -o ' +
-      '-f /etc/chef/test_timestamp || /usr/local/sbin/chefctl -q'
+      '-f /etc/chef/test_timestamp || /usr/local/sbin/chefctl -q &>/dev/null'
   },
   'taste-untester' => {
     'time' => '*/5 * * * *',
-    'command' => '/usr/local/sbin/taste-untester',
+    'command' => '/usr/local/sbin/taste-untester &>/dev/null',
   },
   'remove override files' => {
     'time' => '*/5 * * * *',
     'command' => '/usr/bin/find /var/chef/ -maxdepth 1 ' +
-      '-name cron.default.override -mmin +60 -exec /bin/rm -f {} \;'
+      '-name cron.default.override -mmin +60 -exec /bin/rm -f {} \; &>/dev/null'
   },
   # keep two weeks of chef run logs
   'cleanup chef logs' => {
     'time' => '1 1 * * *',
     'command' => '/usr/bin/find /var/chef/outputs -maxdepth 1 ' +
-      '-name chef.2* -mtime +14 -exec /bin/rm -f {} \;'
+      '-name chef.2* -mtime +14 -exec /bin/rm -f {} \; &>/dev/null'
   },
 }.each do |name, job|
   node.default['fb_cron']['jobs'][name] = job
