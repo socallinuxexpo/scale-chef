@@ -31,6 +31,13 @@ These are not in DNS yet, but they are:
 
 You'll need virtualbox installed (or some other backend for vagrant, we recommend virtualbox) and a reasonably modern vagrant. From there, in the root of the repo you can type `vagrant up` to create three VMs: scale-www1, scale-lists1, and scale-db1. These are duplicates of the prod environment with the exception of scale-db1 (prod uses the rackspace DB-as-a-service).
 
+Note that for some distros, the plugins are not installed, so if you get errors try running:
+
+```
+vagrant plugin install vagrant-cachier
+vagrant plugin install vagrant-hostmanager
+```
+
 From there you can `vagrant ssh scale-www1` or whatever else. You should use the `-V` flag to `chefctl` so that it will pull from your repo. In otherwords development looks like this:
 
 * WINDOW 1: edit some stuff
