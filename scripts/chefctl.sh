@@ -47,16 +47,13 @@ get_repos() {
     cd $REPODIR
     echo "updating $repo"
     dir=$(basename $repo .git)
-    if [ -d "$dir" ]; then
-      cd $dir
-      git pull
-      git submodule init
-      git submodule update
-    else
+    if ! [ -d "$dir" ]; then
       git clone $repo
-      git submodule init
-      git submodule update
     fi
+    cd $dir
+    git pull
+    git submodule init
+    git submodule update
   done
 }
 
@@ -69,7 +66,7 @@ copy_from_vagrant() {
 bootstrap() {
   [ ! -d /opt/chef ] && \
     wget -qO- 'https://www.opscode.com/chef/install.sh' | bash
-  mkdir -p /etc/chef $CHEFDIR $REPODIR $OUTDIR
+  mkdir -p /etc/chef $CHEFDIR $REPODIR $OUTPUTS
   cat > /etc/chef/client-prod.rb <<EOF
 cookbook_path [
   '/var/chef/repo/chef-cookbooks/cookbooks',
