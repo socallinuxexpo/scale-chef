@@ -20,6 +20,7 @@ version '0.0.1'
   fb_helpers
   fb_hostconf
   fb_hosts
+  fb_iptables
   fb_limits
   fb_logrotate
   fb_modprobe

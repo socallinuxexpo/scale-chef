@@ -32,6 +32,7 @@ include_recipe 'scale_ssh'
 #include_recipe 'fb_limits'
 #include_recipe 'fb_hostconf'
 include_recipe 'fb_sysctl'
+include_recipe 'fb_iptables'
 # HERE: networking
 #include_recipe 'fb_syslog'
 include_recipe 'scale_postfix'
