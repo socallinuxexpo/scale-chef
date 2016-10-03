@@ -1,3 +1,3 @@
 #!/bin/bash
 
-taste-tester $@ -c taste-tester.conf
+bundle exec taste-tester $@ -c taste-tester.conf
