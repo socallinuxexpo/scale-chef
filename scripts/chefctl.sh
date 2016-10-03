@@ -17,7 +17,7 @@ SPLAY=''
 RUNLIST_FILE='/etc/chef/runlist.json'
 CHEF_CONFIG='/etc/chef/client.rb'
 CHEF_CLIENT='/usr/bin/chef-client'
-CHEF_ARGS="--no-fork -z -j $RUNLIST_FILE -c $CHEF_CONFIG"
+CHEF_ARGS="--no-fork -j $RUNLIST_FILE -c $CHEF_CONFIG"
 LOCKFILE=/var/lock/subsys/$(basename $0 .sh)
 LOCK_FD_OUT="$LOCKFILE"
 LOCK_TIMEOUT=1800
@@ -285,6 +285,12 @@ if [ "$BOOTSTRAP" = 1 ]; then
   echo "Bootstrapping node"
   bootstrap
   exit 0
+fi
+
+grep 'taste-tester' /etc/chef/client.rb
+ret=$?
+if [ $? -ne 0 ]; then
+  CHEF_ARGS="$CHEF_ARGS -z"
 fi
 
 extra_chef_args="$*"

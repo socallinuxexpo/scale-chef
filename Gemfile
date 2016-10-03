@@ -5,6 +5,7 @@ source 'https://rubygems.org'
   chef
   foodcritic
   rubocop
+  taste_tester
 }.each do |g|
   gem g
 end

@@ -38,6 +38,9 @@ template '/etc/chef/client-prod.rb' do
 end
 
 link '/etc/chef/client.rb' do
+  # don't overwrite this if it's a link ot somewhere else, because
+  # taste-tester
+  not_if { File.symlink?('/etc/chef/client.rb') }
   to '/etc/chef/client-prod.rb'
 end
 
