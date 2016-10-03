@@ -2,6 +2,7 @@
 
 set -u
 
+LOCAL_MODE=1
 BOOTSTRAP=0
 DEBUG=0
 IMMEDIATE=0
@@ -34,7 +35,6 @@ CURLINK_OUT=$OUTPUTS/chef.cur.out
 FIRST_RUN_SAVE=$OUTPUTS/chef.first.out
 
 REPOS='
-  https://github.com/facebook/chef-cookbooks.git
   git@github.com:socallinuxexpo/scale-chef.git
 '
 
@@ -69,7 +69,6 @@ bootstrap() {
   mkdir -p /etc/chef $CHEFDIR $REPODIR $OUTPUTS
   cat > /etc/chef/client-prod.rb <<EOF
 cookbook_path [
-  '/var/chef/repo/chef-cookbooks/cookbooks',
   '/var/chef/repo/scale-chef/cookbooks',
 ]
 role_path '/var/chef/repo/scale-chef/roles'
@@ -130,6 +129,10 @@ _run() {
     extra_args="-l fatal -F doc $extra_args"
   fi
 
+  if [ "$LOCAL_MODE" -eq 1 ]; then
+    extra_args="-z $extra_args"
+  fi
+
   if [ "$WHYRUN" -eq 1 ]; then
     extra_args="--why-run $extra_args"
   fi
@@ -171,7 +174,7 @@ _keeptesting() {
 chef_run() {
   extra_args="$*"
 
-  if [ "$UPDATE" = 1 ]; then
+  if [ "$LOCAL_MODE" -eq 1 -a "$UPDATE" = 1 ]; then
     if [ $VAGRANT -eq 1 ]; then
       copy_from_vagrant
     else
@@ -284,10 +287,10 @@ if [ "$BOOTSTRAP" = 1 ]; then
   exit 0
 fi
 
-grep 'taste-tester' /etc/chef/client.rb
+grep -q 'taste-tester' /etc/chef/client.rb
 ret=$?
-if [ $? -ne 0 ]; then
-  CHEF_ARGS="$CHEF_ARGS -z"
+if [ $? -eq 0 ]; then
+  LOCAL_MODE=0
 fi
 
 extra_chef_args="$*"
