@@ -220,8 +220,8 @@ chef_run() {
   retval=$?
 }
 
-longopts='bootstrap,debug,help,immediate,noupdate,splay:,human,vagrant'
-shortopts='bdhHis:uV'
+longopts='bootstrap,debug,color,help,immediate,why-run,noupdate,quiet,splay:,human,vagrant'
+shortopts='bdchHinuqs:uV'
 
 opts=$(getopt -l $longopts -o $shortopts -- "$@")
 if [ $? -ne 0 ]; then
