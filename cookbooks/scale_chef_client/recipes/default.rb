@@ -50,6 +50,12 @@ template '/etc/chef/runlist.json' do
   mode '0644'
 end
 
+cookbook_file '/usr/local/sbin/taste-untester' do
+  owner 'root'
+  group 'root'
+  mode '0755'
+end
+
 link '/usr/local/sbin/chefctl' do
   to '/var/chef/repo/scale-chef/scripts/chefctl.sh'
 end
