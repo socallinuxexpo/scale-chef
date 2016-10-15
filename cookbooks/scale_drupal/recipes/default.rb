@@ -93,7 +93,9 @@ file '/etc/drupal_secrets' do
   mode '0600'
 end
 
-node.default['fb_cron']['jobs']['drupal_backup'] = {
-  'time' => '30 0,12 * * *',
-  'command' => '/usr/local/bin/backup-drupal-static.sh'
-}
+if node['env'] == 'prod'
+    node.default['fb_cron']['jobs']['drupal_backup'] = {
+      'time' => '30 0,12 * * *',
+      'command' => '/usr/local/bin/backup-drupal-static.sh >/dev/null'
+    }
+end
