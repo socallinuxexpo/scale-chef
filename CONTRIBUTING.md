@@ -16,16 +16,7 @@ There are two ways to test: vagrant and taste-tester.
 
 `vagrant` will spin-up VMs on your box and allow you to iterate quickly and break things at will. You should use this to do basic development until you feel your code is correct and works. At this point you may send a PR if you'd like.
 
-Before your PR can be merged, you must also use taste-tester on the dev environment. Taste-tester will setup a chef-zero instance on your machine and then change the configuration of some machine in our production rackspace network to point at your chef-zero instance. You should use the test instance of the machine you're targeting. So if you are targeting `scale-www1` then use `scale-www-test1` and so-on.
-
-These are not in DNS yet, but they are:
-
-* www -> scale-web1-test
-  (104.130.158.252, 2001:4800:7818:104:be76:4eff:fe04:4215)
-* lists -> scale-lists1-test
-  (23.253.124.123, 2001:4800:7817:103:be76:4eff:fe04:490e)
-* reg -> scale-reg1-test (note: not fully chef-ified yet)
-  (23.253.234.216, 2001:4800:7817:103:be76:4eff:fe04:8acd
+Before your PR can be merged, you must also use taste-tester on the dev environment. Taste-tester will setup a chef-zero instance on your machine and then change the configuration of some machine in our production rackspace network to point at your chef-zero instance. You should use the test instance of the machine you're targeting. So if you are targeting `scale-www1` then use `scale-www-test1` and so-on. These map to public hostnames just as you'd expect: www-test.socallinuxexpo.org and such.
 
 ### Vagrant
 
