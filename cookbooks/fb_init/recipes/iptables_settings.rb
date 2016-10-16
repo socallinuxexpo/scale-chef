@@ -30,6 +30,11 @@ input_rules.each do |key, val|
     'rule' => val,
   }
 end
+# Connectivity doesn't go well over v6 without this
+node.default['fb_iptables']['filter']['INPUT']['rules']['allow icmpv6'] = {
+  'ip' => 6,
+  'rule' => '-p icmpv6 -j ACCEPT',
+}
 
 {
   'allow_outgoing_tcp' => '-p tcp --syn -m conntrack --ctstate NEW -j ACCEPT',
@@ -39,3 +44,9 @@ end
     'rule' => val,
   }
 end
+
+# ... and outbound two, stateful rules don't seem to cover this one.
+node.default['fb_iptables']['filter']['OUTPUT']['rules']['allow icmpv6'] = {
+  'ip' => 6,
+  'rule' => '-p icmpv6 -j ACCEPT',
+}
