@@ -57,4 +57,10 @@ Vagrant.configure("2") do |config|
     v.vm.network :private_network, ip: "172.16.1.12"
     v.vm.provision "shell", inline: provisioning_script, privileged: false
   end
+
+  config.vm.define "scale-reg1" do |v|
+    v.vm.hostname = "scale-reg1"
+    v.vm.network :private_network, ip: "172.16.1.13"
+    v.vm.provision "shell", inline: provisioning_script, privileged: false
+  end
 end
