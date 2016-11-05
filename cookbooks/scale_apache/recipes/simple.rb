@@ -55,6 +55,8 @@ node.default['fb_apache']['sites']['_default_:443'] = vhost_config
 {
   'ErrorLog' => '/var/log/httpd/ssl_error.log',
   'CustomLog' => '/var/log/httpd/ssl_access.log combined',
+  'SSLProtocol' => 'all -SSLv2 -SSLv3',
+  'SSLCipherSuite' => '"EECDH+ECDSA+AESGCM EECDH+aRSA+AESGCM EECDH+ECDSA+SHA384 EECDH+ECDSA+SHA256 EECDH+aRSA+SHA384 EECDH+aRSA+SHA256 EECDH EDH+aRSA !aNULL !eNULL !LOW !3DES !MD5 !EXP !PSK !SRP !DSS !RC4"',
   'SSLEngine' => 'on',
   'SSLCertificateFile' => '/etc/httpd/apache.pem',
   'SSLCertificateChainFile' => '/etc/httpd/sf_bundle.crt',
@@ -64,7 +66,7 @@ node.default['fb_apache']['sites']['_default_:443'] = vhost_config
   'Directory /var/www/cgi-bin' => {
     'SSLOptions' => '+StdEnvVars',
   },
-  'BrowserMatch "MSIE [2-6]"' => 
+  'BrowserMatch "MSIE [2-6]"' =>
     'nokeepalive ssl-unclean-shutdown downgrade-1.0 force-response-1.0',
   # MSIE 7 and newer should be able to use keepalive
   'BrowserMatch "MSIE [17-9]"' => 'ssl-unclean-shutdown',
