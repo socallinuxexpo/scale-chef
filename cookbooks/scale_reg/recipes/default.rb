@@ -7,7 +7,7 @@
 # All rights reserved - Do Not Redistribute
 #
 
-package 'python-mysql' do
+package 'MySQL-python' do
   action :upgrade
 end
 
@@ -24,7 +24,11 @@ directory '/var/www/html' do
 end
 
 include_recipe 'scale_apache::common'
+include_recipe 'scale_apache::dev'
 include_recipe 'fb_apache'
+
+node.default['fb_apache']['modules'] << 'wsgi'
+node.default['fb_apache']['extra_configs']['WSGIPythonPath'] = '/var/www/django'
 
 vhost_config = {
   'ServerName' => 'reg.socallinuxexpo.org',
@@ -58,7 +62,6 @@ vhost_config = {
   'Directory /var/www/django/static/media' => {
     'Require' => 'all granted',
   },
-  'WSGIPythonPath' => '/var/www/django',
   'Directory /var/www/django/scalereg' => {
     'Files wsgi.py' => {
       'Require' => 'all granted',

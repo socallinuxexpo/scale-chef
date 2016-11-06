@@ -1,6 +1,6 @@
 {
   "name": "reg",
   "run_list": [
-    "scale_reg::default"
+    "recipe[scale_reg::default]"
   ]
 }
