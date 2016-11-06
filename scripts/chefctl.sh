@@ -35,7 +35,7 @@ CURLINK_OUT=$OUTPUTS/chef.cur.out
 FIRST_RUN_SAVE=$OUTPUTS/chef.first.out
 
 REPOS='
-  git@github.com:socallinuxexpo/scale-chef.git
+  https://github.com/socallinuxexpo/scale-chef.git
 '
 
 [ -r /var/chef/repo/scale-chef/scripts/stop_chef_lib.sh ] && \
