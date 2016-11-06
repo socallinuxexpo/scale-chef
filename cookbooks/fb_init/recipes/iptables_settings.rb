@@ -22,7 +22,11 @@ input_rules = {
 
 if node.vagrant?
   input_rules['allow_vagrant_ssh'] =
-    '-p tcp -m tcp --dport 2222 --syn -m conntrack --ctstate NEW -j ACCEPT'
+    '-p tcp -m tcp --dport 2222 -m conntrack --ctstate NEW -j ACCEPT'
+  # overwrite SSH rule but allow non-SYN states so vagrant startup doesn't
+  # break
+  input_rules['allow_ssh'] =
+    '-p tcp -m tcp --dport 22 -m conntrack --ctstate NEW -j ACCEPT'
 end
 
 input_rules.each do |key, val|
