@@ -31,7 +31,7 @@ node.default['fb_apache']['modules'] << 'wsgi'
 node.default['fb_apache']['extra_configs']['WSGIPythonPath'] = '/var/www/django'
 
 vhost_config = {
-  'ServerName' => 'reg.socallinuxexpo.org',
+  'ServerName' => 'register.socallinuxexpo.org',
   'ServerAdmin' => 'hostmaster@linuxfests.org',
   'DocumentRoot' => '/var/www/html',
   'DirectoryIndex' => 'index.html',
