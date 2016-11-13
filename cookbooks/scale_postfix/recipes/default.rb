@@ -42,7 +42,6 @@ file '/etc/postfix/sasl_passwd.db' do
   owner 'root'
   group 'root'
   mode '0600'
-  notifies :restart, 'service[postfix]', :immediately
 end
 
 service 'postfix' do
