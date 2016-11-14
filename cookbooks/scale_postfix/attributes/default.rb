@@ -1,7 +1,7 @@
 default['scale_postfix'] = {
   'aliases' => {
     'postmaster' => 'root',
-    'MAILER-DAEON' => 'postmaster',
+    'MAILER-DAEON' => 'postmaster'
   },
   'main.cf' => {
     'soft_bounce' => 'no',
@@ -17,7 +17,7 @@ default['scale_postfix'] = {
       '$myhostname, localhost.$mydomain, localhost',
     'unknown_local_recipient_reject_code' => '550',
     'alias_maps' => [
-      'hash:/etc/postfix/aliases',
+      'hash:/etc/postfix/aliases'
     ],
     'alias_database' => 'hash:/etc/postfix/aliases',
     'debug_peer_level' => '2',
@@ -32,5 +32,12 @@ default['scale_postfix'] = {
     'debugger_command' =>
       'PATH=/bin:/usr/bin:/usr/local/bin:/usr/X11R6/bin' +
       'ddd $daemon_directory/$process_name $process_id & sleep 5',
-  },
+  }
 }
+
+if File.exists?('/etc/postfix/sasl_passwd.db')
+  default['scale_postfix']['main.cf']['smtp_sasl_auth_enable'] = 'yes'
+  default['scale_postfix']['main.cf']['relayhost'] = 'smtp.mailgun.org'
+  default['scale_postfix']['main.cf']['smtp_sasl_security_options'] = 'noanonymous'
+  default['scale_postfix']['main.cf']['smtp_sasl_password_maps'] = 'hash:/etc/postfix/sasl_passwd'
+end

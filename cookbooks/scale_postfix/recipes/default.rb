@@ -10,6 +10,8 @@
 pkgs = %w{
   postfix
   postfix-perl-scripts
+  cyrus-sasl-plain
+  cyrus-sasl-md5
 }
 
 package pkgs do
@@ -19,7 +21,7 @@ end
 template '/etc/postfix/main.cf' do
   owner 'root'
   group 'root'
-  mode  '0644'
+  mode '0644'
   notifies :restart, 'service[postfix]', :immediately
 end
 
@@ -27,13 +29,19 @@ template '/etc/postfix/aliases' do
   source 'aliases.erb'
   owner 'root'
   group 'root'
-  mode  '0644'
+  mode '0644'
   notifies :run, 'execute[newaliases]', :immediately
 end
 
 execute 'newaliases' do
   action :nothing
   notifies :restart, 'service[postfix]', :immediately
+end
+
+file '/etc/postfix/sasl_passwd.db' do
+  owner 'root'
+  group 'root'
+  mode '0600'
 end
 
 service 'postfix' do
