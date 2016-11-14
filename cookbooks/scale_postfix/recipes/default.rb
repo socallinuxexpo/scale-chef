@@ -42,6 +42,7 @@ file '/etc/postfix/sasl_passwd.db' do
   owner 'root'
   group 'root'
   mode '0600'
+  only_if { File.exists?('/etc/postfix/sasl_passwd.db') }
 end
 
 service 'postfix' do
