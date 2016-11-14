@@ -44,7 +44,7 @@ node.default['scale_datadog']['monitors']['postfix'] = {
 }
 
 node.default['scale_sudo']['users']['dd-agent'] =
-  'ALL=(ALL) NOPASSWD:/usr/bin/find /var/spool/postfix/ -type f'
+  'ALL=(ALL) NOPASSWD:/usr/bin/find /var/spool/postfix/ -type f, /bin/find /var/spool/postfix/ -type f'
 
 d = {}
 if File.exists?('/etc/lists_secrets')
