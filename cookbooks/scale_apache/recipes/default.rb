@@ -184,7 +184,7 @@ node.default['fb_apache']['sites']['_default_:443']['_rewrites'] = sslrewrites
   'SSLProtocol' => 'all -SSLv2 -SSLv3',
 	'SSLCipherSuite' => '"EECDH+ECDSA+AESGCM EECDH+aRSA+AESGCM EECDH+ECDSA+SHA384 EECDH+ECDSA+SHA256 EECDH+aRSA+SHA384 EECDH+aRSA+SHA256 EECDH EDH+aRSA !aNULL !eNULL !LOW !3DES !MD5 !EXP !PSK !SRP !DSS !RC4"',
 	'SSLCertificateFile' => '/etc/httpd/apache.pem',
-	'SSLCertificateChainFile' => '/etc/httpd/sf_bundle.crt',
+	'SSLCertificateChainFile' => '/etc/httpd/gd_bundle.crt',
 	'FilesMatch \.(cgi|shtml|phtml|php)$' => {
 	  'SSLOptions' => '+StdEnvVars',
   },

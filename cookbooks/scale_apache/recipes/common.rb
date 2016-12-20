@@ -13,10 +13,14 @@ directory '/etc/httpd' do
   mode '0755'
 end
 
-cookbook_file '/etc/httpd/sf_bundle.crt' do
+cookbook_file '/etc/httpd/gd_bundle.crt' do
   owner 'root'
   group 'root'
   mode '0644'
+end
+
+file '/etc/httpd/sf_bundle.crt' do
+  action :delete
 end
 
 {
