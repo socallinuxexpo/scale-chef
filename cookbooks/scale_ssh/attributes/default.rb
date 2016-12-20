@@ -35,6 +35,6 @@ default['scale_ssh'] = {
      'UseDNS' => false,
      'UsePAM' => true,
      'UsePrivilegeSeparation' => 'sandbox',
-     'X11Forwarding' => false,
+     'X11Forwarding' => true,
   },
 }
