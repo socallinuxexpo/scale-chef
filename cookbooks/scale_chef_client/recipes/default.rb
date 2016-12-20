@@ -44,6 +44,13 @@ link '/etc/chef/client.rb' do
   to '/etc/chef/client-prod.rb'
 end
 
+link '/etc/chef/client.pem' do
+  # don't overwrite this if it's a link ot somewhere else, because
+  # taste-tester
+  not_if { File.symlink?('/etc/chef/client.pem') }
+  to '/etc/chef/client-prod.pem'
+end
+
 template '/etc/chef/runlist.json' do
   owner 'root'
   group 'root'
