@@ -25,10 +25,10 @@ services = ['iptables', 'ip6tables']
 iptables_rules = '/etc/sysconfig/iptables'
 ip6tables_rules = '/etc/sysconfig/ip6tables'
 
-packages.each do |pkg|
-  package pkg do
-    action :upgrade
-  end
+package packages do
+  action :upgrade
+  notifies :restart, 'execute[reload iptables]'
+  notifies :restart, 'execute[reload ip6tables]'
 end
 services.each do |svc|
   service svc do
