@@ -38,7 +38,7 @@ pkgs = %w{
   php-pdo
   php-xml
   python-dns
-  python-boto
+  python2-boto
 }
 package pkgs do
   action :upgrade
