@@ -73,9 +73,18 @@ node.default['fb_apache']['sites']['*:80'] = vhost_config
 {
   'ErrorLog' => '/var/log/httpd/error.log',
   'CustomLog' => '/var/log/httpd/access.log combined',
+  'RewriteEngine' => 'On',
 }.each do |key, val|
   node.default['fb_apache']['sites']['*:80'][key] = val
 end
+node.default['fb_apache']['sites']['*:80']['_rewrites'] = {
+  'force ssl' => {
+    'rule' => '(.*) https://register.socallinuxexpo.org$1 [L,R]',
+    'conditions' => [
+      '%{HTTPS} off',
+    ],
+  },
+}
 
 node.default['fb_apache']['sites']['_default_:443'] = vhost_config
 {
