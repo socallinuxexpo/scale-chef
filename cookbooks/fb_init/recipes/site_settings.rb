@@ -64,3 +64,7 @@ node.default['scale_phplist']['bounce_mailbox_password'] =
   d['bounce_mailbox_password']
 
 include_recipe 'fb_init::iptables_settings'
+
+package 'abrt' do
+  action :remove
+end
