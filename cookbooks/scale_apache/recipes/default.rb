@@ -186,19 +186,19 @@ node.default['fb_apache']['sites']['_default_:443']['_rewrites'] = sslrewrites
 {
   'ErrorLog' => '/var/log/httpd/ssl_error.log',
   'CustomLog' => '/var/log/httpd/ssl_access.log combined',
-	'SSLEngine' => 'on',
+  'SSLEngine' => 'on',
   'SSLProtocol' => 'all -SSLv2 -SSLv3',
-	'SSLCipherSuite' => '"EECDH+ECDSA+AESGCM EECDH+aRSA+AESGCM EECDH+ECDSA+SHA384 EECDH+ECDSA+SHA256 EECDH+aRSA+SHA384 EECDH+aRSA+SHA256 EECDH EDH+aRSA !aNULL !eNULL !LOW !3DES !MD5 !EXP !PSK !SRP !DSS !RC4"',
-	'SSLCertificateKeyFile' => '/etc/httpd/apache.key',
-	'SSLCertificateFile' => '/etc/httpd/apache.crt',
-	'SSLCertificateChainFile' => '/etc/httpd/gd_bundle.crt',
-	'FilesMatch \.(cgi|shtml|phtml|php)$' => {
-	  'SSLOptions' => '+StdEnvVars',
+  'SSLCipherSuite' => '"EECDH+ECDSA+AESGCM EECDH+aRSA+AESGCM EECDH+ECDSA+SHA384 EECDH+ECDSA+SHA256 EECDH+aRSA+SHA384 EECDH+aRSA+SHA256 EECDH EDH+aRSA !aNULL !eNULL !LOW !3DES !MD5 !EXP !PSK !SRP !DSS !RC4"',
+  'SSLCertificateKeyFile' => '/etc/httpd/apache.key',
+  'SSLCertificateFile' => '/etc/httpd/apache.crt',
+  'SSLCertificateChainFile' => '/etc/httpd/gd_bundle.crt',
+  'FilesMatch \.(cgi|shtml|phtml|php)$' => {
+    'SSLOptions' => '+StdEnvVars',
   },
-	'Directory /usr/lib/cgi-bin' => {
-	  'SSLOptions' => '+StdEnvVars'
+  'Directory /usr/lib/cgi-bin' => {
+    'SSLOptions' => '+StdEnvVars'
   },
-	'BrowserMatch' => [
+  'BrowserMatch' => [
     '"MSIE [2-6]" nokeepalive ssl-unclean-shutdown downgrade-1.0' +
       'force-response-1.0',
     '"MSIE [17-9]" ssl-unclean-shutdown',
