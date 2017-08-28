@@ -24,7 +24,6 @@ directory '/var/www/html' do
 end
 
 include_recipe 'scale_apache::common'
-include_recipe 'scale_apache::dev'
 include_recipe 'fb_apache'
 
 node.default['fb_apache']['modules'] << 'wsgi'

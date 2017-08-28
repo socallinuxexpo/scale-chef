@@ -33,3 +33,6 @@ end
     'rule' => val,
   }
 end
+
+# generate dev certs if we don't have prod ones
+include_recipe 'scale_apache::dev'
