@@ -8,7 +8,6 @@
 #
 
 include_recipe 'scale_apache::common'
-include_recipe 'scale_apache::dev'
 include_recipe 'fb_apache'
 
 common_config = {
