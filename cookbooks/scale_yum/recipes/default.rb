@@ -1,6 +1,6 @@
 # vim:shiftwidth=2:expandtab
 
-epel_pkg = 'epel-release-7-9.noarch.rpm'
+epel_pkg = 'epel-release-7-10.noarch.rpm'
 
 remote_file "#{Chef::Config['file_cache_path']}/#{epel_pkg}" do
   not_if { File.exists?('/etc/yum.repos.d/epel.repo') }
