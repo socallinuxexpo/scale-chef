@@ -64,8 +64,8 @@ On All Hosts:
 
 On role[lists]:
 * lists/lists_secrets -> /etc/lists_secrets
-* www/ssl/apache.pem -> /etc/httpd/apache.pem
 
 On role[www]:
-* www/ssl/apache.pem -> /etc/httpd/apache.pem
 * www/drupal_secrets -> /etc/drupal_secrets
+
+To get dev certs on a dev machine touch /etc/httpd/need_dev_keys and chef will create self-signed certs for you

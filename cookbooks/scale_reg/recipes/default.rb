@@ -31,6 +31,9 @@ node.default['fb_apache']['extra_configs']['WSGIPythonPath'] = '/var/www/django'
 
 vhost_config = {
   'ServerName' => 'register.socallinuxexpo.org',
+  'ServerAlias' => [
+    'reg.socallinuxexpo.org',
+  ],
   'ServerAdmin' => 'hostmaster@linuxfests.org',
   'DocumentRoot' => '/var/www/html',
   'DirectoryIndex' => 'index.html',
@@ -57,6 +60,9 @@ vhost_config = {
   ],
   'Alias' => [
     '/media /var/www/django/static/media',
+    # because of the "/" alias, in order for letsencrypt/certbot to work
+    # we need this alias
+    '/.well-known /var/www/html/.well-known',
   ],
   'Directory /var/www/django/static/media' => {
     'Require' => 'all granted',
@@ -90,9 +96,9 @@ node.default['fb_apache']['sites']['_default_:443'] = vhost_config
   'ErrorLog' => '/var/log/httpd/ssl_error.log',
   'CustomLog' => '/var/log/httpd/ssl_access.log combined',
   'SSLEngine' => 'on',
+  'SSLCertificateChainFile' => '/etc/httpd/intermediate.pem',
   'SSLCertificateKeyFile' => '/etc/httpd/apache.key',
   'SSLCertificateFile' => '/etc/httpd/apache.crt',
-  'SSLCertificateChainFile' => '/etc/httpd/gd_bundle.crt',
   'SSLProtocol' => 'all -SSLv2 -SSLv3',
   'FilesMatch "\.(cgi|shtml)$"' => {
     'SSLOptions' => '+StdEnvVars',
@@ -106,4 +112,14 @@ node.default['fb_apache']['sites']['_default_:443'] = vhost_config
   'BrowserMatch "MSIE [17-9]"' => 'ssl-unclean-shutdown',
 }.each do |key, val|
   node.default['fb_apache']['sites']['_default_:443'][key] = val
+end
+
+{
+  'apache.key' => 'register.socallinuxexpo.org/privkey.pem',
+  'apache.crt' => 'register.socallinuxexpo.org/cert.pem',
+  'intermediate.pem' => 'register.socallinuxexpo.org/chain.pem',
+}.each do |sslfile, path|
+  link "/etc/httpd/#{sslfile}" do
+    to "/etc/letsencrypt/live/#{path}"
+  end
 end
