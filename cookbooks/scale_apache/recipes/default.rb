@@ -196,7 +196,7 @@ node.default['fb_apache']['sites']['_default_:443']['_rewrites'] = sslrewrites
   'SSLCipherSuite' => '"EECDH+ECDSA+AESGCM EECDH+aRSA+AESGCM EECDH+ECDSA+SHA384 EECDH+ECDSA+SHA256 EECDH+aRSA+SHA384 EECDH+aRSA+SHA256 EECDH EDH+aRSA !aNULL !eNULL !LOW !3DES !MD5 !EXP !PSK !SRP !DSS !RC4"',
   'SSLCertificateKeyFile' => '/etc/httpd/apache.key',
   'SSLCertificateFile' => '/etc/httpd/apache.crt',
-  'SSLCertificateChainFile' => '/etc/httpd/gd_bundle.crt',
+  'SSLCertificateChainFile' => '/etc/httpd/intermediate.pem',
   'FilesMatch \.(cgi|shtml|phtml|php)$' => {
     'SSLOptions' => '+StdEnvVars',
   },
@@ -274,3 +274,13 @@ node.default['scale_datadog']['monitors']['linux_proc_extras'] = {
     },
   ],
 }
+
+{
+  'apache.key' => 'socallinuxexpo.org/privkey.pem',
+  'apache.crt' => 'socallinuxexpo.org/cert.pem',
+  'intermediate.pem' => 'socallinuxexpo.org/chain.pem',
+}.each do |sslfile, path|
+  link "/etc/httpd/#{sslfile}" do
+    to "/etc/letsencrypt/live/#{path}"
+  end
+end

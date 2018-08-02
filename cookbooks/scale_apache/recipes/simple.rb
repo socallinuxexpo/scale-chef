@@ -1,6 +1,6 @@
 #
-# Cookbook Name:: scale_phplist
-# Recipe:: default
+# Cookbook Name:: scale_apache
+# Recipe:: simple
 #
 
 directory '/var/www' do
@@ -60,7 +60,7 @@ node.default['fb_apache']['sites']['_default_:443'] = vhost_config
   'SSLEngine' => 'on',
   'SSLCertificateKeyFile' => '/etc/httpd/apache.key',
   'SSLCertificateFile' => '/etc/httpd/apache.crt',
-  'SSLCertificateChainFile' => '/etc/httpd/gd_bundle.crt',
+  'SSLCertificateChainFile' => '/etc/httpd/intermediate.pem',
   'FilesMatch "\.(cgi|shtml|phtml|php)$"' => {
     'SSLOptions' => '+StdEnvVars',
   },
@@ -73,4 +73,14 @@ node.default['fb_apache']['sites']['_default_:443'] = vhost_config
   'BrowserMatch "MSIE [17-9]"' => 'ssl-unclean-shutdown',
 }.each do |key, val|
   node.default['fb_apache']['sites']['_default_:443'][key] = val
+end
+
+{
+  'apache.key' => 'lists.socallinuxexpo.org/privkey.pem',
+  'apache.crt' => 'lists.socallinuxexpo.org/cert.pem',
+  'intermediate.pem' => 'lists.socallinuxexpo.org/chain.pem',
+}.each do |sslfile, path|
+  link "/etc/httpd/#{sslfile}" do
+    to "/etc/letsencrypt/live/#{path}"
+  end
 end
