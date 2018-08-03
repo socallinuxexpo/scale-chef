@@ -5,8 +5,8 @@ cookbook_file '/usr/local/sbin/renew_certs.sh' do
   mode '0755'
 end
 
-node.default['fb_cron']['jobs']['renew_www_certs'] = {
-  'command' => '/usr/local/bin/renew_www_certs.sh',
+node.default['fb_cron']['jobs']['renew_certs'] = {
+  'command' => '/usr/local/bin/renew_certs.sh',
   'time' => '1 1 * * *',
 }
 
