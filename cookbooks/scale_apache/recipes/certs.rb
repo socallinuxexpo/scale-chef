@@ -6,7 +6,7 @@ cookbook_file '/usr/local/sbin/renew_certs.sh' do
 end
 
 node.default['fb_cron']['jobs']['renew_certs'] = {
-  'command' => '/usr/local/bin/renew_certs.sh',
+  'command' => '/usr/local/sbin/renew_certs.sh',
   'time' => '1 1 * * *',
 }
 
