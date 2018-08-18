@@ -1,3 +1,7 @@
+package 'certbot' do
+  action :upgrade
+end
+
 # Always run our renewal script
 cookbook_file '/usr/local/sbin/renew_certs.sh' do
   owner 'root'
