@@ -109,9 +109,15 @@ rewrites = {
     ],
   },
   'redirect / to current site' => {
-    'rule' => '^/(.*) http://www.socallinuxexpo.org/scale/16x [L,R,NE]',
+    'rule' => '^/(.*) http://www.socallinuxexpo.org/scale/17x [L,R,NE]',
     'conditions' => [
       '%{REQUEST_URI} ^/$',
+    ],
+  },
+  'redirect scale17x short url to proper url' => {
+    'rule' => '^/(.*) http://www.socallinuxexpo.org/scale/17x [L,R,NE]',
+    'conditions' => [
+      '%{REQUEST_URI} ^/scale17x$',
     ],
   },
   'redirect scale16x short url to proper url' => {
@@ -120,7 +126,7 @@ rewrites = {
       '%{REQUEST_URI} ^/scale16x$',
     ],
   },
-  'redirect short url to proper url' => {
+  'redirect scale15x short url to proper url' => {
     'rule' => '^/(.*) http://www.socallinuxexpo.org/scale/15x [L,R,NE]',
     'conditions' => [
       '%{REQUEST_URI} ^/scale15x$',
