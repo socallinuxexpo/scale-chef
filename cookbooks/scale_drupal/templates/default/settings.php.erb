@@ -472,3 +472,7 @@ $conf['environment_indicator_overwritten_fixed'] = FALSE;
 # HTTPS
 $conf['https'] = TRUE;
 
+# Use Fastly Client IP as remote address when head present
+if (isset($_SERVER['HTTP_FASTLY_CLIENT_IP'])) {
+  $_SERVER['REMOTE_ADDR'] = $_SERVER['HTTP_FASTLY_CLIENT_IP'];
+}
