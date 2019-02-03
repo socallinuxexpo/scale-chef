@@ -5,7 +5,7 @@ end
 use_inline_resources
 
 action :update do
-  Dir.glob('/etc/dd-agent/conf.d/*.yaml').each do |f|
+  Dir.glob('/etc/datadog-agent/conf.d/*.yaml').each do |f|
     basename = ::File.basename(f, '.yaml')
     next if node['scale_datadog']['monitors'].keys.include?(basename)
     file f do
@@ -14,7 +14,7 @@ action :update do
   end
 
   node['scale_datadog']['monitors'].to_hash.each do |monitor, config|
-    template "/etc/dd-agent/conf.d/#{monitor}.yaml" do
+    template "/etc/datadog-agent/conf.d/#{monitor}.yaml" do
       source 'monitor.yaml.erb'
       owner 'dd-agent'
       group 'root'

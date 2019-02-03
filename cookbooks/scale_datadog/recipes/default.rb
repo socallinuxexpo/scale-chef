@@ -23,15 +23,15 @@ package 'datadog-agent' do
   notifies :restart, 'service[datadog-agent]'
 end
 
-directory '/etc/dd-agent' do
-  owner 'root'
-  group 'root'
+directory '/etc/datadog-agent' do
+  owner 'dd-agent'
+  group 'dd-agent'
   mode '0755'
 end
 
-template '/etc/dd-agent/datadog.conf' do
-  source 'datadog.conf.erb'
-  owner 'root'
+template '/etc/datadog-agent/datadog.yaml' do
+  source 'datadog.yaml.erb'
+  owner 'dd-agent'
   group 'dd-agent'
   mode '0640'
   notifies :restart, 'service[datadog-agent]'
