@@ -97,6 +97,7 @@ rewrites = {
   'not our host' => {
      'rule' => '^/(.*) http://www.socallinuxexpo.org/$1 [L,R,NE]',
      'conditions' => [
+       '%{REQUEST_URI} !^/server-status',
        '%{HTTP_HOST} !^www.socallinuxexpo.org [NC]',
        '%{HTTP_HOST} !^$',
      ],
@@ -105,6 +106,7 @@ rewrites = {
     'rule' => '^ http%{ENV:protossl}://www.%{HTTP_HOST}%{REQUEST_URI} [L,R=301]',
     'conditions' => [
       '%{HTTP_HOST} .',
+      '%{REQUEST_URI} !^/server-status',
       '%{HTTP_HOST} !^www\. [NC]',
     ],
   },
