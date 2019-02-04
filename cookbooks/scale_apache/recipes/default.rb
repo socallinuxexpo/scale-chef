@@ -259,6 +259,50 @@ node.default['scale_datadog']['monitors']['apache'] = {
       "apache_status_url" => "http://localhost/server-status?auto"
     },
   ],
+  "logs" => [
+    {
+      "type" => "file",
+      "path" => "/var/log/httpd/access.log",
+      "source" => "apache",
+      "sourcecategory" => "http_web_access",
+      "service" => "apache"
+    },
+    {
+      "type" => "file",
+      "path" => "/var/log/httpd/ssl_access.log",
+      "source" => "apache",
+      "sourcecategory" => "http_web_access",
+      "service" => "apache"
+    },
+    {
+      "type" => "file",
+      "path" => "/var/log/httpd/error.log",
+      "source" => "apache",
+      "sourcecategory" => "http_web_access",
+      "service" => "apache"
+    },
+    {
+      "type" => "file",
+      "path" => "/var/log/httpd/access_log",
+      "source" => "apache",
+      "sourcecategory" => "http_web_access",
+      "service" => "apache"
+    },
+    {
+      "type" => "file",
+      "path" => "/var/log/httpd/ssl_access_log",
+      "source" => "apache",
+      "sourcecategory" => "http_web_access",
+      "service" => "apache"
+    },
+    {
+      "type" => "file",
+      "path" => "/var/log/httpd/ssl_error_log",
+      "source" => "apache",
+      "sourcecategory" => "http_web_access",
+      "service" => "apache"
+    },
+  ]
 }
 
 node.default['scale_datadog']['monitors']['dns_check'] = {
