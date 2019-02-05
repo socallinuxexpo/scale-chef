@@ -8,7 +8,7 @@ default['scale_datadog'] = {
     'log_to_syslog' => 'no',
     'logs_enabled' => true,
     'process_config' => {
-      'enabled': true,
+      'enabled' => true,
     },
   },
   'monitors' => {},
