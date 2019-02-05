@@ -283,7 +283,7 @@ node.default['scale_datadog']['monitors']['linux_proc_extras'] = {
   ],
 }
 
-if !File.exist?('/etc/httpd/need_dev_keys')
+unless File.exist?('/etc/httpd/need_dev_keys')
   {
     'apache.key' => 'socallinuxexpo.org/privkey.pem',
     'apache.crt' => 'socallinuxexpo.org/cert.pem',
