@@ -6,9 +6,9 @@ default['scale_datadog'] = {
     'api_key' => nil,
     'application_key' => nil,
     'log_to_syslog' => 'no',
-    'logs_enabled' => 'true',
+    'logs_enabled' => true,
     'process_config' => {
-      'enabled':'true',
+      'enabled': true,
     },
   },
   'monitors' => {},
