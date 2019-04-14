@@ -18,4 +18,4 @@
 #  -w /var/www/html -d lists.socallinuxexpo.org,lists.linuxfests.org
 #  --webroot -n --rsa-key-size 4096
 
-certbot renew --post-hook "service httpd restart" -q --rsa-key-size 4096
+certbot renew --post-hook "systemctl restart httpd" -q --rsa-key-size 4096
