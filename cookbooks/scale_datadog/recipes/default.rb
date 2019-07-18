@@ -37,6 +37,12 @@ template '/etc/datadog-agent/datadog.yaml' do
   notifies :restart, 'service[datadog-agent]'
 end
 
+directory '/etc/datadog-agent/conf.d' do
+  owner 'dd-agent'
+  group 'dd-agent'
+  mode '0755'
+end
+
 scale_datadog_monitor_configs 'update monitor configs' do
   notifies :restart, 'service[datadog-agent]'
 end
