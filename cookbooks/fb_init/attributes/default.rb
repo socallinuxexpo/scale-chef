@@ -9,8 +9,8 @@ if pieces.size == 3
 else
   env = 'prod'
 end
-org = pieces[0]
-tier = pieces[1]
+org = pieces[1]
+tier = pieces[0]
 
 default['tier'] = tier
 default['org'] = org
