@@ -3,18 +3,30 @@
 # Copyright (c) 2016-present, Facebook, Inc.
 # All rights reserved.
 #
-# This source code is licensed under the BSD-style license found in the
-# LICENSE file in the root directory of this source tree. An additional grant
-# of patent rights can be found in the PATENTS file in the same directory.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
 
 module FB
   module Iptables
+    # rubocop:disable Style/MutableConstant
+    # We let this particular constant remain mutable in case we need to shove in
+    # a nat table or something.
     TABLES_AND_CHAINS = {
       'mangle' => %w{PREROUTING INPUT OUTPUT FORWARD POSTROUTING},
       'filter' => %w{INPUT OUTPUT FORWARD},
       'raw'    => %w{PREROUTING OUTPUT},
     }
+    # rubocop:enable Style/MutableConstant
 
     # Is the given rule valid for the give ip version
     def self.rule_supports_ip_version?(rule, version)
@@ -24,7 +36,7 @@ module FB
     end
 
     def self.each_table(for_ip, node)
-      FB::Iptables::TABLES_AND_CHAINS.each do |table, _chains|
+      FB::Iptables::TABLES_AND_CHAINS.each_key do |table|
         chains = node['fb_iptables'][table].to_hash
         # 'only' is a purposefully not publicly documented attribute
         # thou can to a table, to have this table only used for a
@@ -55,6 +67,19 @@ module FB
       dynamic.map do |dynamic_chain, enabled_for|
         dynamic_chain if enabled_for.include?(chain)
       end.compact
+    end
+
+    # Return true if the iptables modules are loaded for the specified
+    # IP version. This check is based on examining
+    # /proc/net/ip#_tables_names; if the file has contents then the
+    # iptables modules are loaded.
+    def self.iptables_active?(ip_version)
+      if ip_version == 4
+        procfile = '/proc/net/ip_tables_names'
+      else
+        procfile = '/proc/net/ip6_tables_names'
+      end
+      File.exist?(procfile) && !File.read(procfile).empty?
     end
   end
 end

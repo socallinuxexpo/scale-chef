@@ -1,7 +1,3 @@
-package 'firewalld' do
-  action :remove
-end
-
 %w{INPUT FORWARD OUTPUT}.each do |chain|
   node.default['fb_iptables']['filter'][chain]['policy'] = 'DROP'
 end
