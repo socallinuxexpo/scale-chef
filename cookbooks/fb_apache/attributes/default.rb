@@ -4,9 +4,17 @@
 # Copyright (c) 2016-present, Facebook, Inc.
 # All rights reserved.
 #
-# This source code is licensed under the BSD-style license found in the
-# LICENSE file in the root directory of this source tree. An additional grant
-# of patent rights can be found in the PATENTS file in the same directory.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
 
 moddir = value_for_platform_family(
@@ -33,8 +41,8 @@ default['fb_apache'] = {
     "authz_#{auth_core_suffix}",
     'authz_groupfile',
     'authz_host',
-    'authz_user',
     'authz_owner',
+    'authz_user',
     'autoindex',
     'deflate',
     'dir',
@@ -73,6 +81,7 @@ default['fb_apache'] = {
     'cgi' => 'mod_cgi.so',
     'dav_fs' => 'mod_dav_fs.so',
     'dav' => 'mod_dav.so',
+    'dav_svn' => 'mod_dav_svn.so',
     'dbd' => 'mod_dbd.so',
     'deflate' => 'mod_deflate.so',
     'dir' => 'mod_dir.so',
@@ -94,6 +103,7 @@ default['fb_apache'] = {
     'mime_magic' => 'mod_mime_magic.so',
     'negotiation' => 'mod_negotiation.so',
     'php5' => 'libphp5.so',
+    'php7' => 'libphp7.so',
     'proxy_ajp' => 'mod_proxy_ajp.so',
     'proxy_balancer' => 'mod_proxy_balancer.so',
     'proxy_connect' => 'mod_proxy_connect.so',
@@ -105,6 +115,7 @@ default['fb_apache'] = {
     'rewrite' => 'mod_rewrite.so',
     'setenvif' => 'mod_setenvif.so',
     'speling' => 'mod_speling.so',
+    'ssl' => 'mod_ssl.so',
     'status' => 'mod_status.so',
     'substitute' => 'mod_substitute.so',
     'suexec' => 'mod_suexec.so',
@@ -116,14 +127,23 @@ default['fb_apache'] = {
     'wsgi' => 'mod_wsgi.so',
   },
   'module_packages' => {
-    'wsgi' => value_for_platform_family(
-      'rhel' => 'mod_wsgi',
+    'dav_svn' => value_for_platform_family(
+      'rhel' => 'mod_dav_svn',
+    ),
+    'ldap' => value_for_platform_family(
+      'rhel' => 'mod_ldap',
     ),
     'php5' => value_for_platform_family(
       'rhel' => 'mod_php',
     ),
+    'php7' => value_for_platform_family(
+      'rhel' => 'mod_php',
+    ),
     'ssl' => value_for_platform_family(
       'rhel' => 'mod_ssl',
+    ),
+    'wsgi' => value_for_platform_family(
+      'rhel' => 'mod_wsgi',
     ),
   },
 }
