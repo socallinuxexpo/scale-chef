@@ -4,3 +4,5 @@ cookbook_path [
 <% end %>
 ]
 role_path '<%= node['scale_chef_client']['role_dir'] %>'
+ohai.optional_plugins ||= []
+ohai.optional_plugins += [:shard]
