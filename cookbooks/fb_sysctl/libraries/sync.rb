@@ -2,47 +2,54 @@
 # Copyright (c) 2016-present, Facebook, Inc.
 # All rights reserved.
 #
-# This source code is licensed under the BSD-style license found in the
-# LICENSE file in the root directory of this source tree. An additional grant
-# of patent rights can be found in the PATENTS file in the same directory.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
 
 module FB
   # tools for the fb_sysctl cookbook
   module Sysctl
-    def self.sysctl_in_sync?(node)
-      # Get current settings
+    def self.current_settings
       s = Mixlib::ShellOut.new('/sbin/sysctl -a')
       s.run_command
-      unless s.exitstatus.zero?
-        Chef::Log.warn("fb_sysctl: error running /sbin/sysctl -a: #{s.stderr}")
-        Chef::Log.debug("STDOUT: #{s.stdout}")
-        Chef::Log.debug("STDERR: #{s.stderr}")
-        # We couldn't collect current state so cowardly assume all is well
-        return true
-      end
+      s.error!
 
       current = {}
-      s.stdout.split("\n").each do |line|
-        line.gsub(/\s+/, ' ').match(/^(\S+) = (.*)$/)
+      s.stdout.each_line do |line|
+        line.match(/^(\S+)\s*=\s*(.*)$/)
         current[$1] = $2
       end
+      current
+    end
 
-      # Check desired settings, assume we're in sync unless we find we are not
-      insync = true
-      node['fb_sysctl'].to_hash.each do |k, v|
-        Chef::Log.debug("fb_sysctl: current #{k} = #{current[k]}")
-        desired = v.to_s.gsub(/\s+/, ' ')
-        Chef::Log.debug("fb_sysctl: desired #{k} = #{desired}")
-        unless desired == current[k]
-          insync = false
-          Chef::Log.info(
-            "fb_sysctl: #{k} current value \"#{current[k]}\" does " +
-            "not match desired value \"#{desired}\"",
-          )
+    def self.normalize(val)
+      val.to_s.gsub(/\s+/, ' ')
+    end
+
+    def self.incorrect_settings(current, desired)
+      out_of_spec = {}
+      desired.each do |k, v|
+        unless current[k]
+          fail "fb_sysctl: Invalid setting #{k}"
+        end
+        cur_val = normalize(current[k])
+        Chef::Log.debug("fb_sysctl: current #{k} = #{cur_val}")
+        des_val = normalize(v)
+        Chef::Log.debug("fb_sysctl: desired #{k} = #{des_val}")
+        unless cur_val == des_val
+          out_of_spec[k] = cur_val
         end
       end
-      return insync
+      out_of_spec
     end
   end
 end

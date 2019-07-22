@@ -2,14 +2,20 @@
 # Cookbook Name:: fb_sysctl
 # Recipe:: default
 #
-# vim: syntax=ruby:expandtab:shiftwidth=2:softtabstop=2:tabstop=2
-#
 # Copyright (c) 2016-present, Facebook, Inc.
 # All rights reserved.
 #
-# This source code is licensed under the BSD-style license found in the
-# LICENSE file in the root directory of this source tree. An additional grant
-# of patent rights can be found in the PATENTS file in the same directory.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
 
 template '/etc/sysctl.conf' do
@@ -17,17 +23,9 @@ template '/etc/sysctl.conf' do
   owner 'root'
   group 'root'
   source 'sysctl.conf.erb'
-  notifies :run, 'execute[read-sysctl]', :immediately
 end
 
-execute 'read-sysctl' do
+fb_sysctl 'doit' do
   not_if { node.container? }
-  command '/sbin/sysctl -p'
-  action :nothing
-end
-
-# Safety check in case we missed a notification above
-execute 'reread-sysctl' do
-  not_if { node.container? || FB::Sysctl.sysctl_in_sync?(node) }
-  command '/sbin/sysctl -p'
+  action :apply
 end
