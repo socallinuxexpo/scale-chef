@@ -3,9 +3,17 @@
 # Copyright (c) 2016-present, Facebook, Inc.
 # All rights reserved.
 #
-# This source code is licensed under the BSD-style license found in the
-# LICENSE file in the root directory of this source tree. An additional grant
-# of patent rights can be found in the PATENTS file in the same directory.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
 
 databases = {}
@@ -30,8 +38,18 @@ databases = {}
   databases[db] = ['files']
 end
 
+# enable the glibc resolver
 databases['hosts'] << 'dns'
 if node.systemd?
+  # mymachines: map UID/GIDs ranges used by containers to useful names
+  # systemd: enables resolution of all dynamically allocated service users
+  databases['passwd'] += %w{mymachines systemd}
+  databases['group'] += %w{mymachines systemd}
+
+  # mymachines: enable resolution of all local containers registered
+  #             with machined to their respective IP addresses
+  # myhostname: resolve the local hostname to locally configured IP addresses,
+  #             as well as "localhost" to 127.0.0.1/::1.
   databases['hosts'] += %w{mymachines myhostname}
 end
 

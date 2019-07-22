@@ -2,56 +2,55 @@
 # Cookbook Name:: fb_swap
 # Recipe:: default
 #
-# vim: syntax=ruby:expandtab:shiftwidth=2:softtabstop=2:tabstop=2
-#
 # Copyright (c) 2016-present, Facebook, Inc.
 # All rights reserved.
 #
-# This source code is licensed under the BSD-style license found in the
-# LICENSE file in the root directory of this source tree. An additional grant
-# of patent rights can be found in the PATENTS file in the same directory.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
 
-swap_mounts = node['filesystem2']['by_device'].to_hash.select do |_k, v|
-  v['fs_type'] == 'swap'
-end
+device = FB::FbSwap._device(node)
 
-case swap_mounts.count
-when 0
-  Chef::Log.debug('No swap mounts found, nothing to do here.')
+unless device
+  Chef::Log.debug('fb_swap: No swap mounts found, nothing to do here.')
   return
-when 1
-  swap_device = swap_mounts.keys[0]
-  Chef::Log.debug("Found swap device: #{swap_device}")
-else
-  fail 'More than one swap mount found, this is not right.'
 end
 
-if node.systemd?
-  swap_unit = "dev-#{swap_device.split('/')[2]}.swap"
-
-  service 'mask swap unit' do # ~FC038
-    not_if { node['fb_swap']['enabled'] }
-    service_name swap_unit
-    action [:stop, :mask]
-  end
-
-  service 'unmask swap unit' do # ~FC038
-    only_if { node['fb_swap']['enabled'] }
-    service_name swap_unit
-    action [:unmask, :start]
-  end
-end
+Chef::Log.debug("fb_swap: Found swap device: #{device}")
+# Newly provisioned hosts end up with a swap device in /etc/fstab which
+# is referenced by UUID (or label, or path). We use data from ohai's
+# filesystem2 plugin (which is backed by the state of the machine, not what
+# is in /etc/fstab). We want to create/manage our own units with predictable
+# names
+#
+node.default['fb_fstab']['exclude_base_swap'] = true
 
 whyrun_safe_ruby_block 'validate swap size' do
   only_if do
     node['fb_swap']['size'] && node['fb_swap']['size'].to_i < 1024
   end
   block do
-    fail 'You asked for a swap device smaller than 1 MB. This is probably ' +
-         'not what you want. Please make it larger or disable swap altogether.'
+    fail 'fb_swap: You asked for a swap device smaller than 1 MB. This is ' +
+         'probably not what you want. Please make it larger or disable swap ' +
+         'altogether.'
   end
 end
+
+# ask fb_fstab to create the unit
+node.default['fb_fstab']['mounts']['swap_device'] = {
+  'mount_point' => 'swap',
+  'device' => device,
+  'type' => 'swap',
+}
 
 whyrun_safe_ruby_block 'validate resize' do
   only_if do
@@ -60,7 +59,7 @@ whyrun_safe_ruby_block 'validate resize' do
     (node['fb_swap']['size'].to_i - 4) > node['memory']['swap']['total'].to_i
   end
   block do
-    fail 'fb_swap does not support increasing the size of a swap device'
+    fail 'fb_swap: We do not support increasing the size of a swap device'
   end
 end
 
@@ -71,10 +70,10 @@ execute 'resize swap' do
     (node['fb_swap']['size'].to_i - 4) < node['memory']['swap']['total'].to_i
   end
   command lazy {
-    uuid = node['filesystem2']['by_device'][swap_device]['uuid']
+    uuid = node['filesystem2']['by_device'][device]['uuid']
     size = node['fb_swap']['size']
-    "swapoff #{swap_device} && mkswap -U #{uuid} #{swap_device} #{size} && " +
-    "swapon #{swap_device}"
+    "swapoff #{device} && mkswap -U #{uuid} #{device} " +
+     "#{size} && swapon #{device}"
   }
 end
 
@@ -92,4 +91,28 @@ execute 'turn swap off' do
     !node['fb_swap']['enabled']
   end
   command '/sbin/swapoff -a'
+end
+
+# T40484873 mitigation - remove new device swap overrides and management unit.
+
+service 'Swap file unmask' do
+  service_name lazy { FB::FbSwap._swap_unit(node, 'file') }
+  action :unmask
+end
+
+%w{device file}.each do |type|
+  fb_systemd_override "remove #{type} swap override" do
+    override_name 'manage'
+    unit_name lazy { FB::FbSwap._swap_unit(node, type) }
+    action :delete
+  end
+
+  service "manage-swap-#{type}.service" do
+    action :stop
+  end
+
+  file "/etc/systemd/system/manage-swap-#{type}.service" do
+    action :delete
+    notifies :run, 'fb_systemd_reload[system instance]', :immediately
+  end
 end

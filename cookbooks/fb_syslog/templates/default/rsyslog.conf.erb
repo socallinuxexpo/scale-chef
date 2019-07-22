@@ -21,9 +21,6 @@ $ModLoad imklog
 # Provides logging to external programs.
 module(load="omprog")
 <% end -%>
-<% if node['fb_syslog']['rsyslog_relp_tls'] -%>
-module(load="omrelp")
-<% end -%>
 <% if node['fb_syslog']['rsyslog_server'] -%>
 # UDP / TCP reception
 $ModLoad imudp
@@ -94,7 +91,7 @@ $Umask 0002
 <%#  syslog doesn't support not flushing on OS X, so we cannot use the `-`
      prefix for files. %>
 <%   action = entry['action'] -%>
-<%   if node.macosx? && action.start_with?('-') -%>
+<%   if node.macos? && action.start_with?('-') -%>
 <%     action.slice!(0) -%>
 <%   end -%>
 <%=  "%s  %s" % [entry['selector'], action] %>
@@ -134,10 +131,11 @@ $InputTCPServerRun <%= specs['port'] %>
    if node['fb_syslog']['rsyslog_report_suspension'].nil?
      report_suspension = nil
    else
-     report_suspension = 
+     report_suspension =
        node['fb_syslog']['rsyslog_report_suspension'] ? 'on' : 'off'
    end
-   if !node['fb_syslog']['rsyslog_server'] &&
+   if (!node['fb_syslog']['rsyslog_server'] ||
+       node['fb_syslog']['rsyslog_use_omprog_force']) &&
       !node['fb_syslog']['rsyslog_facilities_sent_to_remote'].empty?
      if node['fb_syslog']['rsyslog_use_omprog']
        rsyslog_omprog_binary = node['fb_syslog']['rsyslog_omprog_binary']
@@ -159,15 +157,8 @@ $InputTCPServerRun <%= specs['port'] %>
 <%   else # if rsyslog_use_omprog
        rsyslog_port = node['fb_syslog']['rsyslog_port']
        rsyslog_upstream = node['fb_syslog']['rsyslog_upstream']
-       if node['fb_syslog']['rsyslog_relp_tls']
-         rsyslog_type = 'omrelp'
-         extra_lines = %w{
-           tls="on"
-         }
-         else
-           rsyslog_type = 'omfwd'
-           extra_lines = []
-         end
+       rsyslog_type = 'omfwd'
+       extra_lines = []
        if node.linux?
 %>
 # Remote Logging
@@ -176,9 +167,7 @@ $InputTCPServerRun <%= specs['port'] %>
     name="Remote_Logging"
     target="<%= rsyslog_upstream %>"
     port="<%= rsyslog_port %>"
-<%       unless node['fb_syslog']['rsyslog_relp_tls'] %>
     protocol="tcp"
-<%       end %>
 <%       unless report_suspension.nil? -%>
     action.reportSuspension="<%= report_suspension %>"
     action.reportSuspensionContinuation="<%= report_suspension %>"

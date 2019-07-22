@@ -1,4 +1,7 @@
-# vim: syntax=ruby:expandtab:shiftwidth=2:softtabstop=2:tabstop=2
+#
+# Cookbook Name:: fb_dracut
+# Recipe:: default
+#
 # Copyright (c) 2016-present, Facebook, Inc.
 # All rights reserved.
 #
@@ -15,37 +18,27 @@
 # limitations under the License.
 #
 
-ttys = [
-  'console',
-  'tty1',
-  'tty2',
-  'tty3',
-  'tty4',
-  'tty5',
-  'tty6',
-  'tty7',
-  'tty8',
-  'tty9',
-  'tty10',
-  'tty11',
-]
-
-if node.centos?
-  ttys += [
-    'vc/1',
-    'vc/2',
-    'vc/3',
-    'vc/4',
-    'vc/5',
-    'vc/6',
-    'vc/7',
-    'vc/8',
-    'vc/9',
-    'vc/10',
-    'vc/11',
-  ]
+unless node.centos?
+  fail 'fb_dracut is only supported on CentOS.'
 end
 
-default['fb_securetty'] = {
-  'ttys' => ttys,
-}
+include_recipe 'fb_dracut::packages'
+
+template '/etc/dracut.conf' do
+  source 'dracut.conf.erb'
+  owner 'root'
+  group 'root'
+  mode '0644'
+  notifies :run, 'execute[rebuild all initramfs]'
+end
+
+execute 'rebuild all initramfs' do
+  not_if { node.container? }
+  command 'dracut --force'
+  action :nothing
+  if node.systemd?
+    subscribes :run, 'package[systemd packages]'
+    subscribes :run, 'template[/etc/systemd/system.conf]'
+    subscribes :run, 'template[/etc/sysctl.conf]'
+  end
+end
