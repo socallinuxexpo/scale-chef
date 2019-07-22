@@ -28,6 +28,7 @@ Attributes
 * node['fb_systemd']['timesyncd']['config']
 * node['fb_systemd']['coredump']
 * node['fb_systemd']['tmpfiles']
+* node['fb_systemd']['tmpfiles_excluded_prefixes']
 * node['fb_systemd']['preset']
 * node['fb_systemd']['manage_systemd_packages']
 * node['fb_systemd']['boot']['enable']
@@ -37,28 +38,102 @@ Attributes
 
 Usage
 -----
-This cookbooks manages systemd. It is only supported on systemd-enabled 
-distributions (e.g. CentOS 7 or Debian 8). Just include `fb_systemd` in your 
+This cookbooks manages systemd. It is only supported on systemd-enabled
+distributions (e.g. CentOS 7 or Debian 8). Just include `fb_systemd` in your
 runlist to use it.
 
+### FB::Systemd
+The following methods are available:
+
+* `FB::Systemd.path_to_unit(path, unit_type)`
+  Convert a given `path` to a unit name of `unit_type` type.
+
+```
+ FB::Systemd.path_to_unit('/dev/mapper/dm-0', 'swap')
+ => "dev-mapper-dm\\x2d0.swap"
+```
+
+* `FB::Systemd.sanitize(name)`
+  Sanitize a name by replacing non-alphanumeric characters (including spaces)
+  with underscores.
+
+```
+ FB::Systemd.sanitize('disable network')
+ => "disable_network"
+```
+
+* `FB::Systemd.to_ini(content)`
+  Render a Hash or a String into an INI-formatted String that's compliant with
+  [systemd.syntax](https://www.freedesktop.org/software/systemd/man/systemd.syntax.html).
+
+```
+ FB::Systemd.to_ini({'Service'=>{'User'=>'nobody'}})
+ => "[Service]\nUser = nobody\n"
+```
+
 ### Providers
+
+* a `fb_systemd_override` custom resource to manage systemd unit drop-in
+  overrides, taking inspiration from the `systemd_unit` builtin resource
+
+```
+fb_systemd_override 'run-as-nobody' do
+  unit_name 'foo.service'
+  content({
+    'Service' => {
+      'User' => 'nobody',
+    },
+  })
+end
+```
+
+  The `unit_name` attribute defines the unit the override will be applied to.
+  The override itself is named via `override_name` (which is also the name
+  property for the resource); in the interest of sanity, the resource will
+  sanitize this via `FB::Systemd.sanitize`. The contents of the override are
+  defined via `contents`, which works the same as the eponymous attribute in
+  `systemd_unit`. Note however that if you are overriding a list and want to
+  reset it, you will have to specify `content` as a string, e.g.:
+
+```
+fb_systemd_override 'disable-controllers' do
+  unit_name 'foo.slice'
+  content <<-EOU.gsub(/^\s+/, '')
+  [Slice]
+  DisableControllers=
+  DisableControllers=cpu
+  EOU
+end
+```
+
+  Alternatively, you can specify a `source` to generate the override, e.g.:
+
+```
+fb_systemd_override 'disable-controllers' do
+  unit_name 'foo.slice'
+  source 'disable-controllers.conf.erb'
+end
+```
 
 * a `fb_systemd_reload` LWRP to safetly trigger a daemon reload for a systemd
   instance (at the system or user level)
 
-    fb_systemd_reload 'reload systemd' do
-      instance 'user'
-      user 'dcavalca'
-    end
+```
+fb_systemd_reload 'reload systemd' do
+  instance 'user'
+  user 'dcavalca'
+end
+```
 
   The `instance` attribute can be `system` or `user` and defines which instance
   will be reloaded. For user instances, the optional attribute `user` defines
   which user instance should be reloaded; if it's omitted or `nil`, the LWRP
-  will reload systemd for all active user sessions.
+  will reload systemd for all active user sessions. Restarting is skipped if it
+  looks like the system is not booted (`node.systemd?` is false).
 
-* two resources (`fb_systemd_reload[system instance]` and 
-  `fb_systemd_reload[all user instances]`) that other recipes can notify 
-  whenever they need to reload systemd (e.g. because the added or modified a 
+* two resources (`fb_systemd_reload[system instance]` and
+  `fb_systemd_reload[all user instances]`) that other recipes can notify
+  whenever they need to reload systemd (e.g. because the added or modified a
   unit); these are built on top of the `fb_systemd_reload` LWRP.
 
 ### Default Target
@@ -67,21 +142,23 @@ The default systemd target can be configured with
 `/lib/systemd/system/multi-user.target`.
 
 ### System and session configuration
-You can tune system-level or session-level defaults for systemd by using the 
+You can tune system-level or session-level defaults for systemd by using the
 attributes `node['fb_systemd']['system']` and `node['fb_systemd']['user']`.
 This is useful e.g. to set system-level limits for services (as systemd doesn't
 enforce PAM limits set via `fb_limits` for system services), such as:
 
-  node.default['fb_systemd']['system']['DefaultLimitNOFILE'] = 65535 
+```
+node.default['fb_systemd']['system']['DefaultLimitNOFILE'] = 65535
+```
 
-Refer to the 
-[systemd documentation](https://www.freedesktop.org/software/systemd/man/systemd-system.conf.html) 
+Refer to the
+[systemd documentation](https://www.freedesktop.org/software/systemd/man/systemd-system.conf.html)
 for more details on what settings are available.
 
 ### udevd configuration
 Udevd is a critical system daemon and cannot be disabled. General udev settings
-can be configured via `node['fb_systemd']['journald']['config']`, as described 
-in the 
+can be configured via `node['fb_systemd']['journald']['config']`, as described
+in the
 [udev documentation](https://www.freedesktop.org/software/systemd/man/udev.conf.html).
 
 Additional entries to the hardware database can be entered using the
@@ -89,27 +166,31 @@ Additional entries to the hardware database can be entered using the
 [hwdb documentation](https://www.freedesktop.org/software/systemd/man/hwdb.html).
 Example:
 
-  node.default['fb_systemd']['udevd']['hwdb']['evdev:input:b0003v05AFp8277*'] = {
-    'KEYBOARD_KEY_70039' => 'leftalt',
-    'KEYBOARD_KEY_700e2' => 'leftctrl',
-  }
+```
+node.default['fb_systemd']['udevd']['hwdb']['evdev:input:b0003v05AFp8277*'] = {
+  'KEYBOARD_KEY_70039' => 'leftalt',
+  'KEYBOARD_KEY_700e2' => 'leftctrl',
+}
+```
 
-Additional udev rules can be defined using the 
+Additional udev rules can be defined using the
 `node['fb_systemd']['udevd']['rules']` attribute, as described in the
 [udev documentation](https://www.freedesktop.org/software/systemd/man/udev.html).
 Example:
 
-  node.default['fb_systemd']['udevd']['rules'] += [
-    'KERNEL=="fd[0-9]*", OWNER="john"',
-  ]
+```
+node.default['fb_systemd']['udevd']['rules'] += [
+  'KERNEL=="fd[0-9]*", OWNER="john"',
+]
+```
 
 ### journald configuration
-Journald is a critical system daemon and cannot be disabled. By default we 
+Journald is a critical system daemon and cannot be disabled. By default we
 configure journald to use the 'auto' storage (disk if the log directory exists,
-or ram otherwise, which is the default for most distros). You can change these 
+or ram otherwise, which is the default for most distros). You can change these
 settings and more through `node['fb_systemd']['journald']['config']`.
 
-Refer to the 
+Refer to the
 [journald documentation](https://www.freedesktop.org/software/systemd/man/journald.conf.html)
 for more details on possible configurations.
 
@@ -123,7 +204,7 @@ for more information.
 ### journal-remote configuration
 You can choose whether or not to enable `systemd-journal-remote` with the
 `node['fb_systemd']['journal-remote']['enable']` attribute, which defaults
-to `false`. journal-remote can be configured using the 
+to `false`. journal-remote can be configured using the
 `node['fb_systemd']['journal-remote']['config']` attribute, according to the
 [journal-remote documentation](https://www.freedesktop.org/software/systemd/man/journal-remote.conf.html).
 
@@ -145,7 +226,7 @@ using the `node['fb_systemd']['logind']['config']` attribute, according to the
 You can choose whether or not to enable `systemd-networkd` with the
 `node['fb_systemd']['networkd']['enable']` attribute, which defaults to `false`.
 
-Note that this cookbook does not manage network configuration profiles. If you 
+Note that this cookbook does not manage network configuration profiles. If you
 drop `netdev`, `link`, `network` definitions under `/etc/systemd/network` from
 another cookbook you'll want to request a restart of the `systemd-networkd`
 service.
@@ -153,15 +234,15 @@ service.
 ### resolved configuration
 You can choose whether or not to enable `systemd-resolved` with the
 `node['fb_systemd']['resolved']['enable']` attribute, which defaults to `false`.
-Note that this will also enable the `nss-resolve` resolver in 
+Note that this will also enable the `nss-resolve` resolver in
 `/etc/nsswitch.conf` in place of the glibc `dns` one (using the API provided by
 `fb_nsswitch`). Resolved can be configured using the
 `node['fb_systemd']['resolved']['config']` attribute, as described in the
 [resolved documentation](https://www.freedesktop.org/software/systemd/man/resolved.conf.html).
 
-Note that this cookbook does not manage `/etc/resolv.conf`. If you're using 
-resolved, you probably want to make that a symlink to 
-`/run/systemd/resolve/resolv.conf`. 
+Note that this cookbook does not manage `/etc/resolv.conf`. If you're using
+resolved, you probably want to make that a symlink to
+`/run/systemd/resolve/resolv.conf`.
 
 ### timesyncd configuration
 You can choose whether or not to enable `systemd-timesyncd` with the
@@ -187,14 +268,16 @@ transparently on non-systemd hosts as well.
 Use `node['fb_systemd']['tmpfiles']` to control the creation, deletion
 and cleaning of volatile and temporary files. For example:
 
-  node.default['fb_systemd']['tmpfiles']['/run/user'] = {
-    'type' => 'd',
-    'mode' => '0755',
-    'uid' => 'root',
-    'gid' => 'root',
-    'age' => '10d',
-    'argument' => '-',
-  }
+```
+node.default['fb_systemd']['tmpfiles']['/run/user'] = {
+  'type' => 'd',
+  'mode' => '0755',
+  'uid' => 'root',
+  'gid' => 'root',
+  'age' => '10d',
+  'argument' => '-',
+}
+```
 
 If `type` is omitted, it defaults to `f` (create a regular file); if `path` is
 omitted, it defaults to the configuration key (i.e. `/run/user` in the example).
@@ -202,16 +285,26 @@ If any other argument is omitted, it defaults to `-`. Refer to the
 [tmpfiles documentation](http://www.freedesktop.org/software/systemd/man/tmpfiles.d.html)
 for more details on how to use tmpfiles and the meaning of the various options.
 
+Use `node['fb_systemd']['tmpfiles_excluded_prefixes']` to add to set of paths that
+systemd-tmpfiles will exclude.  For example:
+
+```
+node.default['fb_systemd']['tmpfiles_excluded_prefixes'] << '/sys'
+]
+```
+
 ### Presets
 You can add preset settings to `node['fb_systemd']['preset']`. As an example to
 disable a unit:
 
-    node.default['fb_systemd']['preset']['tmp.mount'] = 'disable'
+```
+node.default['fb_systemd']['preset']['tmp.mount'] = 'disable'
+```
 
 Possible values can be found at
 https://www.freedesktop.org/software/systemd/man/systemd.preset.html
 
-They are installed in `/etc/systemd/system-preset/00-fb_systemd.preset` which 
+They are installed in `/etc/systemd/system-preset/00-fb_systemd.preset` which
 will take precedence over other preset files.
 
 ### Packages
@@ -225,11 +318,11 @@ You can choose whether or not to enable `systemd-boot` with the
 This controls whether `systemd-boot` will be installed, or whether it will be
 updated on package updates. Note that `systemd-boot` only works on EFI systems
 and requires a mounted EFI Service Partition (ESP). The cookbook will attempt
-to autodetect the ESP mountpoint, which can be overwritten with 
+to autodetect the ESP mountpoint, which can be overwritten with
 `node['fb_systemd']['boot']['path']`. General loader settings can be controlled
-with `node['fb_systemd']['boot']['loader']`. Finally, loader entries can be 
+with `node['fb_systemd']['boot']['loader']`. Finally, loader entries can be
 defined by populating `node['fb_systemd']['boot']['entries']`, e.g. by writing
 a `ruby_block` to scan for installed kernels and set the appropriate entries.
-Please refer to the 
+Please refer to the
 [upstream documentation](https://www.freedesktop.org/wiki/Software/systemd/systemd-boot/)
 for more details.
