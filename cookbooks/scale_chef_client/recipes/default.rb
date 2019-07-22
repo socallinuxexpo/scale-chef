@@ -7,8 +7,24 @@
 # All rights reserved - Do Not Redistribute
 #
 
+# omfg I hate this so much
+cookbook_file '/var/chef/cache/chef-13.12.14-1.el7.x86_64.rpm' do
+  owner 'root'
+  group 'root'
+  mode '0644'
+end
+
+ruby_block 'reexec chef' do
+  block do
+    exec('/usr/bin/chef-client --no-fork')
+  end
+  action :nothing
+end
+
 package 'chef' do
+  source '/var/chef/cache/chef-13.12.14-1.el7.x86_64.rpm'
   action :upgrade
+  notifies :run, 'ruby_block[reexec chef]', :immediately
 end
 
 %w{
