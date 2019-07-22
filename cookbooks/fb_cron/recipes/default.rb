@@ -2,14 +2,20 @@
 # Cookbook Name:: fb_cron
 # Recipe:: default
 #
-# vim: syntax=ruby:expandtab:shiftwidth=2:softtabstop=2:tabstop=2
-#
 # Copyright (c) 2016-present, Facebook, Inc.
 # All rights reserved.
 #
-# This source code is licensed under the BSD-style license found in the
-# LICENSE file in the root directory of this source tree. An additional grant
-# of patent rights can be found in the PATENTS file in the same directory.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
 
 require 'shellwords'
@@ -18,23 +24,10 @@ case node['platform_family']
 when 'mac_os_x'
   svc_name = 'com.vix.cron'
 when 'rhel', 'fedora', 'suse'
-  package_name = 'vixie-cron'
-  if node['platform'] == 'amazon' || node['platform_version'].to_i >= 6
-    package_name = 'cronie'
-  end
-  svc_name = 'crond'
-when 'yocto'
-  # We may need to customize this in the future if we have some yocto images
-  # that use cronie and others that use crond.
-  package_name = 'cronie'
   svc_name = 'crond'
 end
 
-if package_name # ~FC023
-  package package_name do
-    action :upgrade
-  end
-end
+include_recipe 'fb_cron::packages'
 
 # keep the name 'cron' so we can notify it easily from other places
 service 'cron' do
@@ -89,8 +82,19 @@ whyrun_safe_ruby_block 'validate_data' do
   end
 end
 
-template '/etc/cron.d/fb_crontab' do
+template 'fb_cron crontab' do
+  path lazy {
+    node['fb_cron']['_crontab_path']
+  }
   source 'fb_crontab.erb'
+  owner 'root'
+  group 'root'
+  mode '0644'
+end
+
+template '/etc/anacrontab' do
+  only_if { node['platform_family'] == 'rhel' }
+  source 'anacrontab.erb'
   owner 'root'
   group 'root'
   mode '0644'
@@ -110,9 +114,23 @@ if envfile # ~FC023
   end
 end
 
+# Cleanup rpmnew and rpmsave files
+Dir.glob('/etc/cron*/*.rpm{save,new}').each do |todel|
+  file todel do
+    action :delete
+  end
+end
+
 # Make sure we nuke all crons from the cron resource.
-file '/var/spool/cron/root' do
-  action :delete
+root_crontab = value_for_platform_family(
+  ['rhel', 'fedora', 'suse'] => '/var/spool/cron/root',
+  ['debian', 'ubuntu'] => '/var/spool/cron/crontabs/root',
+)
+if root_crontab
+  file 'clean out root crontab' do
+    path root_crontab
+    action :delete
+  end
 end
 
 cookbook_file '/usr/local/bin/exclusive_cron.sh' do
@@ -122,7 +140,7 @@ cookbook_file '/usr/local/bin/exclusive_cron.sh' do
   mode '0755'
 end
 
-if node.macosx?
+if node.macos?
   cookbook_file '/usr/local/bin/osx_make_crond.sh' do
     source 'osx_make_crond.sh'
     owner 'root'

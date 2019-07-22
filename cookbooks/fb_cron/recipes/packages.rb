@@ -1,4 +1,6 @@
-# vim: syntax=ruby:expandtab:shiftwidth=2:softtabstop=2:tabstop=2
+#
+# Cookbook Name:: fb_cron
+# Recipe:: packages
 #
 # Copyright (c) 2016-present, Facebook, Inc.
 # All rights reserved.
@@ -15,21 +17,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-default['fb_cron'] = {
-  'jobs' => {},
-  'environment' => {},
-  'anacrontab' => {
-    'environment' => {
-      'shell' => '/bin/sh',
-      'path' => '/sbin:/bin:/usr/sbin:/usr/bin',
-      'mailto' => 'root',
-      'random_delay' => '45',
-      'start_hours_range' => '3-22',
-    },
-  },
 
-  # Path for the crontab that contains all the fb_cron job entries.
-  # This is a hidden attribute because people shouldn't change this unless
-  # they know what they're doing.
-  '_crontab_path' => '/etc/cron.d/fb_crontab',
-}
+case node['platform_family']
+when 'rhel', 'fedora', 'suse'
+  package_name = 'vixie-cron'
+  if node['platform'] == 'amazon' || node['platform_version'].to_i >= 6
+    package_name = 'cronie'
+  end
+end
+
+if package_name # ~FC023
+  package package_name do
+    action :upgrade
+  end
+end

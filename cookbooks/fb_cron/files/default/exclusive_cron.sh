@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Copyright (c) 2018-present, Facebook, Inc.
+
 if [ $# -lt 1 ] || [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
   echo "Uses file locking to runs a single instance of a command "
   echo "on a host at a time. Intended to stop cron job stampedes"
@@ -25,8 +27,8 @@ function on_exit() {
 
 # FD200 is completely arbitrary
 (
-  if ! flock -x -w 0 200; then 
-    echo "Comand '${COMMAND}' with lockfile '${LOCKFILE}' is already running"
+  if ! flock -x -w 0.001 200; then 
+    echo "Command '${COMMAND}' with lockfile '${LOCKFILE}' is already running"
     exit 1
   fi
   trap 'on_exit' EXIT
