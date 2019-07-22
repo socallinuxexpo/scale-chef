@@ -10,6 +10,9 @@ missingok
 <% if node['fb_logrotate']['globals']['size'] -%>
 size  <%= node['fb_logrotate']['globals']['size'] %>
 <% end -%>
+<% if node['fb_logrotate']['globals']['compressext'] -%>
+compressext <%= node['fb_logrotate']['globals']['compressext'] %>
+<% end -%>
 
 <% node['fb_logrotate']['configs'].to_hash.each do |name, block| -%>
 ## fb.fb_logrotate.configs.<%= name %>
@@ -20,20 +23,23 @@ size  <%= node['fb_logrotate']['globals']['size'] %>
 <%   if block['overrides'] -%>
 <%     block['overrides'].keys.sort.each do |k| -%>
 <%       case k -%>
-<%       when 'rotate', 'maxage', 'minsize', 'create', 'olddir', 'su', 
-              'compressoptions', 'dateformat' -%>
+<%       when 'rotate', 'maxage', 'minsize', 'create', 'olddir', 'su',
+              'compressoptions', 'dateformat', 'maxsize' -%>
   <%=      k %> <%= block['overrides'][k] %>
 <%       when 'copytruncate', 'ifempty', 'nocompress', 'missingok',
               'delaycompress', 'sharedscripts', 'nomail', 'dateext',
-              'nodateext', 'noolddir', 'nocopytruncate' -%>
+              'nodateext', 'noolddir', 'nocopytruncate', 'nocreate' -%>
 <%#        check that the value is true -%>
 <%         if block['overrides'][k] -%>
   <%=        k %>
 <%         end -%>
-<%       when 'postrotate', 'prerotate' -%>
+<%       when 'postrotate', 'prerotate', 'preremove' -%>
   <%=      k %>
     <%=    block['overrides'][k] %>
   endscript
+<%       else -%>
+<%         Chef::Log.warn("fb_logrotate:[#{name}]: \
+Invalid logrotate config option #{k}") -%>
 <%       end -%>
 <%     end -%>
 <%   end -%>
