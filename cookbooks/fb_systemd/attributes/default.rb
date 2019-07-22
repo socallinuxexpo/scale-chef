@@ -3,9 +3,17 @@
 # Copyright (c) 2016-present, Facebook, Inc.
 # All rights reserved.
 #
-# This source code is licensed under the BSD-style license found in the
-# LICENSE file in the root directory of this source tree. An additional grant
-# of patent rights can be found in the PATENTS file in the same directory.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
 
 tmpfiles = {}
@@ -13,7 +21,7 @@ tmpfiles = {}
   '/dev/log' => '/run/systemd/journal/dev-log',
   '/dev/initctl' => '/run/systemd/initctl/fifo',
 }.each do |dev, target|
-  if File.exists?(target)
+  if File.exist?(target)
     tmpfiles[dev] = {
       'type' => 'L+',
       'argument' => target,
@@ -32,7 +40,7 @@ esp_path = nil
   # with a misleading error
   if node['filesystem2'] && node['filesystem2']['by_mountpoint'][path] &&
      node['filesystem2']['by_mountpoint'][path]['fs_type'] == 'vfat' &&
-     (File.exists?("#{path}/EFI") || File.exists?("#{path}/efi"))
+     (File.exist?("#{path}/EFI") || File.exist?("#{path}/efi"))
     esp_path = path
     break
   end
@@ -43,6 +51,19 @@ loader = {
 }
 if node['machine_id']
   loader['default'] = "#{node['machine_id']}-*"
+end
+
+# Starting from 18.04, Ubuntu uses networkd, resolved and timesyncd by default,
+# so default to enabling them there to prevent breakage
+if node.ubuntu? &&
+   FB::Version.new(node['platform_version']) >= FB::Version.new('18.04')
+  enable_networkd = true
+  enable_resolved = true
+  enable_timesyncd = true
+else
+  enable_networkd = false
+  enable_resolved = false
+  enable_timesyncd = false
 end
 
 default['fb_systemd'] = {
@@ -78,18 +99,19 @@ default['fb_systemd'] = {
     'config' => {},
   },
   'networkd' => {
-    'enable' => false,
+    'enable' => enable_networkd,
   },
   'resolved' => {
-    'enable' => false,
+    'enable' => enable_resolved,
     'config' => {},
   },
   'timesyncd' => {
-    'enable' => false,
+    'enable' => enable_timesyncd,
     'config' => {},
   },
   'coredump' => {},
   'tmpfiles' => tmpfiles,
+  'tmpfiles_excluded_prefixes' => [],
   'preset' => {},
   'manage_systemd_packages' => true,
   'boot' => {

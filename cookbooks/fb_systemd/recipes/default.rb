@@ -2,69 +2,41 @@
 # Cookbook Name:: fb_systemd
 # Recipe:: default
 #
-# vim: syntax=ruby:expandtab:shiftwidth=2:softtabstop=2:tabstop=2
-#
 # Copyright (c) 2016-present, Facebook, Inc.
 # All rights reserved.
 #
-# This source code is licensed under the BSD-style license found in the
-# LICENSE file in the root directory of this source tree. An additional grant
-# of patent rights can be found in the PATENTS file in the same directory.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# the resources for reloading systemd are useful, even if node.systemd?
+# returns false. This happens when using this cookbook to build a container
+# that is not booted.
+include_recipe 'fb_systemd::reload'
 
 unless node.systemd?
   fail 'fb_systemd is only available on systemd-enabled hosts'
 end
 
-systemd_packages = ['systemd']
-
 case node['platform_family']
 when 'rhel', 'fedora'
-  systemd_packages << 'systemd-libs'
   systemd_prefix = '/usr'
 when 'debian'
-  systemd_packages += %w{
-    libpam-systemd
-    libsystemd0
-    libudev1
-  }
-
-  unless node.container?
-    systemd_packages << 'udev'
-  end
-
-  # older versions of Debian and Ubuntu are missing some extra packages
-  unless ['trusty', 'jessie'].include?(node['lsb']['codename'])
-    systemd_packages += %w{
-      libnss-myhostname
-      libnss-mymachines
-      libnss-resolve
-      systemd-container
-      systemd-coredump
-      systemd-journal-remote
-    }
-  end
-
   systemd_prefix = ''
 else
   fail 'fb_systemd is not supported on this platform.'
 end
 
-package 'systemd packages' do
-  package_name systemd_packages
-  only_if { node['fb_systemd']['manage_systemd_packages'] }
-  action :upgrade
-end
-
-fb_systemd_reload 'system instance' do
-  instance 'system'
-  action :nothing
-end
-
-fb_systemd_reload 'all user instances' do
-  instance 'user'
-  action :nothing
-end
+include_recipe 'fb_systemd::default_packages'
 
 template '/etc/systemd/system.conf' do
   source 'systemd.conf.erb'
@@ -115,7 +87,12 @@ include_recipe 'fb_systemd::timesyncd'
 include_recipe 'fb_systemd::boot'
 
 execute 'process tmpfiles' do
-  command "#{systemd_prefix}/bin/systemd-tmpfiles --create"
+  command lazy {
+    "#{systemd_prefix}/bin/systemd-tmpfiles --create" +
+      node['fb_systemd']['tmpfiles_excluded_prefixes'].
+      map { |x| " --exclude-prefix=#{x}" }.
+      join
+  }
   action :nothing
 end
 
@@ -143,6 +120,12 @@ template '/etc/systemd/system-preset/00-fb_systemd.preset' do
   owner 'root'
   group 'root'
   mode '0644'
+end
+
+directory '/etc/systemd/user/default.target.wants' do
+  owner 'root'
+  group 'root'
+  mode '0755'
 end
 
 link '/etc/systemd/system/default.target' do

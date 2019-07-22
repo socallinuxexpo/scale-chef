@@ -1,8 +1,8 @@
 #
 # Cookbook Name:: fb_systemd
-# Recipe:: networkd
+# Recipe:: reload
 #
-# Copyright (c) 2016-present, Facebook, Inc.
+# Copyright (c) 2019-present, Facebook, Inc.
 # All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,18 +17,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-%w{
-  systemd-networkd.socket
-  systemd-networkd.service
-}.each do |svc|
-  service svc do
-    only_if { node['fb_systemd']['networkd']['enable'] }
-    action [:enable, :start]
-  end
 
-  service "disable #{svc}" do
-    not_if { node['fb_systemd']['networkd']['enable'] }
-    service_name svc
-    action [:stop, :disable]
-  end
+fb_systemd_reload 'system instance' do
+  instance 'system'
+  action :nothing
+end
+
+fb_systemd_reload 'all user instances' do
+  instance 'user'
+  action :nothing
 end
