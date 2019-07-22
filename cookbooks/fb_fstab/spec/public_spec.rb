@@ -3,9 +3,17 @@
 # Copyright (c) 2016-present, Facebook, Inc.
 # All rights reserved.
 #
-# This source code is licensed under the BSD-style license found in the
-# LICENSE file in the root directory of this source tree. An additional grant
-# of patent rights can be found in the PATENTS file in the same directory.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
 
 require 'chef/node'
@@ -14,10 +22,15 @@ require 'chef/node'
 require_relative '../libraries/default'
 require_relative '../libraries/provider'
 
-include FB::FstabProvider
-
 describe 'FB::Fstab' do
   let(:node) { Chef::Node.new }
+  let(:attr_name) do
+    if node['filesystem2']
+      'filesystem2'
+    else
+      'filesystem'
+    end
+  end
   # rubocop:disable LineLength
   full_contents = <<EOF
 #
@@ -49,7 +62,7 @@ EOF
 
   context 'generate_base_fstab' do
     it 'should not regenerate base fstab' do
-      File.should_receive(:exists?).with(FB::Fstab::BASE_FILENAME).
+      File.should_receive(:exist?).with(FB::Fstab::BASE_FILENAME).
         and_return(true)
       File.should_receive(:size).with(FB::Fstab::BASE_FILENAME).
         and_return(12)
@@ -57,7 +70,7 @@ EOF
       FB::Fstab.generate_base_fstab
     end
     it 'should generate new base fstab' do
-      File.should_receive(:exists?).with(FB::Fstab::BASE_FILENAME).
+      File.should_receive(:exist?).with(FB::Fstab::BASE_FILENAME).
         and_return(false)
       FileUtils.should_receive(:cp).and_return(nil)
       FileUtils.should_receive(:chmod).and_return([
@@ -82,7 +95,7 @@ EOF
 
   context 'autofs_parent' do
     before(:each) do
-      node.default['filesystem2']['by_pair']['foo:/bar/baz,/mnt/foo'] = {
+      node.default[attr_name]['by_pair']['foo:/bar/baz,/mnt/foo'] = {
         'device' => 'foo:/bar/baz',
         'mount' => '/mnt/foo',
         'fs_type' => 'autofs',
@@ -100,7 +113,7 @@ EOF
   end
   context 'label_to_device' do
     it 'should find the right label' do
-      node.default['filesystem2']['by_device'] = {
+      node.default[attr_name]['by_device'] = {
         'foo' => {
           'label' => 'label1',
         },
@@ -111,7 +124,7 @@ EOF
       FB::Fstab.label_to_device('label2', node).should eq('bar')
     end
     it 'should not get confused by fs without label' do
-      node.default['filesystem2']['by_device'] = {
+      node.default[attr_name]['by_device'] = {
         'foo' => {
           'uuid' => 'uuid1',
         },
@@ -122,7 +135,7 @@ EOF
       FB::Fstab.label_to_device('label2', node).should eq('bar')
     end
     it 'should fail on missing label' do
-      node.default['filesystem2']['by_device'] = {
+      node.default[attr_name]['by_device'] = {
         'foo' => {
           'uuid' => 'uuid1',
         },
@@ -137,7 +150,7 @@ EOF
   end
   context 'uuid_to_device' do
     it 'should find the right uuid' do
-      node.default['filesystem2']['by_device'] = {
+      node.default[attr_name]['by_device'] = {
         'foo' => {
           'uuid' => 'uuid1',
         },
@@ -148,7 +161,7 @@ EOF
       FB::Fstab.uuid_to_device('uuid2', node).should eq('bar')
     end
     it 'should not get confused by fs without uuid' do
-      node.default['filesystem2']['by_device'] = {
+      node.default[attr_name]['by_device'] = {
         'foo' => {
           'label' => 'label1',
         },
@@ -159,7 +172,7 @@ EOF
       FB::Fstab.uuid_to_device('uuid2', node).should eq('bar')
     end
     it 'should fail on missing uuid' do
-      node.default['filesystem2']['by_device'] = {
+      node.default[attr_name]['by_device'] = {
         'foo' => {
           'label' => 'label1',
         },
@@ -174,14 +187,14 @@ EOF
   end
   context 'get_in_maint_disks' do
     it 'should return an empty array if file does not exist' do
-      File.should_receive(:exists?).with(FB::Fstab::IN_MAINT_DISKS_FILENAME).
+      File.should_receive(:exist?).with(FB::Fstab::IN_MAINT_DISKS_FILENAME).
         and_return(false)
       FB::Fstab.get_in_maint_disks.should eq([])
     end
     it 'should delete stale files' do
       stat = double('FSstat')
       stat.should_receive(:mtime).and_return(Time.new - 60 * 60 * 24 * 8)
-      File.should_receive(:exists?).with(FB::Fstab::IN_MAINT_DISKS_FILENAME).
+      File.should_receive(:exist?).with(FB::Fstab::IN_MAINT_DISKS_FILENAME).
         and_return(true)
       File.should_receive(:stat).with(FB::Fstab::IN_MAINT_DISKS_FILENAME).
         and_return(stat)
@@ -190,23 +203,193 @@ EOF
       FB::Fstab.get_in_maint_disks.should eq([])
     end
   end
+  context 'get_unmasked_base_mounts' do
+    let(:default_ret) do
+      {
+        '/dev/sda1' => {
+          'mount_point' => '/',
+          'type' => 'ext4',
+          'opts' => 'defaults,discard',
+          'dump' => '1',
+          'pass' => '1',
+        },
+        '/dev/sda2' => {
+          'mount_point' => '/boot',
+          'type' => 'ext3',
+          'opts' => 'defaults',
+          'dump' => '1',
+          'pass' => '2',
+        },
+        '/dev/sda3' => {
+          'mount_point' => 'swap',
+          'type' => 'swap',
+          'opts' => 'defaults',
+          'dump' => '0',
+          'pass' => '0',
+        },
+        'devpts' => {
+          'mount_point' => '/dev/pts',
+          'type' => 'devpts',
+          'opts' => 'gid=5,mode=620',
+          'dump' => '0',
+          'pass' => '0',
+        },
+        'sysfs' => {
+          'mount_point' => '/sys',
+          'type' => 'sysfs',
+          'opts' => 'defaults',
+          'dump' => '0',
+          'pass' => '0',
+        },
+        'proc' => {
+          'mount_point' => '/proc',
+          'type' => 'proc',
+          'opts' => 'defaults',
+          'dump' => '0',
+          'pass' => '0',
+        },
+        'tmpfs' => {
+          'mount_point' => '/dev/shm',
+          'type' => 'tmpfs',
+          'opts' => 'defaults,size=4G',
+          'dump' => '0',
+          'pass' => '0',
+        },
+      }
+    end
+    before do
+      node.default[attr_name]['by_device'] = {
+        '/dev/sda1' => {
+          'mounts' => ['/'],
+          'fs_type' => 'ext4',
+          'uuid' => '28137926-9c39-44c0-90d3-3b158fc97ff9',
+          'label' => '/',
+        },
+        '/dev/sda2' => {
+          'mounts' => ['/boot'],
+          'fs_type' => 'ext3',
+          'uuid' => '9ebfe8b9-c188-4cda-8383-393deb0ac59c',
+          'label' => '/boot',
+        },
+        '/dev/sda3' => {
+          'fs_type' => 'swap',
+          'uuid' => '2ace4f5f-c8c5-4d3a-a027-d12076bdab0c',
+        },
+      }
+      node.default['fb_fstab']['mounts'] = {}
+      node.default['fb_swap']['enabled'] = true
+    end
+    it 'should parse base mounts correctly' do
+      expect(File).to receive(:read).with(FB::Fstab::BASE_FILENAME).
+        and_return(base_contents)
+      m = FB::Fstab.get_unmasked_base_mounts(:hash, node)
+      m.should eq(default_ret)
+      m = FB::Fstab.get_unmasked_base_mounts(:lines, node).join("\n") + "\n"
+      m.should eq(base_contents)
+    end
+    it 'should drop swap if masked' do
+      expect(File).to receive(:read).with(FB::Fstab::BASE_FILENAME).
+        and_return(base_contents)
+      node.default['fb_fstab']['exclude_base_swap'] = true
+      m = FB::Fstab.get_unmasked_base_mounts(:hash, node)
+      default_ret.delete('/dev/sda3')
+      m.should eq(default_ret)
+    end
+    it 'should not return overridden mounts' do
+      expect(File).to receive(:read).with(FB::Fstab::BASE_FILENAME).
+        and_return(base_contents)
+      node.default['fb_fstab']['mounts'] = {
+        'phild override' => {
+          'device' => '/dev/sda1',
+          'mount_point' => '/',
+          'type' => 'ext4',
+          'opts' => 'defaults,discard,noatume',
+          'dump' => '1',
+          'pass' => '1',
+        },
+      }
+      m = FB::Fstab.get_unmasked_base_mounts(:hash, node)
+      default_ret.delete('/dev/sda1')
+      m.should eq(default_ret)
+    end
+    it 'should raise an exception if base has bad label' do
+      contents = base_contents +
+        "LABEL=nonexistent / ext4 opts 0 0\n"
+      expect(File).to receive(:read).with(FB::Fstab::BASE_FILENAME).
+        and_return(contents)
+      expect { FB::Fstab.get_unmasked_base_mounts(:hash, node) }.
+        to raise_error(RuntimeError)
+    end
+    it 'should not raise an exception if base has bad UUID overwridden' do
+      contents = base_contents +
+        "UUID=nonexistent / ext4 opts 0 0\n"
+      expect(File).to receive(:read).with(FB::Fstab::BASE_FILENAME).
+        and_return(contents)
+      node.default['fb_fstab']['mounts'] = {
+        'phild override' => {
+          'device' => 'LABEL=/',
+          'mount_point' => '/',
+          'type' => 'ext4',
+          'opts' => 'defaults,discard,noatume',
+          'dump' => '1',
+          'pass' => '1',
+        },
+      }
+      m = FB::Fstab.get_unmasked_base_mounts(:hash, node)
+      default_ret.delete('/dev/sda1')
+      m.should eq(default_ret)
+    end
+    it 'should raise an exception if user specifies bad label' do
+      expect(File).to receive(:read).with(FB::Fstab::BASE_FILENAME).
+        and_return(base_contents)
+      node.default['fb_fstab']['mounts'] = {
+        'phild mount' => {
+          'device' => 'LABEL=nonexistent',
+          'mount_point' => '/stuff',
+          'type' => 'ext4',
+          'opts' => 'defaults,discard,noatume',
+          'dump' => '1',
+          'pass' => '1',
+        },
+      }
+      expect { FB::Fstab.get_unmasked_base_mounts(:hash, node) }.
+        to raise_error(RuntimeError)
+    end
+    it 'should not raise an exception if user specifies bad label and' +
+       'allow_failure' do
+      expect(File).to receive(:read).with(FB::Fstab::BASE_FILENAME).
+        and_return(base_contents)
+      node.default['fb_fstab']['mounts'] = {
+        'phild mount' => {
+          'device' => 'LABEL=nonexistent',
+          'mount_point' => '/stuff',
+          'type' => 'ext4',
+          'opts' => 'defaults,discard,noatume',
+          'dump' => '1',
+          'pass' => '1',
+          'allow_mount_failure' => true,
+        },
+      }
+      m = FB::Fstab.get_unmasked_base_mounts(:hash, node)
+      m.should eq(default_ret)
+    end
+  end
 end
 
 describe 'FB::FstabProvider', :include_provider do
-  # rubocop:disable LineLength
-  base_contents = <<EOF
-UUID=28137926-9c39-44c0-90d3-3b158fc97ff9 /                       ext4    defaults,discard 1 1
-LABEL=/boot /boot                   ext3    defaults        1 2
-UUID=2ace4f5f-c8c5-4d3a-a027-d12076bdab0c swap                    swap    defaults        0 0
-devpts                  /dev/pts                devpts  gid=5,mode=620  0 0
-sysfs                   /sys                    sysfs   defaults        0 0
-proc                    /proc                   proc    defaults        0 0
-tmpfs /dev/shm tmpfs defaults,size=4G 0 0
-EOF
+  include FB::FstabProvider
+
   # rubocop:enable LineLength
   let(:node) { Chef::Node.new }
+  let(:attr_name) do
+    if node['filesystem2']
+      'filesystem2'
+    else
+      'filesystem'
+    end
+  end
   before do
-    node.default['filesystem2'] = {
+    node.default[attr_name] = {
       'by_pair' => {},
       'by_device' => {},
       'by_mountpoint' => {},
@@ -214,53 +397,125 @@ EOF
   end
 
   context 'compare_opts' do
+    before(:each) do
+      node.default['fb_fstab']['ignorable_opts'] = []
+    end
     it 'should find identical things identical' do
-      compare_opts('rw,size=1G', 'rw,size=1G').should eq(true)
+      compare_opts(
+        'rw,size=1G',
+        'rw,size=1G',
+      ).should eq(true)
     end
     it 'should find different-order strings identical' do
-      compare_opts('size=1G,rw', 'rw,size=1G').should eq(true)
+      compare_opts(
+        'size=1G,rw',
+        'rw,size=1G',
+      ).should eq(true)
     end
     it 'should find arrays and strings identical' do
-      compare_opts('rw,size=1G', ['size=1G', 'rw']).should eq(true)
+      compare_opts(
+        'rw,size=1G',
+        ['size=1G', 'rw'],
+      ).should eq(true)
     end
     it 'should treat missing-rw opts as identical' do
-      compare_opts('size=1G', ['size=1G', 'rw']).should eq(true)
+      compare_opts(
+        'size=1G',
+        ['size=1G', 'rw'],
+      ).should eq(true)
     end
     it 'should not treat ro and rw as the same' do
-      compare_opts('size=1G,ro', ['size=1G', 'rw']).should eq(false)
+      compare_opts(
+        'size=1G,ro',
+        ['size=1G', 'rw'],
+      ).should eq(false)
     end
     it 'should handle arrays the same' do
-      compare_opts(['size=1G'], ['size=1G', 'rw']).should eq(true)
+      compare_opts(
+        ['size=1G'],
+        ['size=1G', 'rw'],
+      ).should eq(true)
     end
     it 'should catch different sizes as different opts' do
-      compare_opts(['rw', 'size=2G'], ['size=1G', 'rw']).should eq(false)
+      compare_opts(
+        ['rw', 'size=2G'],
+        ['size=1G', 'rw'],
+      ).should eq(false)
+    end
+    it 'should honor ignored string opts' do
+      node.default['fb_fstab']['ignorable_opts'] << 'nofail'
+      compare_opts(
+        ['rw', 'nofail', 'noatime'],
+        ['rw', 'noatime'],
+      ).should eq(true)
+    end
+    it 'should honor ignored regex opts' do
+      node.default['fb_fstab']['ignorable_opts'] << /^addr=.*/
+      compare_opts(
+        ['rw', 'addr=10.0.0.1', 'noatime'],
+        ['rw', 'noatime'],
+      ).should eq(true)
+    end
+    it 'should normalize size opts' do
+      compare_opts(
+        'size=4K',
+        'size=4096',
+      ).should eq(true)
+      compare_opts(
+        'size=4M',
+        'size=4194304',
+      ).should eq(true)
+      compare_opts(
+        'size=4g',
+        'size=4294967296',
+      ).should eq(true)
+      compare_opts(
+        'size=4t',
+        'size=4398046511104',
+      ).should eq(true)
+    end
+    it 'should treat sizes it does not understand as opaque' do
+      compare_opts(
+        'size=4L',
+        'size=4L',
+      ).should eq(true)
+      compare_opts(
+        'size=4L',
+        'size=4',
+      ).should eq(false)
+      compare_opts(
+        'size=4L',
+        'size=4T',
+      ).should eq(false)
+    end
+    it 'should not normalize different values to be the same' do
+      compare_opts(
+        'size=4K',
+        'size=4000',
+      ).should eq(false)
     end
   end
 
   context 'compare_fstype' do
+    before(:each) do
+      node.default['fb_fstab']['type_normalization_map'] = {}
+    end
     it 'should see identical types as identical' do
       compare_fstype('xfs', 'xfs').should eq(true)
     end
-    it 'should not see auto as identical to anything except itself' do
-      compare_fstype('autofs', 'xfs').should eq(false)
+    it 'should not see auto as the same as anything else' do
+      compare_fstype('xfs', 'auto').should eq(false)
     end
-    it 'should not see different filesystems as the same' do
-      compare_fstype('ext4', 'ext3').should eq(false)
-    end
-  end
-
-  context 'fstype_sameish' do
-    it 'should see identical types as identical' do
-      fstype_sameish('xfs', 'xfs').should eq(true)
-    end
-    it 'should see auto as the same as anything' do
-      fstype_sameish('xfs', 'auto').should eq(true)
-    end
-    it 'should see auto as the same as anything - left' do
-      fstype_sameish('auto', 'ext4').should eq(true)
+    it 'should not see auto as the same as anything else - left' do
+      compare_fstype('auto', 'ext4').should eq(false)
     end
     it 'should see different things as different' do
-      fstype_sameish('xfs', 'ext4').should eq(false)
+      compare_fstype('xfs', 'ext4').should eq(false)
+    end
+    it 'should normalize types according to the map' do
+      node.default['fb_fstab']['type_normalization_map']['fuse.gluster'] =
+        'gluster'
+      compare_fstype('fuse.gluster', 'gluster')
     end
   end
 
@@ -338,7 +593,7 @@ EOF
       ).should eq(false)
     end
     it 'should keep autofs-parented mounts' do
-      node.default['filesystem2']['by_pair']['auto.waka,/foo'] = {
+      node.default[attr_name]['by_pair']['auto.waka,/foo'] = {
         'device' => 'auto.waka',
         'mount' => '/foo',
         'fs_type' => 'autofs',
@@ -354,7 +609,7 @@ EOF
       ).should eq(true)
     end
     it 'should keep autofs-parented mounts - non NFS' do
-      node.default['filesystem2']['by_pair']['auto.waka,/foo'] = {
+      node.default[attr_name]['by_pair']['auto.waka,/foo'] = {
         'device' => 'auto.waka',
         'mount' => '/foo',
         'fs_type' => 'autofs',
@@ -370,7 +625,7 @@ EOF
       ).should eq(true)
     end
     it 'should not keep non-autofs-parented NFS mounts' do
-      node.default['filesystem2']['by_pair']['auto.waka,/foo'] = {
+      node.default[attr_name]['by_pair']['auto.waka,/foo'] = {
         'device' => 'auto.waka',
         'mount' => '/foo',
         'fs_type' => 'autofs',
@@ -386,79 +641,19 @@ EOF
       ).should eq(false)
     end
   end
-  context 'get_base_mounts' do
-    it 'should parse base mounts correctly' do
-      node.default['filesystem2']['by_device'] = {
-        '/dev/sda1' => {
-          'mounts' => ['/'],
-          'fs_type' => 'ext4',
-          'uuid' => '28137926-9c39-44c0-90d3-3b158fc97ff9',
-          'label' => '/',
-        },
-        '/dev/sda2' => {
-          'mounts' => ['/boot'],
-          'fs_type' => 'ext3',
-          'uuid' => '9ebfe8b9-c188-4cda-8383-393deb0ac59c',
-          'label' => '/boot',
-        },
-        '/dev/sda3' => {
-          'fs_type' => 'swap',
-          'uuid' => '2ace4f5f-c8c5-4d3a-a027-d12076bdab0c',
-        },
-      }
-      File.should_receive(:read).with(FB::Fstab::BASE_FILENAME).
-        and_return(base_contents)
-      m = get_base_mounts
-      m.should eq(
-        {
-          '/dev/sda1' => {
-            'mount_point' => '/',
-            'type' => 'ext4',
-            'opts' => 'defaults,discard',
-          },
-          '/dev/sda2' => {
-            'mount_point' => '/boot',
-            'type' => 'ext3',
-            'opts' => 'defaults',
-          },
-          '/dev/sda3' => {
-            'mount_point' => 'swap',
-            'type' => 'swap',
-            'opts' => 'defaults',
-          },
-          'devpts' => {
-            'mount_point' => '/dev/pts',
-            'type' => 'devpts',
-            'opts' => 'gid=5,mode=620',
-          },
-          'sysfs' => {
-            'mount_point' => '/sys',
-            'type' => 'sysfs',
-            'opts' => 'defaults',
-          },
-          'proc' => {
-            'mount_point' => '/proc',
-            'type' => 'proc',
-            'opts' => 'defaults',
-          },
-          'tmpfs' => {
-            'mount_point' => '/dev/shm',
-            'type' => 'tmpfs',
-            'opts' => 'defaults,size=4G',
-          },
-        },
-      )
-    end
-  end
   context 'tmpfs_mount_status' do
+    before(:each) do
+      node.default['fb_fstab']['ignorable_opts'] = []
+      node.default['fb_fstab']['type_normalization_map'] = {}
+    end
     it 'should detect oldschool tmpfs as the same' do
-      node.default['filesystem2']['by_pair']['tmpfs,/mnt/waka'] = {
+      node.default[attr_name]['by_pair']['tmpfs,/mnt/waka'] = {
         'device' => 'tmpfs',
         'mount' => '/mnt/waka',
         'fs_type' => 'tmpfs',
         'mount_options' => ['size=100M', 'rw'],
       }
-      node.default['filesystem2']['by_mountpoint']['/mnt/waka'] = {
+      node.default[attr_name]['by_mountpoint']['/mnt/waka'] = {
         'devices' => ['tmpfs'],
         'fs_type' => 'tmpfs',
         'mount_options' => ['size=100M', 'rw'],
@@ -475,10 +670,12 @@ EOF
         'fb_fstab: Treating ["tmpfs"] on /mnt/waka the same as awesomesauce ' +
         'on /mnt/waka because they are both tmpfs.',
       )
-      tmpfs_mount_status(desired_mounts['awesomemount']).should eq(:same)
+      tmpfs_mount_status(
+        desired_mounts['awesomemount'],
+      ).should eq(:same)
     end
     it 'should detect identical filesystems as such' do
-      node.default['filesystem2']['by_pair']['awesomesauce,/mnt/waka'] = {
+      node.default[attr_name]['by_pair']['awesomesauce,/mnt/waka'] = {
         'device' => 'awesomesauce',
         'mount' => '/mnt/waka',
         'fs_type' => 'tmpfs',
@@ -492,10 +689,12 @@ EOF
           'opts' => 'size=100M,rw',
         },
       }
-      tmpfs_mount_status(desired_mounts['awesomemount']).should eq(:same)
+      tmpfs_mount_status(
+        desired_mounts['awesomemount'],
+      ).should eq(:same)
     end
     it 'should detect remounts' do
-      node.default['filesystem2']['by_pair']['awesomesauce,/mnt/waka'] = {
+      node.default[attr_name]['by_pair']['awesomesauce,/mnt/waka'] = {
         'device' => 'awesomesauce',
         'mount' => '/mnt/waka',
         'fs_type' => 'tmpfs',
@@ -509,16 +708,18 @@ EOF
           'opts' => 'size=200M,rw',
         },
       }
-      tmpfs_mount_status(desired_mounts['awesomemount']).should eq(:remount)
+      tmpfs_mount_status(
+        desired_mounts['awesomemount'],
+      ).should eq(:remount)
     end
     it 'should detect conflict' do
-      node.default['filesystem2']['by_pair']['/dev/sdc1,/mnt/waka'] = {
+      node.default[attr_name]['by_pair']['/dev/sdc1,/mnt/waka'] = {
         'device' => '/dev/sdc1',
         'mount' => '/mnt/waka',
         'fs_type' => 'tmpfs',
         'mount_options' => ['size=100M', 'rw'],
       }
-      node.default['filesystem2']['by_mountpoint']['/mnt/waka'] = {
+      node.default[attr_name]['by_mountpoint']['/mnt/waka'] = {
         'device' => '/dev/sdc1',
         'mount' => '/mnt/waka',
         'fs_type' => 'xfs',
@@ -532,10 +733,12 @@ EOF
           'opts' => 'size=200M,rw',
         },
       }
-      tmpfs_mount_status(desired_mounts['awesomemount']).should eq(:conflict)
+      tmpfs_mount_status(
+        desired_mounts['awesomemount'],
+      ).should eq(:conflict)
     end
     it 'should detect missing fs' do
-      node.default['filesystem2'] = {
+      node.default[attr_name] = {
         'by_pair' => {},
         'by_device' => {},
         'by_mountpoint' => {},
@@ -548,12 +751,18 @@ EOF
           'opts' => 'size=200M,rw',
         },
       }
-      tmpfs_mount_status(desired_mounts['awesomemount']).should eq(:missing)
+      tmpfs_mount_status(
+        desired_mounts['awesomemount'],
+      ).should eq(:missing)
     end
   end
   context 'mount_status' do
+    before(:each) do
+      node.default['fb_fstab']['ignorable_opts'] = []
+      node.default['fb_fstab']['type_normalization_map'] = {}
+    end
     it 'should detect identical mounts as such' do
-      node.default['filesystem2']['by_pair']['/dev/sdd1,/mnt/d0'] = {
+      node.default[attr_name]['by_pair']['/dev/sdd1,/mnt/d0'] = {
         'device' => '/dev/sdd1',
         'mount' => '/mnt/d0',
         'fs_type' => 'xfs',
@@ -567,10 +776,12 @@ EOF
           'opts' => 'rw,noatime',
         },
       }
-      mount_status(desired_mounts['awesomemount']).should eq(:same)
+      mount_status(
+        desired_mounts['awesomemount'],
+      ).should eq(:same)
     end
     it 'should detect remount needed' do
-      node.default['filesystem2']['by_pair']['/dev/sdd1,/mnt/d0'] = {
+      node.default[attr_name]['by_pair']['/dev/sdd1,/mnt/d0'] = {
         'device' => '/dev/sdd1',
         'mount' => '/mnt/d0',
         'fs_type' => 'xfs',
@@ -584,16 +795,18 @@ EOF
           'opts' => 'rw,noatime',
         },
       }
-      mount_status(desired_mounts['awesomemount']).should eq(:remount)
+      mount_status(
+        desired_mounts['awesomemount'],
+      ).should eq(:remount)
     end
     it 'should detect moved filesystems - with different opts' do
-      node.default['filesystem2']['by_pair']['/dev/sdd1,/mnt/d0'] = {
+      node.default[attr_name]['by_pair']['/dev/sdd1,/mnt/d0'] = {
         'device' => '/dev/sdd1',
         'mount' => '/mnt/d0',
         'fs_type' => 'xfs',
         'mount_options' => ['rw'],
       }
-      node.default['filesystem2']['by_device']['/dev/sdd1'] = {
+      node.default[attr_name]['by_device']['/dev/sdd1'] = {
         'mounts' => ['/mnt/d0'],
         'fs_type' => 'xfs',
         'mount_options' => ['rw'],
@@ -606,10 +819,31 @@ EOF
           'opts' => 'rw,noatime',
         },
       }
-      mount_status(desired_mounts['awesomemount']).should eq(:moved)
+      mount_status(
+        desired_mounts['awesomemount'],
+      ).should eq(:moved)
+    end
+    it 'should detect handle auto as not an fstype conflict' do
+      node.default[attr_name]['by_pair']['/dev/sdd1,/mnt/d0'] = {
+        'device' => '/dev/sdd1',
+        'mount' => '/mnt/d0',
+        'fs_type' => 'auto',
+        'mount_options' => ['rw', 'noatime'],
+      }
+      desired_mounts = {
+        'awesomemount' => {
+          'device' => '/dev/sdd1',
+          'mount_point' => '/mnt/d0',
+          'type' => 'ext4',
+          'opts' => 'rw,noatime',
+        },
+      }
+      mount_status(
+        desired_mounts['awesomemount'],
+      ).should eq(:same)
     end
     it 'should detect fstype conflict - with different opts' do
-      node.default['filesystem2']['by_pair']['/dev/sdd1,/mnt/d0'] = {
+      node.default[attr_name]['by_pair']['/dev/sdd1,/mnt/d0'] = {
         'device' => '/dev/sdd1',
         'mount' => '/mnt/d0',
         'fs_type' => 'xfs',
@@ -623,21 +857,23 @@ EOF
           'opts' => 'rw,noatime',
         },
       }
-      mount_status(desired_mounts['awesomemount']).should eq(:conflict)
+      mount_status(
+        desired_mounts['awesomemount'],
+      ).should eq(:conflict)
     end
     it 'should detect something-already-there conflict' do
-      node.default['filesystem2']['by_pair']['/dev/sdd1,/mnt/d0'] = {
+      node.default[attr_name]['by_pair']['/dev/sdd1,/mnt/d0'] = {
         'device' => '/dev/sdd1',
         'mount' => '/mnt/d0',
         'fs_type' => 'xfs',
         'mount_options' => ['rw', 'noatime'],
       }
-      node.default['filesystem2']['by_device']['/dev/sdd1'] = {
+      node.default[attr_name]['by_device']['/dev/sdd1'] = {
         'mounts' => ['/mnt/d0'],
         'fs_type' => 'xfs',
         'mount_options' => ['rw', 'noatime'],
       }
-      node.default['filesystem2']['by_mountpoint']['/mnt/d0'] = {
+      node.default[attr_name]['by_mountpoint']['/mnt/d0'] = {
         'devices' => ['/dev/sdd1'],
         'fs_type' => 'xfs',
         'mount_options' => ['rw', 'noatime'],
@@ -650,10 +886,12 @@ EOF
           'opts' => 'rw,noatime',
         },
       }
-      mount_status(desired_mounts['awesomemount']).should eq(:conflict)
+      mount_status(
+        desired_mounts['awesomemount'],
+      ).should eq(:conflict)
     end
     it 'should detect missing filesystems' do
-      node.default['filesystem2']['by_pair']['/dev/sda1,/mnt/waka'] = {
+      node.default[attr_name]['by_pair']['/dev/sda1,/mnt/waka'] = {
         'device' => '/dev/sda1',
         'mount' => '/mnt/waka',
         'fs_type' => 'xfs',
@@ -667,10 +905,12 @@ EOF
           'opts' => 'rw,noatime',
         },
       }
-      mount_status(desired_mounts['awesomemount']).should eq(:missing)
+      mount_status(
+        desired_mounts['awesomemount'],
+      ).should eq(:missing)
     end
     it 'should detect missing filesystems even if device is in ohai' do
-      node.default['filesystem2']['by_pair'] = {
+      node.default[attr_name]['by_pair'] = {
         '/dev/sda1,/mnt/waka' => {
           'device' => '/dev/sda1',
           'mount' => '/mnt/waka',
@@ -685,7 +925,7 @@ EOF
           'label' => '/mnt/d0',
         },
       }
-      node.default['filesystem2']['by_device'] = {
+      node.default[attr_name]['by_device'] = {
         '/dev/sda1' => {
           'mounts' => ['/mnt/waka'],
           'fs_type' => 'xfs',
@@ -707,7 +947,9 @@ EOF
           'opts' => 'rw,noatime',
         },
       }
-      mount_status(desired_mounts['awesomemount']).should eq(:missing)
+      mount_status(
+        desired_mounts['awesomemount'],
+      ).should eq(:missing)
     end
   end
   context 'mount' do
@@ -718,7 +960,8 @@ EOF
         'type' => 'xfs',
         'opts' => 'rw,noatime',
       }
-      File.should_receive(:exists?).with(desired_mount['mount_point']).
+      expect(node).to receive(:systemd?).and_return(false)
+      File.should_receive(:exist?).with(desired_mount['mount_point']).
         and_return(true)
       so = double('FSshell_out1')
       so.should_receive(:run_command).and_return(so)
@@ -729,6 +972,33 @@ EOF
       ).and_return(so)
       mount(desired_mount, []).should eq(true)
     end
+    it 'should attempt to mount by systemd mount unit on systemd hosts' do
+      desired_mount = {
+        'device' => '/dev/sdd1',
+        'mount_point' => '/mnt/d0',
+        'type' => 'xfs',
+        'opts' => 'rw,noatime',
+      }
+      expect(node).to receive(:systemd?).and_return(true)
+      File.should_receive(:exist?).with(desired_mount['mount_point']).
+        and_return(true)
+      so = double('FSshell_out2')
+      so.should_receive(:run_command).and_return(so)
+      so.should_receive(:error!).and_return(nil)
+      so.should_receive(:stdout).and_return('thisisaunit')
+      so2 = double('FSshell_out1')
+      so2.should_receive(:run_command).and_return(so2)
+      so2.should_receive(:error?).and_return(false)
+      so2.should_receive(:error!).and_return(nil)
+      Mixlib::ShellOut.should_receive(:new).with(
+        "/bin/systemd-escape -p --suffix=mount #{desired_mount['mount_point']}",
+      ).and_return(so)
+
+      Mixlib::ShellOut.should_receive(:new).with(
+        '/bin/systemctl start thisisaunit',
+      ).and_return(so2)
+      mount(desired_mount, []).should eq(true)
+    end
     it 'should raise failures on mount failure' do
       desired_mount = {
         'device' => '/dev/sdd1',
@@ -736,7 +1006,8 @@ EOF
         'type' => 'xfs',
         'opts' => 'rw,noatime',
       }
-      File.should_receive(:exists?).with(desired_mount['mount_point']).
+      expect(node).to receive(:systemd?).and_return(false)
+      File.should_receive(:exist?).with(desired_mount['mount_point']).
         and_return(true)
       so = double('FSshell_out2')
       so.should_receive(:run_command).and_return(so)
@@ -757,7 +1028,8 @@ EOF
         'opts' => 'rw,noatime',
         'allow_mount_failure' => true,
       }
-      File.should_receive(:exists?).with(desired_mount['mount_point']).
+      expect(node).to receive(:systemd?).and_return(false)
+      File.should_receive(:exist?).with(desired_mount['mount_point']).
         and_return(true)
       so = double('FSshell_out3')
       so.should_receive(:run_command).and_return(so)
@@ -789,7 +1061,8 @@ EOF
         'mp_owner' => 'nobody',
         'mp_group' => 'nobody',
       }
-      File.should_receive(:exists?).with(desired_mount['mount_point']).
+      expect(node).to receive(:systemd?).and_return(false)
+      File.should_receive(:exist?).with(desired_mount['mount_point']).
         and_return(false)
       FileUtils.should_receive(:mkdir_p).with(desired_mount['mount_point'],
                                               :mode => 0755).and_return(true)

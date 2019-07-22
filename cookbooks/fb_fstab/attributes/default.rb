@@ -3,15 +3,24 @@
 # Copyright (c) 2016-present, Facebook, Inc.
 # All rights reserved.
 #
-# This source code is licensed under the BSD-style license found in the
-# LICENSE file in the root directory of this source tree. An additional grant
-# of patent rights can be found in the PATENTS file in the same directory.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
 
 default['fb_fstab'] = {
   'mounts' => {},
   'enable_remount' => false,
   'enable_unmount' => false,
+  'allow_lazy_umount' => false,
   'umount_ignores' => {
     'devices' => [
       # Various virtualFSes
@@ -42,25 +51,52 @@ default['fb_fstab'] = {
     'types' => [
       # Core OS stuff to never umount...
       'autofs',
-      'swap',
-      'usbfs',
       'binfmt_misc',
-      'sysfs',
+      'cgroup', # sub-cgroup mounts will have this type. See comment above.
+      'configfs',
+      'efivarfs',
+      'hugetlbfs', # hugepages
+      'mqueue', # POSIX queues
       'proc',
-      # sub-cgroup mounts will have this type. See comment above.
-      'cgroup',
+      'swap',
+      'sysfs',
+      'tracefs', # kernel debugging
+      'usbfs',
     ],
     'mount_points' => [
       # Core OS stuff to never umount...
+      '/dev/shm',
       '/run',
+      '/sys/fs/cgroup',
+      '/sys/fs/selinux',
       # Debian-isms
       '/run/shm',
       '/run/lock',
-      '/run/user',
       '/sys/fs/pstore',
       '/sys/kernel/debug',
       '/sys/kernel/security',
       '/sys/fs/fuse/connections',
     ],
+    'mount_point_prefixes' => [
+      '/run/user',
+    ],
   },
+  'type_normalization_map' => {
+    # Gluster is mounted as '-t gluster', but shows up as 'fuse.gluster'
+    # ... is this true for all FUSE FSes? Dunno...
+    'fuse.gluster' => 'gluster',
+  },
+  'ignorable_opts' => [
+    # seclabel is something the kernel hands you to signify if it's on,
+    # not an option you pass in, and thus shouldn't be part of the comparison
+    'seclabel',
+    # nofail is an option you pass in to fstab, but not an option
+    # that gets passed to the kernel, therefore you won't see it in the mount
+    # options and can't use it in the comparison
+    'nofail',
+    # NFS sometimes automatically adds addr=<server_ip> here automagically,
+    # which doesn't affect the mount, so don't compare it.
+    /^(mount)?(addr|port|proto)=.*/,
+  ],
+  'exclude_base_swap' => false,
 }
