@@ -2,19 +2,33 @@
 # Copyright (c) 2016-present, Facebook, Inc.
 # All rights reserved.
 #
-# This source code is licensed under the BSD-style license found in the
-# LICENSE file in the root directory of this source tree. An additional grant
-# of patent rights can be found in the PATENTS file in the same directory.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
 
 module FB
   # Module to be loaded into the provider namespace
   module FstabProvider
     def mount(mount_data, in_maint_disks)
-      if in_maint_disks.include?(mount_data['device'])
+      relevant_disk = nil
+      if in_maint_disks.any? do |disk|
+        if mount_data['device'].start_with?(disk)
+          relevant_disk = disk
+          next true
+        end
+      end
         Chef::Log.warn(
           "fb_fstab: Skipping mount of #{mount_data['mount_point']} because " +
-          " device #{mount_data['device']} is marked as in-maintenance",
+          " device #{relevant_disk} is marked as in-maintenance",
         )
         return true
       end
@@ -27,7 +41,7 @@ module FB
       # Further, because we're called in a 'converge' block, this is whyrun
       # safe, just like the Mixlib::ShellOut below.
       Chef::Log.info("fb_fstab: Mounting #{mount_data['mount_point']}")
-      if ::File.exists?(mount_data['mount_point'])
+      if ::File.exist?(mount_data['mount_point'])
         if ::File.symlink?(mount_data['mount_point'])
           if mount_data['allow_mount_failure']
             msg = "fb_fstab: #{mount_data['mount_point']} is a symlink. " +
@@ -52,19 +66,55 @@ module FB
           FileUtils.chown(mount_data['mp_owner'], mount_data['mp_group'],
                           mount_data['mount_point'])
         end
+        if mount_data['mp_immutable']
+          readme = File.join(mount_data['mount_point'], 'README.txt')
+          readme_body = 'This directory was created by chef to be an ' +
+            'immutable mountpoint.  If you can see this, ' +
+            "the mount is missing!\n"
+          File.open(readme, 'w') do |f| # ~FB030
+            f.write(readme_body)
+          end
+          s = Mixlib::ShellOut.new(
+            "/bin/chattr +i #{mount_data['mount_point']}",
+          ).run_command
+          s.error!
+        end
       end
-      # We cd into /dev/shm because otherwise mount will be dumb and
-      # change the device of 'foo' to be '/foo' if /foo happens to exist.
-      #
-      # I COULD call --no-canonicalize except that when /bin/mount calls
-      # /sbin/mount.tmpfs, it won't preserve that option, and then calls
-      # /bin/mount -i without it and it's canonicalized anyway. Further on
-      # other FS's --no-canonicalize may not be safe. THUS, we cd to a place
-      # that should be emptyish.
-      s = Mixlib::ShellOut.new(
-        "cd /dev/shm && /bin/mount #{mount_data['mount_point']}",
-      )
-      s.run_command
+      if node.systemd?
+        # If you use FUSE mounts, and you're running Chef from a systemd timer,
+        # the FUSE helpers will be killed after a chef run, which unmounts your
+        # filesystem, which is clearly not what you want. So we instead want to
+        # ask systemd to do the mount for us. The cleanest way to do that is to
+        # ask systemd what it's generated unit for that mount is and then
+        # "start" that unit.
+        #
+        # HOWEVER!!!! NOTE WELL!!!!
+        # If you don't do a `systemctl daemon-reload` after updating /etc/fstab,
+        # then this won't be guaranteed to mount the right thing, so we have
+        # that notify in the recipe
+        s = Mixlib::ShellOut.new(
+          "/bin/systemd-escape -p --suffix=mount #{mount_data['mount_point']}",
+        ).run_command
+        s.error!
+        mountunit = s.stdout.chomp.shellescape
+        s = Mixlib::ShellOut.new("/bin/systemctl start #{mountunit}")
+      else
+        # We cd into /dev/shm because otherwise mount will be dumb and
+        # change the device of 'foo' to be '/foo' if /foo happens to exist.
+        #
+        # I COULD call --no-canonicalize except that when /bin/mount calls
+        # /sbin/mount.tmpfs, it won't preserve that option, and then calls
+        # /bin/mount -i without it and it's canonicalized anyway. Further on
+        # other FS's --no-canonicalize may not be safe. THUS, we cd to a place
+        # that should be emptyish.
+        s = Mixlib::ShellOut.new(
+          "cd /dev/shm && /bin/mount #{mount_data['mount_point']}",
+        )
+      end
+
+      _run_command_flocked(s,
+                           mount_data['lock_file'],
+                           mount_data['mount_point'])
       if s.error? && mount_data['allow_mount_failure']
         Chef::Log.warn(
           "fb_fstab: Mounting #{mount_data['mount_point']} failed, but " +
@@ -76,53 +126,40 @@ module FB
       true
     end
 
-    def umount(mount_point)
+    def umount(mount_point, lock_file)
       Chef::Log.info("fb_fstab: Unmounting #{mount_point}")
       s = Mixlib::ShellOut.new("/bin/umount #{mount_point}")
-      s.run_command
-      s.error!
+      _run_command_flocked(s, lock_file, mount_point)
+      if s.error? && node['fb_fstab']['allow_lazy_umount']
+        Chef::Log.warn("fb_fstab: #{s.stderr.chomp}")
+        Chef::Log.warn(
+          "fb_fstab: Unmounting #{mount_point} failed, " +
+          'trying lazy unmount.',
+        )
+        sl = Mixlib::ShellOut.new("/bin/umount -l #{mount_point}")
+        _run_command_flocked(sl, lock_file, mount_point)
+      else
+        s.error!
+      end
+      true
     end
 
-    def remount(mount_point, with_umount)
+    def remount(mount_point, with_umount, lock_file)
       Chef::Log.info("fb_fstab: Remounting #{mount_point}")
       if with_umount
+        Chef::Log.debug("fb_fstab: umount and mounting #{mount_point}")
         cmd = "/bin/umount #{mount_point}; /bin/mount #{mount_point}"
       else
+        Chef::Log.debug("fb_fstab: 'mount -o remount' on #{mount_point}")
         cmd = "/bin/mount -o remount #{mount_point}"
       end
       s = Mixlib::ShellOut.new(cmd)
-      s.run_command
+      _run_command_flocked(s, lock_file, mount_point)
       s.error!
     end
 
-    def get_base_mounts
-      mounts = {}
-      ::File.read(FB::Fstab::BASE_FILENAME).each_line do |line|
-        next if line.strip.empty?
-        bits = line.split
-        begin
-          real_dev = canonicalize_device(bits[0])
-        rescue RuntimeError => e
-          # In the event that a label or UUID doesn't exist anymore,
-          # we'll want to let users set allow_mount_failure, if they want,
-          # so don't crash... and if they haven't overridden it, we'll fail
-          # later
-          if node['fb_fstab']['mounts'].to_hash.any? do |_key, val|
-               val['device'] == bits[0]
-             end
-            real_dev = bits[0]
-          else
-            raise e
-          end
-        end
-        mounts[real_dev] = {
-          'mount_point' => bits[1],
-          'type' => bits[2],
-          'opts' => bits[3],
-        }
-      end
-      Chef::Log.debug("fb_fstab: base mounts: #{mounts}")
-      mounts
+    def get_unmasked_base_mounts(format)
+      FB::Fstab.get_unmasked_base_mounts(format, node)
     end
 
     def canonicalize_device(device)
@@ -138,7 +175,7 @@ module FB
         "fb_fstab: Should we keep #{mounted_data}?",
       )
       # Does it look like something in desired mounts?
-      desired_mounts.each do |_, desired_data|
+      desired_mounts.each_value do |desired_data|
         begin
           desired_device = canonicalize_device(desired_data['device'])
         rescue RuntimeError
@@ -203,13 +240,17 @@ module FB
         node['fb_fstab']['umount_ignores']['device_prefixes'].dup
       mounts_to_skip =
         node['fb_fstab']['umount_ignores']['mount_points'].dup
+      mount_prefixes_to_skip =
+        node['fb_fstab']['umount_ignores']['mount_point_prefixes'].dup
       fstypes_to_skip = node['fb_fstab']['umount_ignores']['types'].dup
 
-      base_mounts = get_base_mounts
+      base_mounts = get_unmasked_base_mounts(:hash)
+
       # we're going to iterate over specified mounts a lot, lets dump it
       desired_mounts = node['fb_fstab']['mounts'].to_hash
 
-      node['filesystem2']['by_pair'].to_hash.each do |_pair, mounted_data|
+      fs_data = FB::Fstab.get_filesystem_data(node)
+      fs_data['by_pair'].to_hash.each_value do |mounted_data|
         # ohai uses many things to populate this structure, one of which
         # is 'blkid' which gives info on devices that are not currently
         # mounted. This skips those, plus swap, of course.
@@ -252,7 +293,15 @@ module FB
         end
           Chef::Log.debug(
             "fb_fstab: Skipping umount check for #{mounted_data['device']} " +
-            "(#{mounted_data['mount']}) - magic or unsupported",
+            "(#{mounted_data['mount']}) - exempted device prefix",
+          )
+          next
+        elsif mount_prefixes_to_skip.any? do |i|
+          mounted_data['mount'] && mounted_data['mount'].start_with?(i)
+        end
+          Chef::Log.debug(
+            "fb_fstab: Skipping umount check for #{mounted_data['device']} " +
+            "(#{mounted_data['mount']}) - exempted mount_point prefix",
           )
           next
         end
@@ -260,64 +309,88 @@ module FB
         # Is this device in our list of desired mounts?
         next if should_keep(mounted_data, desired_mounts, base_mounts)
 
-        if node['fb_fstab']['allow_umount']
+        if node['fb_fstab']['enable_unmount']
           converge_by "unmount #{mounted_data['mount']}" do
-            umount(mounted_data['mount'])
+            umount(mounted_data['mount'], mounted_data['lock_file'])
           end
         else
           Chef::Log.warn(
             "fb_fstab: Would umount #{mounted_data['device']} from " +
             "#{mounted_data['mount']}, but " +
-            'node["fb"]["fb_fstab"]["allow_umount"] is false',
+            'node["fb_fstab"]["enable_unmount"] is false',
           )
           Chef::Log.debug("fb_fstab: #{mounted_data}")
         end
       end
     end
 
-    # Compare fstype's for identicalness
-    def compare_fstype(type1, type2)
-      if type1 == type2 ||
-         # Gluster is mounted as '-t gluster', but shows up as 'fuse.gluster'
-         # ... is this true for all FUSE FSes? Dunno...
-         type1.sub('fuse.gluster', 'gluster') ==
-         type2.sub('fuse.gluster', 'gluster')
-        return true
+    def _normalize_type(type)
+      if node['fb_fstab']['type_normalization_map'][type]
+        return node['fb_fstab']['type_normalization_map'][type]
       end
-      false
+      type
     end
 
     # We consider a filesystem type the "same" if they are identical or if
     # one is auto.
-    def fstype_sameish(type1, type2)
-      if compare_fstype(type1, type2) || [type1, type2].include?('auto')
-        return true
+    def compare_fstype(type1, type2)
+      type1 == type2 || _normalize_type(type1) == _normalize_type(type2)
+    end
+
+    def delete_ignored_opts!(tlist)
+      ignorable_opts_s = node['fb_fstab']['ignorable_opts'].select do |x|
+        x.is_a?(::String)
       end
-      false
+      ignorable_opts_r = node['fb_fstab']['ignorable_opts'].select do |x|
+        x.is_a?(::Regexp)
+      end
+      tlist.delete_if do |x|
+        ignorable_opts_s.include?(x) ||
+          ignorable_opts_r.any? do |regex|
+            x =~ regex
+          end
+      end
+    end
+
+    # This translates human-readable size mount options into their
+    # canonical bytes form. I.e. "size=4G" into "size=4194304"
+    #
+    # Assumes it's really a size opt - validate before calling!
+    def translate_size_opt(opt)
+      val = opt.split('=').last
+      mag = val[-1].downcase
+      mags = ['k', 'm', 'g', 't']
+      return opt unless mags.include?(mag)
+      num = val[0..-2].to_i
+      mags.each do |d|
+        num *= 1024
+        return "size=#{num}" if mag == d
+      end
+      fail RangeError "fb_fstab: Failed to translate #{opt}"
+    end
+
+    def canonicalize_opts(opts)
+      # ensure both are arrays
+      optsl = opts.is_a?(Array) ? opts.dup : opts.split(',')
+      # 'rw' is implied, so if no readability is specified, add it to both,
+      # so missing on one if them doesn't cause a false-negative
+      optsl << 'rw' unless optsl.include?('ro') || optsl.include?('rw')
+      delete_ignored_opts!(optsl)
+      optsl.map! do |x|
+        x.start_with?('size=') ? translate_size_opt(x) : x
+      end
+
+      # sort
+      optsl.sort
     end
 
     # Take opts in a variety of forms, and compare them intelligently
     def compare_opts(opts1, opts2)
-      # ensure both are arrays
-      opts1l = opts1.is_a?(Array) ? opts1.dup : opts1.split(',')
-      opts2l = opts2.is_a?(Array) ? opts2.dup : opts2.split(',')
-
-      # 'rw' is implied, so if no readability is specified, add it to both,
-      # so missing on one if them doesn't cause a false-negative
-      opts1l << 'rw' unless opts1l.include?('ro') || opts1l.include?('rw')
-      opts2l << 'rw' unless opts2l.include?('ro') || opts2l.include?('rw')
-
-      # NFS sometimes automatically adds addr=<server_ip> here automagically,
-      # which doesn't affect the mount, so don't compare it.
-      opts1l.delete_if { |x| x.start_with?('addr=') }
-      opts2l.delete_if { |x| x.start_with?('addr=') }
-
-      # Sort them both
-      opts1l.sort!
-      opts2l.sort!
+      c1 = canonicalize_opts(opts1)
+      c2 = canonicalize_opts(opts2)
 
       # Check that they're the same
-      opts1l == opts2l
+      c1 == c2
     end
 
     # Given a tmpfs desired mount `desired` check to see what it's status is;
@@ -333,9 +406,10 @@ module FB
       # Start with checking if it was mounted the way we would mount it
       # this is ALMOST the same as the 'is it identical' check for non-tmpfs
       # filesystems except that with tmpfs we don't treat 'auto' as equivalent
+      fs_data = FB::Fstab.get_filesystem_data(node)
       key = "#{desired['device']},#{desired['mount_point']}"
-      if node['filesystem2']['by_pair'][key]
-        mounted = node['filesystem2']['by_pair'][key].to_hash
+      if fs_data['by_pair'][key]
+        mounted = fs_data['by_pair'][key].to_hash
         if mounted['fs_type'] == 'tmpfs'
           Chef::Log.debug(
             "fb_fstab: tmpfs #{desired['device']} on " +
@@ -345,7 +419,15 @@ module FB
             Chef::Log.debug('fb_fstab: ... with identical options.')
             return :same
           else
-            Chef::Log.debug('fb_fstab: ... with different options.')
+            Chef::Log.debug(
+              "fb_fstab: ... with different options #{desired['opts']} vs " +
+              mounted['mount_options'].join(','),
+            )
+            Chef::Log.info(
+              "fb_fstab: #{desired['mount_point']} is mounted with options " +
+              "#{canonicalize_opts(mounted['mount_options'])} instead of " +
+              canonicalize_opts(desired['opts']).to_s,
+            )
             return :remount
           end
         end
@@ -353,10 +435,9 @@ module FB
       # OK, if that's not the case, we don't have the same device, which
       # is OK. Find out if we have something mounted at the same spot, and
       # get its device name so we can find it's entry in node['filesystem']
-      if node['filesystem2']['by_mountpoint'][desired['mount_point']]
+      if fs_data['by_mountpoint'][desired['mount_point']]
         # If we are here the mountpoints are the same...
-        mounted =
-          node['filesystem2']['by_mountpoint'][desired['mount_point']].to_hash
+        mounted = fs_data['by_mountpoint'][desired['mount_point']].to_hash
         # OK, if it's tmpfs as well, we're diong good
         if mounted['fs_type'] == 'tmpfs'
           Chef::Log.warn(
@@ -377,6 +458,11 @@ module FB
               "fb_fstab: ... with different options #{desired['opts']} vs " +
               mounted['mount_options'].join(','),
             )
+            Chef::Log.info(
+              "fb_fstab: #{desired['mount_point']} is mounted with options " +
+              "#{canonicalize_opts(mounted['mount_options'])} instead of " +
+              canonicalize_opts(desired['opts']).to_s,
+            )
             return :remount
           end
         end
@@ -387,7 +473,7 @@ module FB
         )
         return :conflict
       end
-      return :missing
+      :missing
     end
 
     # Given a desired mount `desired` check to see what it's status is;
@@ -405,27 +491,28 @@ module FB
       end
 
       key = "#{desired['device']},#{desired['mount_point']}"
+      fs_data = FB::Fstab.get_filesystem_data(node)
       mounted = nil
-      if node['filesystem2']['by_pair'][key]
-        mounted = node['filesystem2']['by_pair'][key].to_hash
+      if fs_data['by_pair'][key]
+        mounted = fs_data['by_pair'][key].to_hash
       else
         key = "#{desired['device']}/,#{desired['mount_point']}"
-        if node['filesystem2']['by_pair'][key]
-          mounted = node['filesystem2']['by_pair'][key].to_hash
+        if fs_data['by_pair'][key]
+          mounted = fs_data['by_pair'][key].to_hash
         end
       end
 
       if mounted
         Chef::Log.debug(
-          "fb_fstab: There is an entry in node['filesystem2'] for #{key}",
+          "fb_fstab: There is an entry in node['filesystem'] for #{key}",
         )
         # If it's a virtual device, we require the fs type to be identical.
         # otherwise, we require them to be similar. This is because 'auto'
         # is meaningless without a physical device, so we don't want to allow
         # it to be the same.
-        if desired['type'] == mounted['fs_type'] ||
+        if compare_fstype(desired['type'], mounted['fs_type']) ||
            (desired['device'].start_with?('/') &&
-            fstype_sameish(desired['type'], mounted['fs_type']))
+            [desired['type'], mounted['fs_type']].include?('auto'))
           Chef::Log.debug(
             "fb_fstab: FS #{desired['device']} on #{desired['mount_point']}" +
             ' is currently mounted...',
@@ -437,6 +524,11 @@ module FB
             Chef::Log.debug(
               "fb_fstab: ... with different options #{desired['opts']} vs " +
               mounted['mount_options'].join(','),
+            )
+            Chef::Log.info(
+              "fb_fstab: #{desired['mount_point']} is mounted with options " +
+              "#{canonicalize_opts(mounted['mount_options'])} instead of " +
+              canonicalize_opts(desired['opts']).to_s,
             )
             return :remount
           end
@@ -455,7 +547,7 @@ module FB
       # once place, we look up this device and see if it moved or just isn't
       # mounted
       unless ['nfs', 'glusterfs'].include?(desired['type'])
-        device = node['filesystem2']['by_device'][desired['device']]
+        device = fs_data['by_device'][desired['device']]
         if device && device['mounts'] && !device['mounts'].empty?
           Chef::Log.warn(
             "fb_fstab: #{desired['device']} is at #{device['mounts']}, but" +
@@ -467,8 +559,8 @@ module FB
 
       # Ok, this device isn't mounted, but before we return we need to check
       # if anything else is mounted where we want to be.
-      if node['filesystem2']['by_mountpoint'][desired['mount_point']]
-        devices = node['filesystem2']['by_mountpoint'][
+      if fs_data['by_mountpoint'][desired['mount_point']]
+        devices = fs_data['by_mountpoint'][
             desired['mount_point']]['devices']
         Chef::Log.warn(
           "fb_fstab: Device #{desired['device']} desired at " +
@@ -481,17 +573,17 @@ module FB
     end
 
     def check_wanted_filesystems
-      # before we do anything... node['filesystem2'] is a mapping of devices
+      # before we do anything... node['filesystem'] is a mapping of devices
       # to mountpoint, but that won't work for things with a device of "none",
       # so build a reverse mapping too
       in_maint_disks = FB::Fstab.get_in_maint_disks
 
       # walk desired mounts, see if it's mounted, and mount/update
       # as appropriate.
-      node['fb_fstab']['mounts'].to_hash.each do |_, desired_data|
+      node['fb_fstab']['mounts'].to_hash.each_value do |desired_data|
         # Using "none" as a device is deprecated. You can use descriptive
         # strings now. Doing so is not only the new hotness, but it also
-        # prevents dupes in node['filesystem2'] - so we require it.
+        # prevents dupes in node['filesystem'] - so we require it.
         if desired_data['device'] == 'none'
           Chef::Log.warn('fb_fstab: We do not permit "none" devices, please ' +
                           'use a descriptive device name')
@@ -544,7 +636,8 @@ module FB
             Chef::Log.debug("fb_fstab: #{base_msg} - remounting")
             converge_by "remount #{desired_data['mount_point']}" do
               remount(desired_data['mount_point'],
-                      desired_data['remount_with_umount'])
+                      desired_data['remount_with_umount'],
+                      desired_data['lock_file'])
             end
             # There's nothing after us in the loop at this point, but I'm being
             # explicit with the 'next' here so that we never accidentally
@@ -556,5 +649,24 @@ module FB
         end
       end
     end
+
+    # rubocop:disable Style/RedundantReturn
+    def _run_command_flocked(shellout, lock_file, mount_point)
+      if lock_file.nil?
+        return shellout.run_command
+      else
+        lock_fd = File.open(lock_file, 'a+')
+        unless lock_fd.flock(File::LOCK_EX | File::LOCK_NB)
+          fail IOError, "Couldn't grab lock at #{lock_file} for #{mount_point}"
+        end
+
+        begin
+          return shellout.run_command
+        ensure
+          lock_fd.flock(File::LOCK_UN)
+        end
+      end
+    end
+    # rubocop:enable Style/RedundantReturn
   end
 end

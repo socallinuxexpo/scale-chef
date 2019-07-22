@@ -5,9 +5,17 @@
 # Copyright (c) 2016-present, Facebook, Inc.
 # All rights reserved.
 #
-# This source code is licensed under the BSD-style license found in the
-# LICENSE file in the root directory of this source tree. An additional grant
-# of patent rights can be found in the PATENTS file in the same directory.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
 # vim: syntax=ruby:expandtab:shiftwidth=2:softtabstop=2:tabstop=2
 #
@@ -63,7 +71,13 @@ whyrun_safe_ruby_block 'validate data' do
           'enough to tell the kernel it is tmpfs. Offending mount: ' +
           "#{data['mount_point']}."
       end
-      unless data['type'] == 'nfs' || data['type'] == 'glusterfs'
+      is_bind_mount = false
+      if data['opts']
+        opt_list = data['opts'].split(',')
+        is_bind_mount = opt_list.include?('bind')
+      end
+      unless ['nfs', 'glusterfs', 'nfusr'].include?(data['type']) ||
+             is_bind_mount
         if uniq_devs[data['device']]
           fail 'Device names must be unique and you have repeated ' +
             "#{data['device']} for #{uniq_devs[data['device']]} and " +
@@ -84,11 +98,9 @@ whyrun_safe_ruby_block 'validate data' do
   end
 end
 
-whyrun_safe_ruby_block 'get base mounts' do
-  block do
-    node.default['fb_fstab']['_basefilecontents'] =
-      FB::Fstab.load_base_fstab
-  end
+execute 'fb_fstab-daemon-reload' do
+  command '/bin/systemctl daemon-reload'
+  action :nothing
 end
 
 template '/etc/fstab' do
@@ -96,6 +108,11 @@ template '/etc/fstab' do
   owner 'root'
   group 'root'
   mode '0644'
+  # On systemd hosts we use the generated mount units to mount filesystems
+  # so it's important we ask it to regenerate them when we edit fstab
+  if node.systemd?
+    notifies :run, 'execute[fb_fstab-daemon-reload]', :immediately
+  end
 end
 
 fb_fstab 'handle_mounts'
