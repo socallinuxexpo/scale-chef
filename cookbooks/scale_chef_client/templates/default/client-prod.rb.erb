@@ -6,3 +6,7 @@ cookbook_path [
 role_path '<%= node['scale_chef_client']['role_dir'] %>'
 ohai.optional_plugins ||= []
 ohai.optional_plugins += [:shard]
+follow_client_key_symlink true
+client_fork false
+no_lazy_load false
+local_key_generation true
