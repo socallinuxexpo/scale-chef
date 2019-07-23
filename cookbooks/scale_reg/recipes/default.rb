@@ -7,6 +7,11 @@
 # All rights reserved - Do Not Redistribute
 #
 
+unless File.exists?('/etc/httpd/apache.crt')
+  Chef::Log.warn('Skipping apache setup, no keys yet')
+  return
+end
+
 package 'MySQL-python' do
   action :upgrade
 end
