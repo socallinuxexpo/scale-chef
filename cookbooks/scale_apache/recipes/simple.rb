@@ -3,6 +3,11 @@
 # Recipe:: simple
 #
 
+unless File.exists?('/etc/httpd/apache.crt')
+  Chef::Log.warn('Skipping apache setup, no keys yet')
+  return
+end
+
 directory '/var/www' do
   owner 'root'
   group 'root'
