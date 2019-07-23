@@ -28,6 +28,11 @@ if Chef::Config[:why_run]
   return
 end
 
+unless File.exist?('/etc/datadog_secrets')
+  Chef::Log.warn('No /etc/datadog_secrets, skipping datadog setup')
+  return
+end
+
 include_recipe 'chef_handler'
 
 chef_gem 'chef-handler-datadog' do # ~FC009
