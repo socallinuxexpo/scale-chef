@@ -8,7 +8,11 @@
 #
 
 # omfg I hate this so much
-cookbook_file '/var/chef/cache/chef-13.12.14-1.el7.x86_64.rpm' do
+rpmpath = File.join(
+    Chef::Config['file_cache_path'],
+    'chef-13.12.14-1.el7.x86_64.rpm',
+)
+cookbook_file rpmpath do
   owner 'root'
   group 'root'
   mode '0644'
@@ -22,7 +26,7 @@ ruby_block 'reexec chef' do
 end
 
 package 'chef' do
-  source '/var/chef/cache/chef-13.12.14-1.el7.x86_64.rpm'
+  source rpmpath
   action :upgrade
   notifies :run, 'ruby_block[reexec chef]', :immediately
 end
