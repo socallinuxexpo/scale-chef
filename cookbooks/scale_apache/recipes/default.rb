@@ -122,6 +122,12 @@ rewrites = {
     ],
   },
   'redirect scale17x short url to proper url' => {
+    'rule' => '^/(.*) http://www.socallinuxexpo.org/scale/18x [L,R,NE]',
+    'conditions' => [
+      '%{REQUEST_URI} ^/scale18x$',
+    ],
+  },
+  'redirect scale17x short url to proper url' => {
     'rule' => '^/(.*) http://www.socallinuxexpo.org/scale/17x [L,R,NE]',
     'conditions' => [
       '%{REQUEST_URI} ^/scale17x$',
