@@ -68,3 +68,9 @@ include_recipe 'fb_init::iptables_settings'
 package 'abrt' do
   action :remove
 end
+
+# 32-bit systemd doesn't belong here
+package 'systemd-libs' do
+  arch 'i686'
+  action :remove
+end
