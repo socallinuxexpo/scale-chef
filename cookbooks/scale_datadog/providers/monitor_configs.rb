@@ -14,7 +14,7 @@ action :update do
   end
 
   node['scale_datadog']['monitors'].to_hash.each do |monitor, config|
-    template "/etc/datadog-agent/conf.d/#{monitor}.yaml" do
+    template "/etc/datadog-agent/conf.d/#{monitor}.d/#{monitor}.yaml" do
       source 'monitor.yaml.erb'
       owner 'dd-agent'
       group 'root'
