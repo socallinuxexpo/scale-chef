@@ -8,6 +8,7 @@ end
 
 default['scale_drupal'] = {
   'drupal_hash_salt' => d['drupal_hash_salt'] || 'thisisadevhashsalt',
+  'drupal_username' => d['drupal_username'] || 'drupal',
   'drupal_password' => d['drupal_password'] || 'thisisadevpassword',
   'drupal_database' => d['drupal_database'] || 'drupal',
 }
