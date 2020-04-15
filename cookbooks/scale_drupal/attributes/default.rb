@@ -9,7 +9,7 @@ end
 default['scale_drupal'] = {
   'drupal_hash_salt' => d['drupal_hash_salt'] || 'thisisadevhashsalt',
   'drupal_password' => d['drupal_password'] || 'thisisadevpassword',
-  'drupal_database' => d['drupal_database'] || 'scale_drupal',
+  'drupal_database' => d['drupal_database'] || 'drupal',
 }
 
 if node.vagrant?
