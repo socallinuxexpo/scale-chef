@@ -62,6 +62,7 @@ copy_from_vagrant() {
 }
 
 bootstrap() {
+  [ -x /bin/wget ] || yum install -y wget
   [ ! -d /opt/cinc ] && \
     wget -qO- 'https://omnitruck.cinc.sh/install.sh' | bash
   mkdir -p /etc/chef $CHEFDIR $REPODIR $OUTPUTS
