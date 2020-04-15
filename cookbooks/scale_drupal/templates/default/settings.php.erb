@@ -183,7 +183,7 @@ $databases = array (
     'default' =>
     array (
       'database' => '<%= node['scale_drupal']['drupal_database'] %>',
-      'username' => 'drupal',
+      'username' => '<%= node['scale_drupal']['drupal_username'] %>',
       'password' => '<%= node['scale_drupal']['drupal_password'] %>',
       'host' => '<%= node['scale_drupal']['mysql_host'] %>',
       'port' => '',
