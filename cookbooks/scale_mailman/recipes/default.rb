@@ -7,6 +7,8 @@ node.default['fb_iptables']['filter']['INPUT']['rules']['allow_smtp'] = {
   'rule' => '-p tcp -m tcp -m conntrack --ctstate NEW --dport 25 -j ACCEPT',
 }
 
+node.default['scale_apache']['ssl_hostname'] = 'lists.socallinuxexpo.org'
+
 include_recipe 'scale_apache::simple'
 
 allow_all = {

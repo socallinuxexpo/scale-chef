@@ -18,18 +18,21 @@ node.default['fb_cron']['jobs']['renew_certs'] = {
 if File.exist?('/etc/httpd/need_dev_keys')
   execute 'generate dev keys' do
     creates '/etc/httpd/apache.key'
-    command 'openssl req -x509 -newkey rsa:2048 -keyout /etc/httpd/apache.key ' +
-      '-out /etc/httpd/apache.crt -days 999 -nodes -subj ' +
+    command 'openssl req -x509 -newkey rsa:2048 -keyout /etc/httpd/apache.key' +
+      ' -out /etc/httpd/apache.crt -days 999 -nodes -subj ' +
       '"/O=scale/countryName=US/commonName=www.socallinuxexpo.org"'
   end
 else
   {
-    'apache.key' => 'socallinuxexpo.org/privkey.pem',
-    'apache.crt' => 'socallinuxexpo.org/cert.pem',
-    'intermediate.pem' => 'socallinuxexpo.org/chain.pem',
+    'apache.key' => 'privkey.pem',
+    'apache.crt' => 'cert.pem',
+    'intermediate.pem' => 'chain.pem',
   }.each do |sslfile, path|
     link "/etc/httpd/#{sslfile}" do
-      to "/etc/letsencrypt/live/#{path}"
+      to lazy {
+        host = node['scale_apache']['ssl_hostname']
+        "/etc/letsencrypt/live/#{host}/#{path}"
+      }
     end
   end
 end

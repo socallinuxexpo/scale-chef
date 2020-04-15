@@ -7,6 +7,8 @@
 # All rights reserved - Do Not Redistribute
 #
 
+node.default['scale_apache']['ssl_hostname'] = 'register.socallinuxexpo.org'
+
 package 'MySQL-python' do
   action :upgrade
 end

@@ -7,6 +7,7 @@ if File.exists?('/etc/drupal_secrets')
 end
 
 default['scale_apache'] = {
+  'ssl_hostname' => 'socallinuxexpo.org',
   's3_aws_access_key_id' => d['s3_aws_access_key_id'] || 'thisisadevkey',
   's3_aws_secret_access_key' =>
       d['s3_aws_secret_access_key'] || 'thisisadevsecret',
