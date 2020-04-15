@@ -7,13 +7,8 @@
 # All rights reserved - Do Not Redistribute
 #
 
-unless File.exists?('/etc/httpd/apache.crt')
-  Chef::Log.warn('Skipping apache setup, no keys yet')
-  return
-end
-
-include_recipe 'scale_apache::common'
 include_recipe 'fb_apache'
+include_recipe 'scale_apache::common'
 
 common_config = {
   'ServerName' => 'www.socallinuxexpo.org',
