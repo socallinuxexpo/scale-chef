@@ -1,3 +1,0 @@
-[submodule "cookbooks/chef_handler"]
-	path = cookbooks/chef_handler
-	url = https://github.com/chef-cookbooks/chef_handler.git
