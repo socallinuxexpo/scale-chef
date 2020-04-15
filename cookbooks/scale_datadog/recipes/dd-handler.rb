@@ -20,20 +20,10 @@
 
 require 'uri'
 
-if Chef::Config[:why_run]
-  # chef_handler 1.1 needs us to require datadog handler's file,
-  # which makes why-run runs fail when chef-handler-datadog is not installed,
-  # so skip the recipe when in why-run mode until we can use chef_handler 1.2
-  Chef::Log.warn('Running in why-run mode, skipping dd-handler')
-  return
-end
-
 unless File.exist?('/etc/datadog_secrets')
   Chef::Log.warn('No /etc/datadog_secrets, skipping datadog setup')
   return
 end
-
-include_recipe 'chef_handler'
 
 chef_gem 'chef-handler-datadog' do # ~FC009
   action :install
