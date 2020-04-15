@@ -7,8 +7,8 @@
 # All rights reserved - Do Not Redistribute
 #
 
-include_recipe 'fb_apache'
 include_recipe 'scale_apache::common'
+include_recipe 'fb_apache'
 
 common_config = {
   'ServerName' => 'www.socallinuxexpo.org',
@@ -332,15 +332,3 @@ node.default['scale_datadog']['monitors']['linux_proc_extras'] = {
     },
   ],
 }
-
-unless File.exist?('/etc/httpd/need_dev_keys')
-  {
-    'apache.key' => 'socallinuxexpo.org/privkey.pem',
-    'apache.crt' => 'socallinuxexpo.org/cert.pem',
-    'intermediate.pem' => 'socallinuxexpo.org/chain.pem',
-  }.each do |sslfile, path|
-    link "/etc/httpd/#{sslfile}" do
-      to "/etc/letsencrypt/live/#{path}"
-    end
-  end
-end

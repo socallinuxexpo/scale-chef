@@ -3,16 +3,15 @@
 # Recipe:: simple
 #
 
-directory '/var/www' do
-  owner 'root'
-  group 'root'
-  mode '0755'
-end
-
-directory '/var/www/html' do
-  owner 'root'
-  group 'root'
-  mode '0755'
+%w{
+  /var/www
+  /var/www/html
+}.each do |dir|
+  directory dir do
+    owner 'root'
+    group 'root'
+    mode '0755'
+  end
 end
 
 include_recipe 'scale_apache::common'
@@ -73,14 +72,4 @@ node.default['fb_apache']['sites']['_default_:443'] = vhost_config
   'BrowserMatch "MSIE [17-9]"' => 'ssl-unclean-shutdown',
 }.each do |key, val|
   node.default['fb_apache']['sites']['_default_:443'][key] = val
-end
-
-{
-  'apache.key' => 'lists.socallinuxexpo.org/privkey.pem',
-  'apache.crt' => 'lists.socallinuxexpo.org/cert.pem',
-  'intermediate.pem' => 'lists.socallinuxexpo.org/chain.pem',
-}.each do |sslfile, path|
-  link "/etc/httpd/#{sslfile}" do
-    to "/etc/letsencrypt/live/#{path}"
-  end
 end

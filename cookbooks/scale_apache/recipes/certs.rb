@@ -22,4 +22,15 @@ if File.exist?('/etc/httpd/need_dev_keys')
       '-out /etc/httpd/apache.crt -days 999 -nodes -subj ' +
       '"/O=scale/countryName=US/commonName=www.socallinuxexpo.org"'
   end
+else
+  {
+    'apache.key' => 'socallinuxexpo.org/privkey.pem',
+    'apache.crt' => 'socallinuxexpo.org/cert.pem',
+    'intermediate.pem' => 'socallinuxexpo.org/chain.pem',
+  }.each do |sslfile, path|
+    link "/etc/httpd/#{sslfile}" do
+      to "/etc/letsencrypt/live/#{path}"
+    end
+  end
 end
+
