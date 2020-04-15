@@ -52,8 +52,6 @@ get_repos() {
     fi
     cd $dir
     git pull
-    git submodule init
-    git submodule update
   done
 }
 
