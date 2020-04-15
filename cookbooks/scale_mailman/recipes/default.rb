@@ -76,7 +76,7 @@ template '/usr/local/bin/restore-mailman.py' do
 end
 
 execute '/usr/local/bin/restore-mailman.py' do
-  creates '/var/lib/mailman/archives/'
+  creates '/var/lib/mailman/archives/private/tech'
 end
 
 template '/usr/local/bin/backup-mailman.sh' do
