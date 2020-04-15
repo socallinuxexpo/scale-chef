@@ -8,11 +8,11 @@
 #
 
 # omfg I hate this so much
-rpmpath = File.join(
-    Chef::Config['file_cache_path'],
-    'chef-13.12.14-1.el7.x86_64.rpm',
-)
-cookbook_file rpmpath do
+version = '15.9.17'
+rpm = "cinc-#{version}-1.el7.x86_64.rpm"
+rpmpath = File.join(Chef::Config['file_cache_path'], rpm)
+remote_file rpmpath do
+  source "http://downloads.cinc.sh/files/stable/cinc/#{version}/el/7/#{rpm}"
   owner 'root'
   group 'root'
   mode '0644'
@@ -40,6 +40,21 @@ end
     owner 'root'
     group 'root'
     mode '0755'
+  end
+end
+
+link '/etc/cinc' do
+  to '/etc/chef'
+end
+
+%w{
+  chef-apply
+  chef-client
+  chef-shell
+  chef-solo
+}.each do |f|
+  link "/usr/bin/#{f}" do
+    to '/opt/cinc/bin/cinc-wrapper'
   end
 end
 
