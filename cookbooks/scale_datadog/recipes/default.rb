@@ -48,6 +48,9 @@ scale_datadog_monitor_configs 'update monitor configs' do
 end
 
 service 'datadog-agent' do
-  only_if { node['scale_datadog']['config']['api_key'] }
+  # the normal ruby-stile exist-and-not-nil check makes Chef warn because a
+  # string is returned inside of it, and it thinks you are trying to use a
+  # shell-command-style only_if
+  not_if { node['scale_datadog']['config']['api_key'].nil? }
   action [:enable, :start]
 end
