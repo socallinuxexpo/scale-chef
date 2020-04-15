@@ -337,6 +337,7 @@ unless File.exist?('/etc/httpd/need_dev_keys')
   {
     'apache.key' => 'socallinuxexpo.org/privkey.pem',
     'apache.crt' => 'socallinuxexpo.org/cert.pem',
+    'intermediate.pem' => 'socallinuxexpo.org/chain.pem',
   }.each do |sslfile, path|
     link "/etc/httpd/#{sslfile}" do
       to "/etc/letsencrypt/live/#{path}"
