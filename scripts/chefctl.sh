@@ -64,9 +64,10 @@ copy_from_vagrant() {
 }
 
 bootstrap() {
-  [ ! -d /opt/chef ] && \
-    wget -qO- 'https://www.opscode.com/chef/install.sh' | bash
+  [ ! -d /opt/cinc ] && \
+    wget -qO- 'https://omnitruck.cinc.sh/install.sh' | bash
   mkdir -p /etc/chef $CHEFDIR $REPODIR $OUTPUTS
+  ln -sf /etc/chef /etc/cinc
   cat > /etc/chef/client-prod.rb <<EOF
 cookbook_path [
   '/var/chef/repo/scale-chef/cookbooks',
