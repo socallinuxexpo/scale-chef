@@ -1,0 +1,89 @@
+#!/bin/bash
+
+OVERRIDE_FILE=/var/chef/cron.default.override
+
+[ $EUID -eq 0 ] || {
+  echo "Ray, when someone asks you if you're a god, you say YES!"
+  echo "(you must be root to do this)"
+  exit 1
+}
+
+#
+# These are functions other chef scripts may want to utilize
+#
+
+help() {
+  echo "
+Usage: $0 [options]
+
+Attempts to safely stop or wait for any active chef runs and then prevent
+future runs for the time period specified (1 hour by default). We use the
+override file built in to chefctl.sh ($OVERRIDE_FILE).
+
+You can re-enable chef at any time by deleting $OVERRIDE_FILE
+
+Options:
+  -h
+      Print help
+
+  -r <reason>
+      Provide a custom message explaining why you stopped chef.
+
+  -t <hours>
+      Stop for <hours> hours, default is 1 hour even if option is not
+      specified.
+"
+}
+
+stop() {
+  hours=$1
+  reason=$2
+
+  # Try to let people know who did this
+  msg="$(date) USER=$USER SUDO_USER=$SUDO_USER REASON=$reason"
+  echo "$msg" >> $OVERRIDE_FILE
+
+  # We remove the override when it is 1 hour old so actually touch the file
+  # one less hour than requested. Also, macs don't use coreutils touch so
+  # make it work.
+  if [ $hours -eq 1 ]; then
+    # Nice and easy
+    touch $OVERRIDE_FILE
+  else
+    realhours=$(($hours-1))
+    touch -d "now + $realhours hours" $OVERRIDE_FILE
+  fi
+  chefctl -w
+  echo "Chef disabled for $hours hours."
+}
+
+# default
+thours=1
+reason='none'
+
+while getopts 'hr:t:' opt; do
+  case "$opt" in
+    h)
+      help
+      exit 0
+      ;;
+    r)
+      reason="$OPTARG"
+      ;;
+    t)
+      thours="$OPTARG"
+      ;;
+    *)
+      help
+      exit 1
+      ;;
+  esac
+done
+
+if [ $thours -lt 1 ]; then
+  echo "Invalid value: \"$thours\" hours is nonsensical, cowardly refusing"
+  help
+  exit 1
+fi
+
+stop "$thours" "$reason"
