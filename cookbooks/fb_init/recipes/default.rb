@@ -36,7 +36,7 @@ include_recipe 'fb_sysctl'
 include_recipe 'fb_iptables'
 # HERE: networking
 #include_recipe 'fb_syslog'
-include_recipe 'scale_postfix'
+include_recipe 'fb_postfix'
 # HERE: nfs
 #include_recipe 'fb_swap'
 # WARNING!

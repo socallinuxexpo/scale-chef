@@ -14,7 +14,6 @@ version '0.0.1'
   scale_sudo
   scale_ssh
   scale_users
-  scale_postfix
   scale_yum
   fb_cron
   fb_fstab
@@ -26,6 +25,7 @@ version '0.0.1'
   fb_logrotate
   fb_modprobe
   fb_motd
+  fb_postfix
   fb_swap
   fb_securetty
   fb_sysctl

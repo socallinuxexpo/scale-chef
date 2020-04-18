@@ -26,13 +26,32 @@ if File.exists?('/etc/datadog_secrets')
 end
 
 {
-  'decode' => 'root',
   'abuse' => 'postmaster',
-  'spam' => 'postmaster',
+  'decode' => 'root',
+  'postmaster' => 'root',
   'root' => 'root@socallinuxexpo.org',
   'scale-voicemail' => 'scale-chairs',
+  'spam' => 'postmaster',
+  'MAILER-DAEMON' => 'postmaster',
 }.each do |src, dst|
-  node.default['scale_postfix']['aliases'][src] = dst
+  node.default['fb_postfix']['aliases'][src] = dst
+end
+
+if File.exist?('/etc/postfix/skip_mailgun')
+  Chef::Log.warn("fb_init: Skipping mailgun postfix setup!")
+else
+  {
+    'smtp_sasl_auth_enable' => 'yes',
+    'relayhost' => 'smtp.mailgun.org:2525',
+    'smtp_sasl_security_options' => 'noanonymous',
+    'smtp_sasl_password_maps' => 'hash:/etc/postfix/sasl_passwd',
+  }.each do |k, v|
+    node.default['fb_postfix']['main.cf'][k] = v
+  end
+end
+
+package %w{postfix-perl-scripts cyrus-sasl-plain cyrus-sasl-md5} do
+  action :upgrade
 end
 
 node.default['scale_datadog']['monitors']['postfix'] = {
