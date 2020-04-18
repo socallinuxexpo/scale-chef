@@ -26,6 +26,8 @@ ruby_block 'reexec chef' do
 end
 
 package 'chef' do
+  # We need the gate otherwise whyrun breaks
+  only_if { File.exists?(rpmpath) }
   source rpmpath
   action :upgrade
   notifies :run, 'ruby_block[reexec chef]', :immediately
