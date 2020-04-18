@@ -6,7 +6,7 @@ default['scale_phplist'] = {
   'bounce_mailbox_host' => nil,
   'bounce_mailbox_user' => nil,
   'bounce_mailbox_password' => nil,
-  'version' => '3.2.5',
+  'version' => '3.5.2',
   'bounce_protocol' => 'pop',
   'bounce_mailbox_port' => '995/pop3/ssl',
 }
