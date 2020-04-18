@@ -50,6 +50,8 @@ else
   end
 end
 
+node.default['fb_postfix']['main.cf']['mydomain'] = 'localhost'
+
 package %w{postfix-perl-scripts cyrus-sasl-plain cyrus-sasl-md5} do
   action :upgrade
 end
