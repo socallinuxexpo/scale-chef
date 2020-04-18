@@ -10,6 +10,7 @@ version '0.0.1'
 %w{
   scale_chef_client
   scale_datadog
+  scale_selinux
   scale_sudo
   scale_ssh
   scale_users
