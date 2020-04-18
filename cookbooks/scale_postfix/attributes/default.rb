@@ -40,7 +40,7 @@ if File.exist?('/etc/postfix/skip_mailgun')
 else
   {
     'smtp_sasl_auth_enable' => 'yes',
-    'relayhost' => 'smtp.mailgun.org',
+    'relayhost' => 'smtp.mailgun.org:2525',
     'smtp_sasl_security_options' => 'noanonymous',
     'smtp_sasl_password_maps' => 'hash:/etc/postfix/sasl_passwd',
   }.each do |k, v|
