@@ -1,4 +1,4 @@
-default['scale_postfix'] = {
+config = {
   'aliases' => {
     'postmaster' => 'root',
     'MAILER-DAEON' => 'postmaster'
@@ -35,9 +35,17 @@ default['scale_postfix'] = {
   }
 }
 
-if File.exists?('/etc/postfix/sasl_passwd.db')
-  default['scale_postfix']['main.cf']['smtp_sasl_auth_enable'] = 'yes'
-  default['scale_postfix']['main.cf']['relayhost'] = 'smtp.mailgun.org'
-  default['scale_postfix']['main.cf']['smtp_sasl_security_options'] = 'noanonymous'
-  default['scale_postfix']['main.cf']['smtp_sasl_password_maps'] = 'hash:/etc/postfix/sasl_passwd'
+if File.exist?('/etc/postfix/skip_mailgun')
+  Chef::Log.warn("scale_postfix: Skipping mailgun setup!")
+else
+  {
+    'smtp_sasl_auth_enable' => 'yes',
+    'relayhost' => 'smtp.mailgun.org',
+    'smtp_sasl_security_options' => 'noanonymous',
+    'smtp_sasl_password_maps' => 'hash:/etc/postfix/sasl_passwd',
+  }.each do |k, v|
+    config['main.cf'][k] = v
+  end
 end
+
+default['scale_postfix'] = config
