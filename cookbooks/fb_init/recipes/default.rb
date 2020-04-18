@@ -21,6 +21,7 @@ if node.systemd?
   include_recipe 'fb_systemd'
 end
 
+include_recipe 'scale_selinux'
 include_recipe 'scale_users'
 
 include_recipe 'fb_nsswitch'
