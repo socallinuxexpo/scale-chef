@@ -2,32 +2,20 @@
 
 ## Getting started
 
-!!!This is a work in progress!!!
-
-Start up the VMs with `vagrant up` -- this will bootstrap the nodes and run
-chef for the first time. Run `vagrant provision $vm` to rerun chef and
-`vagrant ssh $vm` to get a shell. This assumes you have a ssh key that can
-clone github loaded into your agent (which will get forwarded into the VMs).
-
-You can also manually bootstrap a node with
+You can also manually bootstrap a node by cloning the repo into
+/var/chef/repo and running:
 
 ```
-/vagrant/scripts/chefctl.sh -b
+/var/chef/repo/scripts/chef_bootstrap.sh
 ```
 
 You can then run chef with:
 
 ```
-/vagrant/scripts/chefctl.sh -i
+chefctl -i
 ```
 
-For development, use the `-V` flag to pull from your local repo (which is mounted into the VM on `/vagrant`) instead of pulling from github.
-
-Currently it uses the prefix of the hostname to determine the active file, so "www1" will get a www.json role and "db4" would get a db.json role.
-
 This is heavily based on the [facebook cookbooks](https://github.com/facebook/chef-cookbooks).
-
-Unless you pass in '--no-update', the chefrun will clone/update the relevant git-repos which, for scale-chef requires you to have some keys loaded, but also requires you to be root. This sucks, but I haven't fixed it yet.
 
 To get the webserver up and running, get a copy of the dynamic content (the
 stuff under `httpdocs/sites/default/files`), copy it to

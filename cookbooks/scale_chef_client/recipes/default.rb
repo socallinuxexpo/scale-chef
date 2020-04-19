@@ -103,7 +103,14 @@ end
 include_recipe '::chefctl'
 
 link '/usr/local/sbin/stop_chef_temporarily' do
-  to '/var/chef/repo/scale-chef/scripts/stop_chef_temporarily'
+  only_if { ::File.symlink?('/usr/local/sbin/stop_chef_temporarily') }
+  action :delete
+end
+
+cookbook_file '/usr/local/sbin/stop_chef_temporarily' do
+  owner 'root'
+  group 'root'
+  mode '0755'
 end
 
 {
