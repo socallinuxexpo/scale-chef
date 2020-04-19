@@ -18,8 +18,6 @@ include_recipe 'scale_apache::common'
 include_recipe 'fb_apache'
 
 vhost_config = {
-  'ServerName' => 'lists.socallinuxexpo.org',
-  'ServerAdmin' => 'listmaster@linuxfests.org',
   'DocumentRoot' => '/var/www/html',
   'DirectoryIndex' => 'index.php index.html',
   'Directory /' => {
@@ -42,7 +40,6 @@ vhost_config = {
   'LogLevel' => 'warn',
 }
 
-node.default['fb_apache']['sites']['*:80'] = vhost_config
 {
   'ErrorLog' => '/var/log/httpd/error.log',
   'CustomLog' => '/var/log/httpd/access.log combined',

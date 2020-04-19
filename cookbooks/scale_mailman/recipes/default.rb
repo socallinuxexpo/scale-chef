@@ -11,13 +11,29 @@ node.default['scale_apache']['ssl_hostname'] = 'lists.socallinuxexpo.org'
 
 include_recipe 'scale_apache::simple'
 
+common_config = {
+  'ServerName' => 'lists.socallinuxexpo.org',
+  'ServerAlias' => [
+    'lists.socallinuxexpo.net',
+    'lists.socallinuxexpo.com',
+    'lists.linuxfests.org',
+    'lists.linuxfests.net',
+    'lists.linuxfests.com',
+  ],
+}
+
+node.default['fb_apache']['sites']['*:80'] = common_config.merge({
+  'Redirect permanent /' => 'https://lists.linuxfests.org/',
+})
+
 allow_all = {
   'AllowOverride' => 'None',
   'Order' => 'allow,deny',
   'Allow' => 'from all',
   'Require' => 'all granted',
 }
-{
+
+common_config.merge({
   'ScriptAlias' => '/cgi-bin/mailman/ /usr/lib/mailman/cgi-bin/',
   'Alias /pipermail/' => '/var/lib/mailman/archives/public/',
   'Alias /images/mailman/' => '/usr/lib/mailman/icons/',
@@ -29,8 +45,8 @@ allow_all = {
     'Options' => 'FollowSymlinks',
   }.merge!(allow_all),
   'Directory /usr/lib/mailman/icons/' => allow_all,
-}.each do |key, val|
-  node.default['fb_apache']['sites']['*:80'][key] = val
+}).each do |key, val|
+  node.default['fb_apache']['sites']['_default_:443'][key] = val
 end
 
 pkgs = %w{
