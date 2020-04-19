@@ -25,6 +25,7 @@ EOF
   ln -sf /etc/chef/client-prod.pem /etc/chef/client.pem
   cp $REPODIR/cookbooks/scale_chef/files/default/chefctl_hooks.rb /etc/chef
   cp $REPODIR/cookbooks/scale_chef/files/default/chefctl-config.rb /et/
+  local_mode true
 
   cat >$RUNLIST_FILE <<EOF
 {"run_list":["recipe[fb_init]","role[$ROLE]"]}
