@@ -1,11 +1,10 @@
 # This is where you set your own stuff...
 
 node.default['scale_chef_client']['cookbook_dirs'] = [
-  '/var/chef/repo/scale-chef/cookbooks',
-  '/var/chef/repo/chef-cookbooks/cookbooks',
+  '/var/chef/repo/cookbooks',
 ]
 node.default['scale_chef_client']['role_dir'] =
-  '/var/chef/repo/scale-chef/roles'
+  '/var/chef/repo/roles'
 
 if node.vagrant?
   node.default['scale_sudo']['users']['vagrant'] = 'ALL=NOPASSWD: ALL'
@@ -18,7 +17,8 @@ if File.exists?('/etc/datadog_secrets')
     d[k.downcase] = v
   end
   if d['application_key']
-    node.default['scale_datadog']['config']['application_key'] = d['application_key']
+    node.default['scale_datadog']['config']['application_key'] =
+      d['application_key']
   end
   if d['api_key']
     node.default['scale_datadog']['config']['api_key'] = d['api_key']
@@ -70,7 +70,8 @@ node.default['scale_datadog']['monitors']['postfix'] = {
 }
 
 node.default['scale_sudo']['users']['dd-agent'] =
-  'ALL=(ALL) NOPASSWD:/usr/bin/find /var/spool/postfix/ -type f, /bin/find /var/spool/postfix/ -type f'
+  'ALL=(ALL) NOPASSWD:/usr/bin/find /var/spool/postfix/ -type f, ' +
+  '/bin/find /var/spool/postfix/ -type f'
 
 d = {}
 if File.exists?('/etc/lists_secrets')
