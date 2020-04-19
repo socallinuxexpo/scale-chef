@@ -84,6 +84,8 @@ node.default['scale_phplist']['bounce_mailbox_user'] = d['bounce_mailbox_user']
 node.default['scale_phplist']['bounce_mailbox_password'] = 
   d['bounce_mailbox_password']
 
+node['fb_sysctl']['net.ipv6.conf.all.accept_ra'] = 1
+
 include_recipe 'fb_init::iptables_settings'
 
 to_remove = %w{
