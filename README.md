@@ -38,6 +38,34 @@ GRANT ALL PRIVILEGES ON drupal.* TO 'drupal'@'scale-www1' IDENTIFIED BY 'thisisa
 
 To not get redirects you should edit `/home/drupal/scale-drupal/httpdocs/.htaccess` and remove the www rewrite rules. The cookbooks assume you are in dev mode if there are no prod secrets, but if you are testing with prod secrets you can force no redirects by touching `/etc/no_prod_redirects`
 
+## Testing Changes
+
+Note: You probably want to use rvm and then "bundle install" to get
+all the dependencies installed for testing.
+
+We use [Taste Tester](https://github.com/facebook/taste-tester/) for testing
+changes. We have a wrapper for our specific settings. From the root of the
+repo, you can run:
+
+```
+./scripts/tt test -s <host>
+```
+
+Then run `chefctl -i` on that host. You should put the results of your test in the PR.
+
+To update your code on your taste-tester instance do:
+
+```
+./scripts/tt upload
+```
+
+Tests expire after an hour of idle and revert back to prod, but you can explicitly
+untest with:
+
+```
+./scripts/tt untest -ys <hsot>
+```
+
 ## Production secrets
 
 For production machines use the `scale-secrets` repo, to manually setup the following secrets:
