@@ -20,12 +20,12 @@ end
 
 ruby_block 'reexec chef' do
   block do
-    exec('/usr/bin/chef-client --no-fork')
+    exec('/opt/cinc/bin/cinc-client --no-fork')
   end
   action :nothing
 end
 
-package 'chef' do
+package 'cinc' do
   # We need the gate otherwise whyrun breaks
   only_if { File.exists?(rpmpath) }
   source rpmpath
@@ -100,9 +100,7 @@ cookbook_file '/usr/local/sbin/taste-untester' do
   mode '0755'
 end
 
-link '/usr/local/sbin/chefctl' do
-  to '/var/chef/repo/scale-chef/scripts/chefctl.sh'
-end
+include_recipe '::chefctl'
 
 link '/usr/local/sbin/stop_chef_temporarily' do
   to '/var/chef/repo/scale-chef/scripts/stop_chef_temporarily'
