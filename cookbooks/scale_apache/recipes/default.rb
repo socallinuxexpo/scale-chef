@@ -25,6 +25,13 @@ common_config = {
     'www.southerncalifornialinuxexpo.org',
     'www.southerncalifornialinuxexpo.net',
   ],
+}
+
+node.default['fb_apache']['sites']['*:80'] = common_config.merge({
+  'Redirect permanent /' => 'https://www.socallinuxexpo.org/',
+})
+
+base_config = common_config.merge({
   'Alias' => [
     '/past /home/webroot/past',
     '/scale5x /home/webroot/scale5x',
@@ -85,7 +92,7 @@ common_config = {
     'Deny' => 'from all',
     'Allow' => 'from 127.0.0.0/255.0.0.0 ::1/128',
   },
-}
+})
 
 rewrites = {
   'CFPs' => {
@@ -95,7 +102,7 @@ rewrites = {
     ],
   },
   'not our host' => {
-     'rule' => '^/(.*) http://www.socallinuxexpo.org/$1 [L,R,NE]',
+     'rule' => '^/(.*) https://www.socallinuxexpo.org/$1 [L,R,NE]',
      'conditions' => [
        '%{REQUEST_URI} !^/server-status',
        '%{HTTP_HOST} !^www.socallinuxexpo.org [NC]',
@@ -103,7 +110,7 @@ rewrites = {
      ],
   },
   'always ensure www' => {
-    'rule' => '^ http%{ENV:protossl}://www.%{HTTP_HOST}%{REQUEST_URI} [L,R=301]',
+    'rule' => '^ https://www.%{HTTP_HOST}%{REQUEST_URI} [L,R=301]',
     'conditions' => [
       '%{HTTP_HOST} .',
       '%{REQUEST_URI} !^/server-status',
@@ -111,97 +118,71 @@ rewrites = {
     ],
   },
   'redirect / to current site' => {
-    'rule' => '^/(.*) http://www.socallinuxexpo.org/scale/18x [L,R,NE]',
+    'rule' => '^/(.*) https://www.socallinuxexpo.org/scale/18x [L,R,NE]',
     'conditions' => [
       '%{REQUEST_URI} ^/$',
     ],
   },
   'redirect scale18x short url to proper url' => {
-    'rule' => '^/(.*) http://www.socallinuxexpo.org/scale/18x [L,R,NE]',
+    'rule' => '^/(.*) https://www.socallinuxexpo.org/scale/18x [L,R,NE]',
     'conditions' => [
       '%{REQUEST_URI} ^/scale18x$',
     ],
   },
   'redirect scale17x short url to proper url' => {
-    'rule' => '^/(.*) http://www.socallinuxexpo.org/scale/17x [L,R,NE]',
+    'rule' => '^/(.*) https://www.socallinuxexpo.org/scale/17x [L,R,NE]',
     'conditions' => [
       '%{REQUEST_URI} ^/scale17x$',
     ],
   },
   'redirect scale16x short url to proper url' => {
-    'rule' => '^/(.*) http://www.socallinuxexpo.org/scale/16x [L,R,NE]',
+    'rule' => '^/(.*) https://www.socallinuxexpo.org/scale/16x [L,R,NE]',
     'conditions' => [
       '%{REQUEST_URI} ^/scale16x$',
     ],
   },
   'redirect scale15x short url to proper url' => {
-    'rule' => '^/(.*) http://www.socallinuxexpo.org/scale/15x [L,R,NE]',
+    'rule' => '^/(.*) https://www.socallinuxexpo.org/scale/15x [L,R,NE]',
     'conditions' => [
       '%{REQUEST_URI} ^/scale15x$',
     ],
   },
   'safety' => {
-    'rule' => '^/safety http://www.socallinuxexpo.org/scale/15x/anti-harassment-policy [L,R,NE]',
+    'rule' => '^/safety https://www.socallinuxexpo.org/scale/15x/anti-harassment-policy [L,R,NE]',
     'conditions' => [
       '%{REQUEST_URI} ^/safety$',
     ],
   },
   'scale 14x' => {
-    'rule' => '^/(.*) http://www.socallinuxexpo.org/scale/14x [L,R,NE]',
+    'rule' => '^/(.*) https://www.socallinuxexpo.org/scale/14x [L,R,NE]',
     'conditions' => [
       '%{REQUEST_URI} ^/scale14x$',
     ],
   },
   'scale 14x 2' => {
-    'rule' => '^/scale14x/(.*) http://www.socallinuxexpo.org/scale/14x/$1 [L,R=301,NE]',
+    'rule' => '^/scale14x/(.*) https://www.socallinuxexpo.org/scale/14x/$1 [L,R=301,NE]',
     'conditions' => [
       '%{REQUEST_URI} ^/scale14x/',
     ],
   },
   'scale 13x' => {
-    'rule' => '^/(.*) http://www.socallinuxexpo.org/scale/13x [L,R,NE]',
+    'rule' => '^/(.*) https://www.socallinuxexpo.org/scale/13x [L,R,NE]',
     'conditions' => [
       '%{REQUEST_URI} ^/scale13x$',
     ],
   },
   'scale 13x 2' => {
-    'rule' => '^/scale13x/(.*) http://www.socallinuxexpo.org/scale/13x/$1 [L,R=301,NE]',
+    'rule' => '^/scale13x/(.*) https://www.socallinuxexpo.org/scale/13x/$1 [L,R=301,NE]',
     'conditions' => [
       '%{REQUEST_URI} ^/scale13x/',
     ],
   },
 }
 
-node.default['fb_apache']['sites']['*:80'] = common_config
-node.default['fb_apache']['sites']['*:80']['_rewrites'] = rewrites
+node.default['fb_apache']['sites']['_default_:443'] = base_config
+node.default['fb_apache']['sites']['_default_:443']['_rewrites'] = rewrites
 
-{
-  'cfp1' => '%{REQUEST_URI} ^/(user|cfp)$',
-  'cfp2' => '%{REQUEST_URI} ^/scale/14x/(user|cfp)$',
-  'cfp3' => '%{REQUEST_URI} ^/(user|cfp)/',
-  'cfp4' => '%{REQUEST_URI} ^/scale/14x/(user|cfp)/',
-}.each do |name, condition|
-  node.default['fb_apache']['sites']['*:80']['_rewrites'][name] = {
-    # yes these are supposed to be ssl
-    'rule' => '^/(.*) https://www.socallinuxexpo.org/$1 [L,R,NE]',
-    'conditions' => [condition],
-  }
-end
-
-# munged for https
-# note we don't just dup because dup doesn't deeply-copy enough
-sslrewrites = {}
-rewrites.each do |name, ruleset|
-  sslrewrites[name] = {
-    'rule' => rewrites[name]['rule'].sub(' http://', ' https://'),
-    'conditions' => rewrites[name]['conditions'],
-  }
-end
-
-node.default['fb_apache']['sites']['_default_:443'] = common_config
-node.default['fb_apache']['sites']['_default_:443']['_rewrites'] = sslrewrites
-
-# some SSL overrides
+# some SSL specifics
 {
   'ErrorLog' => '/var/log/httpd/ssl_error.log',
   'CustomLog' => '/var/log/httpd/ssl_access.log combined',
