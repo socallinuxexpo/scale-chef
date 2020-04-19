@@ -39,7 +39,7 @@ end
 
 if File.exist?('/etc/postfix/skip_mailgun')
   Chef::Log.warn("fb_init: Skipping mailgun postfix setup!")
-else
+elsif File.exist?('/etc/sasl_passwd')
   {
     'smtp_sasl_auth_enable' => 'yes',
     'relayhost' => 'smtp.mailgun.org:2525',
@@ -48,6 +48,11 @@ else
   }.each do |k, v|
     node.default['fb_postfix']['main.cf'][k] = v
   end
+
+  node.default['fb_postfix']['sasl_passwd']['smtp.mailgun.org:2525'] =
+    File.read('/etc/sasl_passwd').split(' ')[1]
+else
+  fail 'fb_init: /etc/sasl_passwd is missing, cannot setup mailgun'
 end
 
 node.default['fb_postfix']['main.cf']['mydomain'] = 'localhost'
