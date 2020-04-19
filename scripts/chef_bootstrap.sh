@@ -2,10 +2,8 @@
 
 set -u
 
-BOOTSTRAP=0
 RUNLIST_FILE='/etc/chef/runlist.json'
-CHEF_CONFIG='/etc/chef/client.rb'
-CHEF_PROD_CONFIG='/etc/chef/client.rb'
+CHEF_PROD_CONFIG='/etc/chef/client-prod.rb'
 ROLE=$(hostname -s | cut -f 2 -d- | sed -E 's/[0-9]+$//g')
 CHEFDIR='/var/chef'
 REPODIR="$CHEFDIR/repo"
@@ -17,7 +15,7 @@ bootstrap() {
     wget -qO- 'https://omnitruck.cinc.sh/install.sh' | bash
   mkdir -p /etc/chef $CHEFDIR $REPODIR $OUTPUTS
   ln -sf /etc/chef /etc/cinc
-  cat > /etc/chef/client-prod.rb <<EOF
+  cat > $CHEF_PROD_CONFIG <<EOF
 cookbook_path [
   '/var/chef/repo/scale-chef/cookbooks',
 ]
