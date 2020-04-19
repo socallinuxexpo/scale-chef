@@ -10,5 +10,5 @@ Attributes
 
 Usage
 -----
-As of now this simply uses the `scale_postfix` API to set things up and then
+As of now this simply uses the `fb_postfix` API to set things up and then
 sets up SCALE lists. Genericification to come.
