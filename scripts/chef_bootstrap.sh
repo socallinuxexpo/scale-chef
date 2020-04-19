@@ -17,15 +17,16 @@ bootstrap() {
   ln -sf /etc/chef /etc/cinc
   cat > $CHEF_PROD_CONFIG <<EOF
 cookbook_path [
-  '/var/chef/repo/scale-chef/cookbooks',
+  '/var/chef/repo/cookbooks',
 ]
-role_path '/var/chef/repo/scale-chef/roles'
+role_path '/var/chef/repo/roles'
+local_mode true
 EOF
+
   ln -sf /etc/chef/client-prod.rb /etc/chef/client.rb
   ln -sf /etc/chef/client-prod.pem /etc/chef/client.pem
-  cp $REPODIR/cookbooks/scale_chef/files/default/chefctl_hooks.rb /etc/chef
-  cp $REPODIR/cookbooks/scale_chef/files/default/chefctl-config.rb /et/
-  local_mode true
+  cp $REPODIR/cookbooks/scale_chef_client/files/default/chefctl_hooks.rb /etc/chef
+  cp $REPODIR/cookbooks/scale_chef_client/files/default/chefctl-config.rb /etc/
 
   cat >$RUNLIST_FILE <<EOF
 {"run_list":["recipe[fb_init]","role[$ROLE]"]}
