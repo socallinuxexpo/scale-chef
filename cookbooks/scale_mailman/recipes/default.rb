@@ -148,9 +148,10 @@ node.default['fb_cron']['jobs']['mailman_cull_bad_shunt'] = {
   'user' => 'mailman',
 }
 
-node.default['scale_postfix']['aliases']['listmaster'] = 'listmaster@linuxfests.org'
+node.default['fb_postfix']['aliases']['listmaster'] =
+  'listmaster@linuxfests.org'
 
-node.default['scale_postfix']['main.cf']['alias_maps'] <<
+node.default['fb_postfix']['main.cf']['alias_maps'] <<
   'hash:/var/lib/mailman/data/aliases'
 
 {
@@ -158,7 +159,7 @@ node.default['scale_postfix']['main.cf']['alias_maps'] <<
     'lists.linuxfests.org, $myhostname, localhost.$mydomain, localhost',
   'mydomain' => 'linuxfests.org',
 }.each do |conf, val|
-  node.default['scale_postfix']['main.cf'][conf] = val
+  node.default['fb_postfix']['main.cf'][conf] = val
 end
 
 template '/var/lib/mailman/data/aliases' do
