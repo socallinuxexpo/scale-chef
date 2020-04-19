@@ -61,7 +61,7 @@ module ScaleHook
   # The return value is ignored.
   def pre_run(output)
     unless ::File.exist?('/var/chef/repo')
-      Chefctl.logger.info('Initializiong repo in /var/chef/repo')
+      Chefctl.logger.info('Initializing repo in /var/chef/repo')
       Dir.chdir '/var/chef' do
         Mixlib::ShellOut.new(
           'git clone git@github.com:socallinuxexpo/scale-chef.git repo',
