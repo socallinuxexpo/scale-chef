@@ -90,7 +90,14 @@ node.default['scale_phplist']['bounce_mailbox_user'] = d['bounce_mailbox_user']
 node.default['scale_phplist']['bounce_mailbox_password'] = 
   d['bounce_mailbox_password']
 
+# NOTE: this is technically the default, but because we end up
+# doing DHCPV6, network-scripts turns it back off. Which is dumb
+# and what we really want is to set `IPV6_SET_SYCTL=no` in
+# the ifcfg files, but not sure how to get cloud-init to do that
+# so in the meantime we work around it with this
 node.default['fb_sysctl']['net.ipv6.conf.all.accept_ra'] = 1
+node.default['fb_sysctl']['net.ipv6.conf.default.accept_ra'] = 1
+node.default['fb_sysctl']['net.ipv6.conf.ens5.accept_ra'] = 1
 
 include_recipe 'fb_init::iptables_settings'
 
