@@ -168,7 +168,7 @@ node.default['fb_postfix']['aliases']['listmaster'] =
   'listmaster@linuxfests.org'
 
 node.default['fb_postfix']['main.cf']['alias_maps'] <<
-  'hash:/var/lib/mailman/data/aliases'
+  ',hash:/var/lib/mailman/data/aliases'
 
 {
   'mydestination' =>
