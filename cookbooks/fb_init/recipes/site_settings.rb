@@ -49,7 +49,7 @@ elsif File.exist?('/etc/sasl_passwd')
     node.default['fb_postfix']['main.cf'][k] = v
   end
 
-  node.default['fb_postfix']['sasl_passwd']['smtp.mailgun.org:2525'] =
+  node.default['fb_postfix']['sasl_passwd']['smtp.mailgun.org'] =
     File.read('/etc/sasl_passwd').chomp.split(' ')[1]
 else
   fail 'fb_init: /etc/sasl_passwd is missing, cannot setup mailgun'
