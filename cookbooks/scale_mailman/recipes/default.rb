@@ -170,6 +170,8 @@ node.default['fb_postfix']['aliases']['listmaster'] =
 node.default['fb_postfix']['main.cf']['alias_maps'] <<
   ',hash:/var/lib/mailman/data/aliases'
 
+node.default['fb_postfix']['main.cf']['inet_interfaces'] = "all"
+
 {
   'mydestination' =>
     'lists.linuxfests.org, $myhostname, localhost.$mydomain, localhost',
