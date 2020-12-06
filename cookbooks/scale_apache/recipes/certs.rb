@@ -1,4 +1,4 @@
-package 'certbot' do
+package ['certbot', 'python-acme'] do
   action :upgrade
 end
 
