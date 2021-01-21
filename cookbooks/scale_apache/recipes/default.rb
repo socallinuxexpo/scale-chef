@@ -118,9 +118,15 @@ rewrites = {
     ],
   },
   'redirect / to current site' => {
-    'rule' => '^/(.*) https://www.socallinuxexpo.org/scale/18x [L,R,NE]',
+    'rule' => '^/(.*) https://www.socallinuxexpo.org/scale/19x [L,R,NE]',
     'conditions' => [
       '%{REQUEST_URI} ^/$',
+    ],
+  },
+  'redirect scale19x short url to proper url' => {
+    'rule' => '^/(.*) https://www.socallinuxexpo.org/scale/19x [L,R,NE]',
+    'conditions' => [
+      '%{REQUEST_URI} ^/scale19x$',
     ],
   },
   'redirect scale18x short url to proper url' => {
