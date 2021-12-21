@@ -9,19 +9,19 @@ if File.exists?('/etc/lists_secrets')
 end
 
 default['scale_mailman'] = {
-  's3_aws_access_key_id' => d['s3_aws_access_key_id'] || 'thisisadevkey',
-  's3_aws_secret_access_key' => d['s3_aws_secret_access_key'] || 'thisisadevsecret',
-}
-
-default['scale_mailman']['listmaster'] = "ilan@linuxfests.org,listmaster@linuxfests.org"
-
-default['scale_mailman']['lists'] = [
+  's3_aws_access_key_id' =>
+    d['s3_aws_access_key_id'] || 'thisisadevkey',
+  's3_aws_secret_access_key' =>
+    d['s3_aws_secret_access_key'] || 'thisisadevsecret',
+  'listmaster' => "ilan@linuxfests.org,listmaster@linuxfests.org",
+  'lists' => [
     "board",
     "mailman",
     "scale-av",
     "scale-design",
     "scale-pr",
     "scale-webdev",
+    "scale-cfp-reviewers",
     "transportation",
     "hilton-tech",
     "ossie-planning",
@@ -35,5 +35,6 @@ default['scale_mailman']['lists'] = [
     "scale-planning",
     "scale-volunteers",
     "tech",
-    "open-infra-day"
-]
+    "open-infra-day",
+  ],
+}
