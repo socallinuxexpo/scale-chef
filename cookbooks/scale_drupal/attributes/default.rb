@@ -17,5 +17,5 @@ if node.vagrant?
   default['scale_drupal']['mysql_host'] = 'scale-db1'
 else
   default['scale_drupal']['mysql_host'] =
-    'drupal-db.cluster-c19nohpiwnoo.us-east-1.rds.amazonaws.com'
+    'scale-drupal-may23-snapshot-cluster.cluster-c19nohpiwnoo.us-east-1.rds.amazonaws.com'
 end
