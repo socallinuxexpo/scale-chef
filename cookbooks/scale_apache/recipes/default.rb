@@ -25,10 +25,17 @@ common_config = {
     'www.southerncalifornialinuxexpo.org',
     'www.southerncalifornialinuxexpo.net',
   ],
+  'Location /server-status' => {
+    'SetHandler' => 'server-status',
+    'Order' => 'Deny,Allow',
+    'Deny' => 'from all',
+    'Allow' => 'from localhost',
+  },
 }
 
 node.default['fb_apache']['sites']['*:80'] = common_config.merge({
-  'Redirect permanent /' => 'https://www.socallinuxexpo.org/',
+  'RedirectMatch permanent ^/(?!server-status)' =>
+    'https://www.socallinuxexpo.org/',
 })
 
 base_config = common_config.merge({
@@ -49,12 +56,6 @@ base_config = common_config.merge({
     '/scale12x-supporting /home/webroot/scale12x-supporting',
     '/doc /usr/share/doc',
   ],
-  'Location /server-status' => {
-    'SetHandler' => 'server-status',
-    'Order' => 'Deny,Allow',
-    'Deny' => 'from all',
-    'Allow' => 'from localhost',
-  },
   'RewriteEngine' => 'On',
   'DocumentRoot' => '/home/drupal/scale-drupal/httpdocs',
   'Directory /' => {
