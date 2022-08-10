@@ -1,10 +1,7 @@
 source 'https://rubygems.org'
 
 %w{
-  rspec
-  chef
-  foodcritic
-  rubocop
+  chef-zero
   taste_tester
 }.each do |g|
   gem g
