@@ -16,3 +16,18 @@ package 'epel-release' do
   source "#{Chef::Config['file_cache_path']}/#{epel_pkg}"
 end
 
+lux_pkg = 'lux-release-7-1.noarch.rpm'
+
+remote_file "#{Chef::Config['file_cache_path']}/#{lux_pkg}" do
+  not_if { File.exists?('/etc/yum.repos.d/lux.repo') }
+  source "http://repo.iotti.biz/CentOS/7/noarch/#{lux_pkg}"
+  owner 'root'
+  group 'root'
+  mode '0644'
+  action :create
+end
+
+package 'lux-release' do
+  not_if { File.exists?('/etc/yum.repos.d/lux.repo') }
+  source "#{Chef::Config['file_cache_path']}/#{lux_pkg}"
+end

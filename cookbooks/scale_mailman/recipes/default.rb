@@ -49,6 +49,12 @@ common_config.merge({
   node.default['fb_apache']['sites']['_default_:443'][key] = val
 end
 
+package 'downgrade mailman' do
+  only_if { node['packages']['mailman']['release'].match('fc25') }
+  package_name 'mailman'
+  action :remove
+end
+
 pkgs = %w{
   php
   php-gd
@@ -57,7 +63,9 @@ pkgs = %w{
   php-xml
   python-dns
   python2-boto
+  mailman
 }
+
 package pkgs do
   action :upgrade
   notifies :restart, 'service[apache]'
@@ -68,20 +76,6 @@ cookbook_file '/var/www/html/index.html' do
   owner 'root'
   group 'root'
   mode '0644'
-end
-
-remote_file "#{Chef::Config['file_cache_path']}/mailman-2.1.21-1.fc25.x86_64.rpm" do
-  not_if { File.exists?('/usr/lib/mailman/bin/mailmanctl') }
-  source 'https://s3.amazonaws.com/scale-packages/mailman-2.1.21-1.fc25.x86_64.rpm'
-  owner 'root'
-  group 'root'
-  mode '0644'
-  action :create
-end
-
-package 'mailman' do
-  not_if { File.exists?('/usr/lib/mailman/bin/mailmanctl') }
-  source "#{Chef::Config['file_cache_path']}/mailman-2.1.21-1.fc25.x86_64.rpm"
 end
 
 ## RESTORE BACKUPS
