@@ -70,9 +70,23 @@ cookbook_file '/var/www/html/index.html' do
   mode '0644'
 end
 
-remote_file "#{Chef::Config['file_cache_path']}/mailman-2.1.21-1.fc25.x86_64.rpm" do
+# CentOS 7's version of mailman only has 2.1.15, but that doesn't have any of
+# the necessary features for accepting mail from people with dmarc policies
+# (https://wiki.list.org/DEV/DMARC)
+#
+# those only were added in 2.1.16. 2.1.18 and later releases. Thus, using the
+# C7 version would mean:
+# - emails from people with strict dmarc policies (eg @yahoo.com or
+# owen@delong.com) emails will just bounce back when mailman tries to send it
+# to list members. the receiving members will then be unsubscribed from the
+# list instead of the sender.
+# - for those that dont have reject set as their policy, but rather quarantine
+# their mail will go to spam As such we've pulled 2.1.21 from FC25
+
+mailman_file = 'mailman-2.1.21-1.fc25.x86_64.rpm'
+remote_file "#{Chef::Config['file_cache_path']}/#{mailman_file}" do
   not_if { File.exists?('/usr/lib/mailman/bin/mailmanctl') }
-  source 'https://s3.amazonaws.com/scale-packages/mailman-2.1.21-1.fc25.x86_64.rpm'
+  source "https://s3.amazonaws.com/scale-packages/#{mailman_file}"
   owner 'root'
   group 'root'
   mode '0644'
