@@ -8,7 +8,7 @@
 #
 
 # omfg I hate this so much
-version = '15.9.17'
+version = '17.10.0'
 rpm = "cinc-#{version}-1.el7.x86_64.rpm"
 rpmpath = File.join(Chef::Config['file_cache_path'], rpm)
 remote_file rpmpath do
