@@ -25,6 +25,13 @@ common_config = {
     'www.southerncalifornialinuxexpo.org',
     'www.southerncalifornialinuxexpo.net',
   ],
+  # Not used by much, because of our http->https redirect,
+  # but needed for the LetsEncrypt tokens
+  'DocumentRoot' => '/home/drupal/scale-drupal/httpdocs',
+  'Directory /home/drupal/scale-drupal/httpdocs/.well-known' => {
+    'Allow' => 'from all',
+    'Require' => 'all granted',
+  },
   'Location /server-status' => {
     'SetHandler' => 'server-status',
     'Order' => 'Deny,Allow',
@@ -34,7 +41,7 @@ common_config = {
 }
 
 node.default['fb_apache']['sites']['*:80'] = common_config.merge({
-  'RedirectMatch permanent ^/(?!server-status)' =>
+  'RedirectMatch permanent ^/(?!server-status|.well-known)' =>
     'https://www.socallinuxexpo.org/',
 })
 
