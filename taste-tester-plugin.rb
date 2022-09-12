@@ -5,5 +5,6 @@ def self.test_remote_client_rb_extra_code(_hostname)
     client_fork false
     no_lazy_load false
     local_key_generation true
+    json_attribs '/etc/chef/runlist.json'
   EOF
 end

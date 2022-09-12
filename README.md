@@ -40,8 +40,7 @@ To not get redirects you should edit `/home/drupal/scale-drupal/httpdocs/.htacce
 
 ## Testing Changes
 
-Note: You probably want to use rvm and then "bundle install" to get
-all the dependencies installed for testing.
+You'll need to setup your environment. Run `./scripts/setup_dev.sh` to do so.
 
 We use [Taste Tester](https://github.com/facebook/taste-tester/) for testing
 changes. We have a wrapper for our specific settings. From the root of the
