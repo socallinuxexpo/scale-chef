@@ -131,7 +131,7 @@ rewrites = {
       '%{REQUEST_URI} ^/$',
     ],
   },
-  'redirect scale19x short url to proper url' => {
+  'redirect scale20x short url to proper url' => {
     'rule' => '^/(.*) https://www.socallinuxexpo.org/scale/20x [L,R,NE]',
     'conditions' => [
       '%{REQUEST_URI} ^/scale20x$',
