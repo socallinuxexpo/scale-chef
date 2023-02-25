@@ -77,7 +77,7 @@ module ScaleHook
         Chefctl.logger.debug(" - STDERR: #{s.stdout}")
         return
       end
-      s = Mixlib::ShellOut.new("git reset --hard origin/master").run_command
+      s = Mixlib::ShellOut.new("git reset --hard origin/main").run_command
       if s.error?
         Chefctl.logger.error("Failed to update git repo")
         return
