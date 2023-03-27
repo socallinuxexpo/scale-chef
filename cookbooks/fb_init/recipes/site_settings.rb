@@ -100,6 +100,9 @@ node.default['fb_sysctl']['net.ipv6.conf.default.accept_ra'] = 1
 node.default['fb_sysctl'][
   "net.ipv6.conf.#{node['network']['default_interface']}.accept_ra"] = 1
 
+# Remove once we've ported over all cookbooks to fb_yum_repos
+node.default['fb_yum_repos']['manage_repos'] = false
+
 include_recipe 'fb_init::iptables_settings'
 
 to_remove = %w{
