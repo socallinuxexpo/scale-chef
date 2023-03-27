@@ -3,9 +3,22 @@
 # Recipe:: default
 #
 
+if node.centos8?
+  package 'remi-release-8' do
+    source 'https://rpms.remirepo.net/enterprise/remi-release-8.rpm'
+    action :install
+  end
+
+  # for php-imap
+  node.default['fb_dnf']['modules']['php'] = {
+    'enable' => true,
+    'stream' => 'remi-7.2',
+  }
+end
+
 pkgs = %w{
   php
-  php-mysql
+  php-mysqlnd
   php-imap
 }
 
