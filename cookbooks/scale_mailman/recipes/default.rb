@@ -70,6 +70,19 @@ elsif node.centos8?
     python3
     python3-boto3
   }
+
+  node.default['fb_dnf']['modules']['python27'] = {
+    'enable' => true,
+    'stream' => '2.7',
+  }
+  node.default['fb_dnf']['modules']['python36'] = {
+    'enable' => true,
+    'stream' => '3.6',
+  }
+  node.default['fb_dnf']['modules']['mailman'] = {
+    'enable' => true,
+    'stream' => '2.1',
+  }
 else
   fail "scale_mailman: platform not supported"
 end
