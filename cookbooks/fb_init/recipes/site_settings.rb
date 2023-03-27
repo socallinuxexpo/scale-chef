@@ -105,6 +105,16 @@ to_remove = %w{
   rpcbind
   abrt
 }
+
+# c8s and later preinstall cockpit, do not want
+unless node.centos7?
+  to_remove += %w{
+    cockpit-system
+    cockpit-ws
+    cockpit-bridge
+  }
+end
+
 package to_remove do
   action :remove
 end
