@@ -9,11 +9,11 @@
 
 # omfg I hate this so much
 version = '17.10.0'
-rpm = "cinc-#{version}-1.el#{node['platform_version']}.x86_64.rpm"
+rpm = "cinc-#{version}-1.el#{node.major_platform_version}.x86_64.rpm"
 rpmpath = File.join(Chef::Config['file_cache_path'], rpm)
 remote_file rpmpath do
   source "http://downloads.cinc.sh/files/stable/cinc/#{version}/el/" +
-    "#{node['platform_version']}/#{rpm}"
+    "#{node.major_platform_version}/#{rpm}"
   owner 'root'
   group 'root'
   mode '0644'
