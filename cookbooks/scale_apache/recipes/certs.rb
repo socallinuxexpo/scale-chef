@@ -1,4 +1,9 @@
-package ['certbot', 'python-acme'] do
+pkgs = ['certbot']
+
+# undeclared dependency in c7
+pkgs << 'python-acme' if node.centos7?
+
+package pkgs do
   action :upgrade
 end
 
