@@ -1,4 +1,9 @@
-package ['certbot', 'python-acme'] do
+pkgs = %w{certbot}
+if node.centos7?
+  pkgs << 'python-acme'
+end
+
+package pkgs do
   action :upgrade
 end
 
