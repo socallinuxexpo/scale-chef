@@ -238,6 +238,13 @@ pkgs = %w{
   python2-boto
 }
 
+if node.centos8?
+  node.default['fb_dnf']['modules']['httpd'] = {
+    'enable' => true,
+    'stream' => '2.4',
+  }
+end
+
 package pkgs do
   action :upgrade
   notifies :restart, 'service[apache]'
