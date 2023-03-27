@@ -9,6 +9,9 @@
 include_recipe 'fb_init::site_settings'
 
 if node.centos?
+  unless node.centos7?
+    include_recipe 'fb_dnf'
+  end
   include_recipe 'scale_yum'
 end
 if node.debian? || node.ubuntu?

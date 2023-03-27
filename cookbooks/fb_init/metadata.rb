@@ -16,6 +16,7 @@ version '0.0.1'
   scale_users
   scale_yum
   fb_cron
+  fb_dnf
   fb_fstab
   fb_helpers
   fb_hostconf
