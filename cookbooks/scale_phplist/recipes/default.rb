@@ -4,8 +4,17 @@
 #
 
 if node.centos8?
-  package 'remi-release-8' do
+  relpath = File.join(Chef::Config['file_cache_path'], 'remi-release-8.rpm')
+  remote_file relpath do
     source 'https://rpms.remirepo.net/enterprise/remi-release-8.rpm'
+    owner 'root'
+    group 'root'
+    mode '0644'
+    action :create
+  end
+
+  package 'remi-release-8' do
+    source relpath
     action :install
   end
 
