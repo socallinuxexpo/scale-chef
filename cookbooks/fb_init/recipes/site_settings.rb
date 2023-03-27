@@ -97,7 +97,8 @@ node.default['scale_phplist']['bounce_mailbox_password'] =
 # so in the meantime we work around it with this
 node.default['fb_sysctl']['net.ipv6.conf.all.accept_ra'] = 1
 node.default['fb_sysctl']['net.ipv6.conf.default.accept_ra'] = 1
-node.default['fb_sysctl']['net.ipv6.conf.ens5.accept_ra'] = 1
+node.default['fb_sysctl'][
+  "net.ipv6.conf.#{node['network']['default_interface']}.accept_ra"] = 1
 
 include_recipe 'fb_init::iptables_settings'
 
