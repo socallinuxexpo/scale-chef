@@ -52,11 +52,8 @@ end
 pkgs = %w{
   php
   php-gd
-  php-mysql
   php-pdo
   php-xml
-  python-dns
-  python2-boto
 }
 
 if node.centos7?
