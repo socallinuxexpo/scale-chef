@@ -1,5 +1,5 @@
 [datadog]
 name=Datadog
-baseurl=https://yum.datadoghq.com/stable/6/x86_64/
+baseurl=https://yum.datadoghq.com/stable/7/x86_64/
 gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/DATADOG_RPM_KEY.public
