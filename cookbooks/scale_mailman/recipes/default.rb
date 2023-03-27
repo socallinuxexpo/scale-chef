@@ -119,14 +119,18 @@ package 'mailman' do
 end
 
 ## RESTORE BACKUPS
-template '/usr/local/bin/restore-mailman.py' do
-  owner 'root'
-  group 'root'
-  mode  '0755'
-end
+if node.centos7?
+  # Probably never worked... but also would need a port to boto3 to even
+  # try to work in C8
+  template '/usr/local/bin/restore-mailman.py' do
+    owner 'root'
+    group 'root'
+    mode  '0755'
+  end
 
-execute '/usr/local/bin/restore-mailman.py' do
-  creates '/var/lib/mailman/archives/private/tech'
+  execute '/usr/local/bin/restore-mailman.py' do
+    creates '/var/lib/mailman/archives/private/tech'
+  end
 end
 
 template '/usr/local/bin/backup-mailman.sh' do
