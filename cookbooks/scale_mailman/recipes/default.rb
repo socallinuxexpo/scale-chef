@@ -67,6 +67,8 @@ elsif node.centos8?
     php-mysqlnd
     python2
     python2-dns
+    python3
+    python3-boto3
   }
 else
   fail "scale_mailman: platform not supported"
