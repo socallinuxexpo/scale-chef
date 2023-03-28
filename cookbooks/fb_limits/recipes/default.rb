@@ -20,15 +20,22 @@
 
 template '/etc/security/limits.conf' do
   source 'limits.conf.erb'
-  owner 'root'
-  group 'root'
+  owner node.root_user
+  group node.root_group
   mode '0644'
 end
 
-# We want to manage all limits config via /etc/security/limits.conf so
-# clean out limits.d
-directory '/etc/security/limits.d' do
-  only_if { Dir.exists?('/etc/security/limits.d') }
-  action :delete
-  recursive true
+# We want to manage all limits config via /etc/security/limits.conf, so clean
+# out limits.d/*.conf. Instead of deleting the directory, just overwrite the
+# files with a comment indicating they were disabled by Chef. This is important
+# so that upgrading or reinstalling an RPM that ships one such config file will
+# not end up creating the file back again.
+Dir.glob '/etc/security/limits.d/*.conf' do |i|
+  file "overwrite #{i} in /etc/security/limits.d" do
+    path i
+    content "# Disabled by Chef\n"
+    owner node.root_user
+    group node.root_group
+    mode '0644'
+  end
 end
