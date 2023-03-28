@@ -25,35 +25,73 @@ moddir = value_for_platform_family(
 
 auth_core_suffix = node.centos6? ? 'default' : 'core'
 
-default['fb_apache'] = {
-  'sysconfig' => {
-    '_extra_lines' => [],
-  },
-  'manage_packages' => true,
-  'sites' => {},
-  'extra_configs' => {},
-  'modules' => [
-    'alias',
-    'auth_basic',
-    'auth_digest',
-    'authn_file',
-    "authn_#{auth_core_suffix}",
-    "authz_#{auth_core_suffix}",
-    'authz_groupfile',
-    'authz_host',
-    'authz_owner',
-    'authz_user',
-    'autoindex',
-    'deflate',
-    'dir',
-    'env',
-    'headers',
+modules = [
+  'alias',
+  'auth_basic',
+  'auth_digest',
+  'authn_file',
+  "authn_#{auth_core_suffix}",
+  "authz_#{auth_core_suffix}",
+  'authz_groupfile',
+  'authz_host',
+  'authz_owner',
+  'authz_user',
+  'autoindex',
+  'deflate',
+  'dir',
+  'env',
+  'headers',
+  'mime',
+  'negotiation',
+  'setenvif',
+]
+
+sysconfig = {
+  '_extra_lines' => [],
+}
+
+case node['platform_family']
+when 'rhel'
+  modules += [
     'log_config',
     'logio',
-    'mime',
-    'negotiation',
-    'setenvif',
-  ],
+    'ssl',
+  ]
+
+  unless node.centos6?
+    modules += [
+      'socache_shmcb',
+      'systemd',
+      'unixd',
+    ]
+  end
+
+  {
+    'options' => [],
+    'lang' => 'C',
+  }.each do |k, v|
+    sysconfig[k] = v
+  end
+when 'debian'
+  {
+    'htcacheclean_run' => 'auto',
+    'htcacheclean_mode' => 'daeon',
+    'htcacheclean_size' => '300M',
+    'htcacheclean_daemon_interval' => '120',
+    'htcacheclean_path' => '/var/cache/apache2/mod_cache_disk',
+    'htcacheclean_options' => ['-n'],
+  }.each do |k, v|
+    sysconfig[k] = v
+  end
+end
+
+default['fb_apache'] = {
+  'sysconfig' => sysconfig,
+  'manage_packages' => true,
+  'enable_default_site' => true,
+  'sites' => {},
+  'extra_configs' => {},
+  'modules' => modules,
   'modules_directory' => moddir,
   'modules_mapping' => {
     'actions' => 'mod_actions.so',
@@ -114,17 +152,19 @@ default['fb_apache'] = {
     'reqtimeout' => 'mod_reqtimeout.so',
     'rewrite' => 'mod_rewrite.so',
     'setenvif' => 'mod_setenvif.so',
+    'socache_shmcb' => 'mod_socache_shmcb.so',
     'speling' => 'mod_speling.so',
     'ssl' => 'mod_ssl.so',
     'status' => 'mod_status.so',
     'substitute' => 'mod_substitute.so',
     'suexec' => 'mod_suexec.so',
+    'systemd' => 'mod_systemd.so',
     'unique_id' => 'mod_unique_id.so',
     'userdir' => 'mod_userdir.so',
     'usertrack' => 'mod_usertrack.so',
+    'unixd' => 'mod_unixd.so',
     'version' => 'mod_version.so',
     'vhost_alias' => 'mod_vhost_alias.so',
-    'wsgi' => 'mod_wsgi.so',
   },
   'module_packages' => {
     'dav_svn' => value_for_platform_family(
@@ -142,28 +182,6 @@ default['fb_apache'] = {
     'ssl' => value_for_platform_family(
       'rhel' => 'mod_ssl',
     ),
-    'wsgi' => value_for_platform_family(
-      'rhel' => 'mod_wsgi',
-    ),
   },
+  'mpm' => 'prefork',
 }
-
-if node.centos?
-  {
-    'options' => [],
-    'lang' => 'C',
-  }.each do |k, v|
-    node.default['fb_apache']['sysconfig'][k] = v
-  end
-elsif node.debian?
-  {
-    'htcacheclean_run' => 'auto',
-    'htcacheclean_mode' => 'daeon',
-    'htcacheclean_size' => '300M',
-    'htcacheclean_daemon_interval' => '120',
-    'htcacheclean_path' => '/var/cache/apache2/mod_cache_disk',
-    'htcacheclean_options' => ['-n'],
-  }.each do |k, v|
-    node.default['fb_apache']['sysconfig'][k] = v
-  end
-end
