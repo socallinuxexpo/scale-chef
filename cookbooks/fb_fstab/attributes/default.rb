@@ -96,7 +96,10 @@ default['fb_fstab'] = {
     'nofail',
     # NFS sometimes automatically adds addr=<server_ip> here automagically,
     # which doesn't affect the mount, so don't compare it.
-    /^(mount)?(addr|port|proto)=.*/,
+    /^mount(addr|port|proto|vers)=|(client)?(addr|port)=.*/,
   ],
   'exclude_base_swap' => false,
+  # Best effort try to remove the mount point (only directory and only if empty)
+  # Does not throw exception on failure
+  'umount_delete_empty_mountdir' => false,
 }

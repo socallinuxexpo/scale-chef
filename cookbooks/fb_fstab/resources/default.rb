@@ -20,20 +20,19 @@ require 'fileutils'
 
 default_action :doeverything
 
-def whyrun_supported?
-  true
-end
-
 action_class do
   def reload_filesystems
-    ohai 'reload filesystems for fb_fstab' do
+    # this should not trigger the parent resource as an 'update' because
+    # we are not changing anything here
+    t = build_resource(:ohai, 'reload filesystems for fb_fstab') do
       if node['filesystem2']
         plugin 'filesystem2'
       else
         plugin 'filesystem'
       end
       action :nothing
-    end.run_action(:reload)
+    end
+    t.run_action(:reload)
   end
 end
 
