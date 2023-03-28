@@ -37,8 +37,8 @@ else
   template sysconfig_path do
     not_if { node.systemd? }
     source 'rsyslog-sysconf.erb'
-    owner 'root'
-    group 'root'
+    owner node.root_user
+    group node.root_group
     mode '0644'
     notifies :restart, 'service[rsyslog]'
   end
@@ -55,12 +55,11 @@ if node.centos?
     'files' => ['/var/log/rsyslog-stats.log'],
     'overrides' => {
       'missingok' => true,
-      'notifempty' => true,
     },
   }
   directory '/var/spool/rsyslog' do
-    owner 'root'
-    group 'root'
+    owner node.root_user
+    group node.root_group
     mode '0700'
   end
 end
@@ -68,8 +67,8 @@ end
 include_recipe 'fb_syslog::packages'
 
 template config_file do
-  owner 'root'
-  group 'root'
+  owner node.root_user
+  group node.root_group
   mode '0644'
   notifies :restart, "service[#{service_name}]"
 end
@@ -77,4 +76,7 @@ end
 service service_name do
   action :start
   subscribes :restart, 'package[rsyslog]'
+  # within vagrant, sometimes rsyslog fails to restart the first time
+  retries 5
+  retry_delay 5
 end

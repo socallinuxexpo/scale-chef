@@ -30,6 +30,11 @@ else
   }
 end
 
+syslog_file = value_for_platform_family(
+  ['rhel', 'fedora'] => '/var/log/messages',
+  'debian' => '/var/log/syslog',
+)
+
 # Add in some reasonable defaults for all syslog.confs
 default['fb_syslog'] = {
   'syslog-entries' => {
@@ -38,8 +43,8 @@ default['fb_syslog'] = {
       'comment' => 'Log anything info level or higher. A lot ' +
                    'of things go into their own file.',
       'selector' => '*.info;mail,authpriv,cron,' +
-                    'local2,local3,local5,local6.none',
-      'action' => '-/var/log/messages',
+        'local0,local1,local2,local3,local5,local6,local7.none',
+      'action' => "-#{syslog_file}",
     },
     'mail' => {
       'comment' => 'Log all the mail messages in one place.',
@@ -54,7 +59,7 @@ default['fb_syslog'] = {
     'emergency' => {
       'comment' => 'Everybody gets emergency messages',
       'selector' => '*.emerg',
-      'action' => '*',
+      'action' => ':omusrmsg:*',
     },
     'news' => {
       'comment' => 'Save news errors of level crit and higher ' +
@@ -69,12 +74,20 @@ default['fb_syslog'] = {
     },
   },
   'rsyslog_server' => false,
+  'rsyslog_server_address' => nil,
   'rsyslog_rulesets' => {},
   'rsyslog_nonruleset_ports' => {
     'tcp' => [],
     'udp' => [],
   },
-  'rsyslog_early_lines' => [],
+  'rsyslog_early_lines' => [
+    # Set the default permissions for all log files.
+    '$FileOwner root',
+    '$FileGroup root',
+    '$FileCreateMode 0644',
+    '$DirCreateMode 0755',
+    '$Umask 0002',
+  ],
   'rsyslog_late_lines' => [],
   'rsyslog_additional_sockets' => [],
   'rsyslog_facilities_sent_to_remote' => [],
@@ -83,5 +96,7 @@ default['fb_syslog'] = {
   'rsyslog_report_suspension' => false,
   'rsyslog_stats_logging' => false,
   'rsyslog_use_omprog_force' => false,
+  'rsyslog_omprog_binary_args' => [],
   'sysconfig' => sysconfig,
+  '_enable_syslog_socket_override' => true,
 }

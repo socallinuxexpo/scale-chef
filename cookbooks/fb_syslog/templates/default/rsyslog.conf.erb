@@ -26,6 +26,10 @@ module(load="omprog")
 $ModLoad imudp
 $ModLoad imtcp
 
+<% if node['fb_syslog']['rsyslog_server_address'] -%>
+$UDPServerAddress <%= node['fb_syslog']['rsyslog_server_address'] %>
+<% end -%>
+
 <%   non_ruleset_ports = node['fb_syslog']['rsyslog_nonruleset_ports'].to_hash %>
 <%   non_ruleset_ports.each do |proto, ports| -%>
 <%     if proto == 'udp' -%>
@@ -67,17 +71,7 @@ $AddUnixListenSocket <%= sock %>
 # not useful and an extreme performance hit
 #$ActionFileEnableSync on
 
-#
-# Set the default permissions for all log files.
-#
-$FileOwner root
-$FileGroup root
-$FileCreateMode 0644
-$DirCreateMode 0755
-$Umask 0002
-
 <% unless node['fb_syslog']['rsyslog_early_lines'].empty? %>
-# rsyslog magic that should (be able to) win over standard syslog stuff
 <%   node['fb_syslog']['rsyslog_early_lines'].each do |line| %>
 <%=    line %>
 <%   end %>
@@ -139,6 +133,11 @@ $InputTCPServerRun <%= specs['port'] %>
       !node['fb_syslog']['rsyslog_facilities_sent_to_remote'].empty?
      if node['fb_syslog']['rsyslog_use_omprog']
        rsyslog_omprog_binary = node['fb_syslog']['rsyslog_omprog_binary']
+       rsyslog_omprog_binary_args =
+         node['fb_syslog']['rsyslog_omprog_binary_args']
+       unless rsyslog_omprog_binary_args.empty?
+         rsyslog_omprog_binary += ' ' + rsyslog_omprog_binary_args.join(' ')
+       end
        if node.linux?
 %>
 # Program Logging
