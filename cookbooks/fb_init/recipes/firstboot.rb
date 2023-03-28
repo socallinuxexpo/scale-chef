@@ -1,6 +1,8 @@
-# vim: syntax=ruby:expandtab:shiftwidth=2:softtabstop=2:tabstop=2
 #
-# Copyright (c) 2018-present, Facebook, Inc.
+# Cookbook Name:: fb_init_sample
+# Recipe:: firstboot
+#
+# Copyright (c) 2019-present, Facebook, Inc.
 # All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,17 +16,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
 
-# This stuff should go in an ohai plugin or some-such
-shorthostname = node['hostname']
-trimmed_hostname = shorthostname.tr('0-9', '')
-pieces = trimmed_hostname.split('-')
-env = 'prod'
-tier = pieces[1]
-
-default['fb_init'] = {
-  'firstboot_os' => File.exist?('/root/firstboot_os'),
-  'firstboot_tier' => File.exist?('/root/firstboot_tier'),
-  'tier' => tier,
-  'env' => env,
-}
+# HERE: put any non-OS specific firstboot logic here
