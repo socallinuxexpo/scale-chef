@@ -17,18 +17,48 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-%w{
-  systemd-networkd.socket
-  systemd-networkd.service
-}.each do |svc|
-  service svc do
-    only_if { node['fb_systemd']['networkd']['enable'] }
-    action [:enable, :start]
-  end
 
-  service "disable #{svc}" do
-    not_if { node['fb_systemd']['networkd']['enable'] }
-    service_name svc
-    action [:stop, :disable]
-  end
+fb_helpers_gated_template '/etc/systemd/networkd.conf' do
+  allow_changes node.nw_changes_allowed?
+  source 'systemd.conf.erb'
+  owner node.root_user
+  group node.root_group
+  mode '0644'
+  variables(
+    :config => 'networkd',
+    :section => %w{Network DHCP},
+  )
+  notifies :restart, 'service[systemd-networkd.service]'
+end
+
+service 'systemd-networkd.socket' do
+  only_if { node['fb_systemd']['networkd']['enable'] }
+  only_if { node['fb_systemd']['networkd']['use_networkd_socket_with_networkd'] }
+  notifies :stop, 'service[systemd-networkd.service]', :before
+  notifies :start, 'service[systemd-networkd.service]', :immediately
+  action [:enable, :start]
+end
+
+service 'mask systemd-networkd.socket' do
+  only_if { node['fb_systemd']['networkd']['enable'] }
+  not_if { node['fb_systemd']['networkd']['use_networkd_socket_with_networkd'] }
+  service_name 'systemd-networkd.socket'
+  action :mask
+end
+
+service 'disable systemd-networkd.socket' do
+  not_if { node['fb_systemd']['networkd']['enable'] }
+  service_name 'systemd-networkd.socket'
+  action [:stop, :disable]
+end
+
+service 'systemd-networkd.service' do
+  only_if { node['fb_systemd']['networkd']['enable'] }
+  action [:enable, :start]
+end
+
+service 'disable systemd-networkd.service' do
+  not_if { node['fb_systemd']['networkd']['enable'] }
+  service_name 'systemd-networkd.service'
+  action [:stop, :disable]
 end

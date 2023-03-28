@@ -28,7 +28,7 @@ unless node.systemd?
 end
 
 case node['platform_family']
-when 'rhel', 'fedora'
+when 'rhel', 'fedora', 'arch'
   systemd_prefix = '/usr'
 when 'debian'
   systemd_prefix = ''
@@ -47,7 +47,7 @@ template '/etc/systemd/system.conf' do
     :config => 'system',
     :section => 'Manager',
   )
-  notifies :run, 'fb_systemd_reload[system instance]', :immediately
+  notifies :reexec, 'fb_systemd_reload[system instance]', :immediately
 end
 
 template '/etc/systemd/user.conf' do
@@ -86,6 +86,25 @@ include_recipe 'fb_systemd::resolved'
 include_recipe 'fb_systemd::timesyncd'
 include_recipe 'fb_systemd::boot'
 
+link '/etc/tmpfiles.d/selinux-policy.conf' do
+  only_if { node['fb_systemd']['fedora_nspawn_workaround'] }
+  to '/dev/null'
+end
+
+# FIXME: Remove after https://github.com/systemd/systemd/pull/23205 is
+# resolved and released.
+execute 'Ensure systemd-network user exists' do
+  only_if do
+    systemd_version = FB::Version.new(node['packages']['systemd']['version'])
+    # 'systemd-sysusers' was only introduced in v.215
+    systemd_version >= FB::Version.new('215')
+  end
+  # rubocop:disable Layout/LineLength
+  command "#{systemd_prefix}/bin/systemd-sysusers --inline \"u systemd-network 192 \\\"systemd Network Management\\\"\""
+  # rubocop:enable Layout/LineLength
+  action :nothing
+end
+
 execute 'process tmpfiles' do
   command lazy {
     "#{systemd_prefix}/bin/systemd-tmpfiles --create" +
@@ -93,7 +112,17 @@ execute 'process tmpfiles' do
       map { |x| " --exclude-prefix=#{x}" }.
       join
   }
+  Chef::Log.debug(
+    'Running in node.firstboot_any_phase? ' +
+    node.firstboot_any_phase?.to_s,
+  )
+  # it returns 65 if it had to ignore some lines, which seems to happen
+  # quite often on initial setup
+  if node.firstboot_any_phase?
+    returns [0, 65]
+  end
   action :nothing
+  notifies :run, 'execute[Ensure systemd-network user exists]', :before
 end
 
 template '/etc/tmpfiles.d/chef.conf' do
@@ -128,6 +157,26 @@ directory '/etc/systemd/user/default.target.wants' do
   mode '0755'
 end
 
+execute 'set default target' do
+  only_if do
+    current = shell_out('systemctl get-default').stdout.strip
+    is_ignored = node['fb_systemd']['ignore_targets'].include?(current)
+    is_supported = FB::Version.new(node['packages']['systemd'][
+      'version']) >= FB::Version.new('205')
+    is_supported && !is_ignored &&
+      current != node['fb_systemd']['default_target']
+  end
+  command lazy {
+    "systemctl set-default #{node['fb_systemd']['default_target']}"
+  }
+end
+
 link '/etc/systemd/system/default.target' do
-  to lazy { node['fb_systemd']['default_target'] }
+  only_if do
+    FB::Version.new(node['packages']['systemd'][
+      'version']) < FB::Version.new('205')
+  end
+  to lazy {
+    "/lib/systemd/system/#{node['fb_systemd']['default_target']}.target"
+  }
 end

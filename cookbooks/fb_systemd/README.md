@@ -22,7 +22,9 @@ Attributes
 * node['fb_systemd']['logind']['enable']
 * node['fb_systemd']['logind']['config']
 * node['fb_systemd']['networkd']['enable']
+* node['fb_systemd']['networkd']['config']
 * node['fb_systemd']['resolved']['enable']
+* node['fb_systemd']['resolved']['enable_nss_resolve']
 * node['fb_systemd']['resolved']['config']
 * node['fb_systemd']['timesyncd']['enable']
 * node['fb_systemd']['timesyncd']['config']
@@ -35,6 +37,8 @@ Attributes
 * node['fb_systemd']['boot']['path']
 * node['fb_systemd']['boot']['loader']
 * node['fb_systemd']['boot']['entries']
+* node['fb_systemd']['ignore_targets']
+* node['fb_systemd']['fedora_nspawn_workaround']
 
 Usage
 -----
@@ -45,10 +49,33 @@ runlist to use it.
 ### FB::Systemd
 The following methods are available:
 
+* `FB::Systemd.condition_user_online(user)
+  Takes a username (as a string) or a uid (as an integer), and generates
+  a map containing attributes to add to a unit definition to make the service
+  start conditional on that user being logged in, and
+  `{After,Wants}=network-online.target` (so NetworkManager or some other utility
+  can use the user's credentials to start a network connection).
+
+```ruby
+ FB::Systemd.condition_user_online('johndoe')
+ => {"After"=>"network-online.target", "Wants"=>"network-online.target", "ConditionPathExists"=>"/run/user/1000/bus"}
+```
+
+* `FB::Systemd.condition_user_session(user)
+  Takes a username (as a string) or a uid (as an integer), and generates
+  a map containing `ConditionPathExists` with the path to that user's session bus,
+  which when added to a unit definition will make the service start conditional on
+  that user being logged in.
+
+```ruby
+ FB::Systemd.condition_user_session('johndoe')
+ => {"ConditionPathExists"=>"/run/user/1000/bus"}
+```
+
 * `FB::Systemd.path_to_unit(path, unit_type)`
   Convert a given `path` to a unit name of `unit_type` type.
 
-```
+```ruby
  FB::Systemd.path_to_unit('/dev/mapper/dm-0', 'swap')
  => "dev-mapper-dm\\x2d0.swap"
 ```
@@ -57,7 +84,7 @@ The following methods are available:
   Sanitize a name by replacing non-alphanumeric characters (including spaces)
   with underscores.
 
-```
+```ruby
  FB::Systemd.sanitize('disable network')
  => "disable_network"
 ```
@@ -66,9 +93,45 @@ The following methods are available:
   Render a Hash or a String into an INI-formatted String that's compliant with
   [systemd.syntax](https://www.freedesktop.org/software/systemd/man/systemd.syntax.html).
 
-```
+```ruby
  FB::Systemd.to_ini({'Service'=>{'User'=>'nobody'}})
  => "[Service]\nUser = nobody\n"
+```
+
+* `FB::Systemd.merge_unit(default_hash, override_hash)`
+  Take two hashes of systemd unit properties, and merge them together.
+  Arguments are expected to be a hash, with the three unit file stanzas.
+  The merge will append values together if a key from either hash is a list.
+  Otherwise, it will override.
+
+```ruby
+ default_hash= {
+   'Service' => {
+     'PrivateTmp' => 'yes',
+     'Unmodified' => 'true',
+     'Something' => ['val1'],
+     'AnotherThing' => 'val3',
+   },
+   'Unit' => {},
+   'Install' => {},
+ }
+ override_hash= {
+   'Service' => {
+     'PrivateTmp' => 'no',
+     'Something' => ['val2'],
+     'AnotherThing' => ['val4'],
+   },
+ }
+
+ FB::Systemd.merge_unit(default_hash, override_hash)
+ => {
+      "Service"=>{
+        "AnotherThing"=>["val3", "val4"],
+        "PrivateTmp"=>"no",
+        "Something"=>["val1", "val2"],
+        "Unmodified"=>"true"
+      }
+    }
 ```
 
 ### Providers
@@ -76,7 +139,13 @@ The following methods are available:
 * a `fb_systemd_override` custom resource to manage systemd unit drop-in
   overrides, taking inspiration from the `systemd_unit` builtin resource
 
-```
+This provider has two actions:
+
+* `:create` - Add parameters described below to create the override and
+  reload systemd [default]
+* `:delete` - Remove the override and reload systemd
+
+```ruby
 fb_systemd_override 'run-as-nobody' do
   unit_name 'foo.service'
   content({
@@ -95,7 +164,7 @@ end
   `systemd_unit`. Note however that if you are overriding a list and want to
   reset it, you will have to specify `content` as a string, e.g.:
 
-```
+```ruby
 fb_systemd_override 'disable-controllers' do
   unit_name 'foo.slice'
   content <<-EOU.gsub(/^\s+/, '')
@@ -108,7 +177,7 @@ end
 
   Alternatively, you can specify a `source` to generate the override, e.g.:
 
-```
+```ruby
 fb_systemd_override 'disable-controllers' do
   unit_name 'foo.slice'
   source 'disable-controllers.conf.erb'
@@ -118,7 +187,7 @@ end
 * a `fb_systemd_reload` LWRP to safetly trigger a daemon reload for a systemd
   instance (at the system or user level)
 
-```
+```ruby
 fb_systemd_reload 'reload systemd' do
   instance 'user'
   user 'dcavalca'
@@ -141,13 +210,24 @@ The default systemd target can be configured with
 `node['fb_systemd']['default_target']`. It defaults to
 `/lib/systemd/system/multi-user.target`.
 
+### Ignored targets
+Sometimes it could be useful for chef to ignore target changes generated by
+external tools - `node['fb_systemd']['ignore_targets']` can be used to
+whitelist a specific list of targets for that purpose, for example:
+
+```ruby
+node.default['fb_systemd']['ignore_targets'] = [
+  'emergency.target',
+]
+```
+
 ### System and session configuration
 You can tune system-level or session-level defaults for systemd by using the
 attributes `node['fb_systemd']['system']` and `node['fb_systemd']['user']`.
 This is useful e.g. to set system-level limits for services (as systemd doesn't
 enforce PAM limits set via `fb_limits` for system services), such as:
 
-```
+```ruby
 node.default['fb_systemd']['system']['DefaultLimitNOFILE'] = 65535
 ```
 
@@ -166,7 +246,7 @@ Additional entries to the hardware database can be entered using the
 [hwdb documentation](https://www.freedesktop.org/software/systemd/man/hwdb.html).
 Example:
 
-```
+```ruby
 node.default['fb_systemd']['udevd']['hwdb']['evdev:input:b0003v05AFp8277*'] = {
   'KEYBOARD_KEY_70039' => 'leftalt',
   'KEYBOARD_KEY_700e2' => 'leftctrl',
@@ -178,7 +258,7 @@ Additional udev rules can be defined using the
 [udev documentation](https://www.freedesktop.org/software/systemd/man/udev.html).
 Example:
 
-```
+```ruby
 node.default['fb_systemd']['udevd']['rules'] += [
   'KERNEL=="fd[0-9]*", OWNER="john"',
 ]
@@ -225,6 +305,9 @@ using the `node['fb_systemd']['logind']['config']` attribute, according to the
 ### networkd configuration
 You can choose whether or not to enable `systemd-networkd` with the
 `node['fb_systemd']['networkd']['enable']` attribute, which defaults to `false`.
+Global network parameters for networkd can be configured via the
+`node['fb_systemd']['networkd']['config']` attribute, as described in the
+[networkd documention](https://www.freedesktop.org/software/systemd/man/networkd.conf.html)
 
 Note that this cookbook does not manage network configuration profiles. If you
 drop `netdev`, `link`, `network` definitions under `/etc/systemd/network` from
@@ -233,12 +316,13 @@ service.
 
 ### resolved configuration
 You can choose whether or not to enable `systemd-resolved` with the
-`node['fb_systemd']['resolved']['enable']` attribute, which defaults to `false`.
-Note that this will also enable the `nss-resolve` resolver in
+`node['fb_systemd']['resolved']['enable']` attribute, which defaults to
+`false`.  Note that this will also enable the `nss-resolve` resolver in
 `/etc/nsswitch.conf` in place of the glibc `dns` one (using the API provided by
-`fb_nsswitch`). Resolved can be configured using the
-`node['fb_systemd']['resolved']['config']` attribute, as described in the
-[resolved documentation](https://www.freedesktop.org/software/systemd/man/resolved.conf.html).
+`fb_nsswitch`) unless you set `enable_nss_resolve` to false. Resolved can be
+configured using the `node['fb_systemd']['resolved']['config']` attribute, as
+described in the [resolved
+documentation](https://www.freedesktop.org/software/systemd/man/resolved.conf.html).
 
 Note that this cookbook does not manage `/etc/resolv.conf`. If you're using
 resolved, you probably want to make that a symlink to
@@ -268,7 +352,7 @@ transparently on non-systemd hosts as well.
 Use `node['fb_systemd']['tmpfiles']` to control the creation, deletion
 and cleaning of volatile and temporary files. For example:
 
-```
+```ruby
 node.default['fb_systemd']['tmpfiles']['/run/user'] = {
   'type' => 'd',
   'mode' => '0755',
@@ -288,16 +372,23 @@ for more details on how to use tmpfiles and the meaning of the various options.
 Use `node['fb_systemd']['tmpfiles_excluded_prefixes']` to add to set of paths that
 systemd-tmpfiles will exclude.  For example:
 
-```
+```ruby
 node.default['fb_systemd']['tmpfiles_excluded_prefixes'] << '/sys'
 ]
 ```
+
+Due to an issue with the default Fedora tmpfiles configuration
+(see https://bugzilla.redhat.com/show_bug.cgi?id=1945775), in order to create
+tmpfiles in a Fedora systemd-nspawn container this cookbook masks the problematic
+configuration by linking `/etc/tmpfiles.d/selinux-policy.conf` to `/dev/null`.
+You can toggle this behavior with the `node['fb_systemd']['fedora_nspawn_workaround']`
+attribute.
 
 ### Presets
 You can add preset settings to `node['fb_systemd']['preset']`. As an example to
 disable a unit:
 
-```
+```ruby
 node.default['fb_systemd']['preset']['tmp.mount'] = 'disable'
 ```
 
