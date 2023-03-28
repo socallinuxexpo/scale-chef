@@ -33,9 +33,27 @@ whyrun_safe_ruby_block 'Validate and calculate swap sizes' do
   end
 end
 
-['device', 'file'].each do |type|
+template '/usr/local/libexec/manage-additional-swap-file' do
+  source 'manage-additional-swap-file.sh.erb'
+  owner 'root'
+  group 'root'
+  # read/execute for root, read only for everyone else.
+  mode '0544'
+  notifies :run, 'execute[manage-additional-swap-file]', :immediately
+end
+
+execute 'manage-additional-swap-file' do
+  only_if do
+    node['fb_swap']['_calculated']['additional_file_size_bytes'].
+      positive? &&
+      node['fb_swap']['_calculated']['additional_file_current_size_bytes'].
+        negative?
+  end
+  command '/usr/local/libexec/manage-additional-swap-file'
+end
+
+['device', 'file', 'additional_file'].each do |type|
   next if type == 'device' && FB::FbSwap._device(node).nil?
-  manage_unit = "manage-swap-#{type}.service"
 
   whyrun_safe_ruby_block "Add #{type} swap to fstab" do
     only_if { node['fb_swap']['_calculated']["#{type}_size_bytes"].positive? }
@@ -45,10 +63,15 @@ end
         'mount_point' => 'swap',
         'device' => FB::FbSwap._path(node, type),
         'type' => 'swap',
+        # prioritize swap file in case that swap partition is on a spinning disk
+        'opts' => type == 'device' ? 'pri=5' : 'pri=10',
       }
     end
   end
-
+end
+['device', 'file'].each do |type|
+  next if type == 'device' && FB::FbSwap._device(node).nil?
+  manage_unit = "manage-swap-#{type}.service"
   template "/etc/systemd/system/#{manage_unit}" do
     source "#{manage_unit}.erb"
     owner 'root'
@@ -88,22 +111,24 @@ end
     only_if { node['fb_swap']['_calculated']["#{type}_size_bytes"].positive? }
     override_name 'manage'
     unit_name lazy { FB::FbSwap._swap_unit(node, type) }
-    content({
-              'Unit' => {
-                'BindsTo' => manage_unit,
-                'After' => manage_unit,
-                'PartOf' => manage_unit,
-              },
-              # Stopping swap is pathologically slow on Linux today. The general
-              # default for stopping units in systemd is 90s. Here we'll use
-              # 100s per GiB as a heuristic on top of the default.
-              # T39598868 Disabled until workaround or bug fix
-              # 'Service' => {
-              #   'TimeoutStopSec' => 90 + 100 *
-              #   (node['fb_swap']['_calculated']["#{@type}_size_bytes"]
-              #    / 2 ** 30),
-              # }
-            })
+    content(
+      lazy do
+        {
+          'Unit' => {
+            'BindsTo' => manage_unit,
+            'After' => manage_unit,
+            'PartOf' => manage_unit,
+          },
+          # Stopping swap is pathologically slow on Linux today. The general
+          # default for stopping units in systemd is 90s. Here we'll use
+          # 100s per GiB as a heuristic on top of the default.
+          'Swap' => {
+            'TimeoutSec' => 90 + 100 *
+            (node['fb_swap']['_calculated']["#{type}_size_bytes"] / 2**30),
+          },
+        }
+      end,
+    )
   end
 
   fb_systemd_override "remove #{type} swap override" do
@@ -120,5 +145,5 @@ template '/usr/local/libexec/manage-swap-file' do
   group 'root'
   # read/execute for root, read only for everyone else.
   mode '0544'
-  notifies :restart, 'service[manage-swap-file.service]'
+  notifies :restart, 'service[manage-swap-file.service]', :immediately
 end

@@ -21,6 +21,7 @@ module FB
     def self._validate(node)
       device = self._device(node)
       file = self._file(node)
+      additional_file = self._additional_file(node)
       # Let's look at /proc/swaps for actual size. We can't examine swap
       # partitions formatted size unless they're "mounted" here. This also
       # produces a list of swap files mounted.
@@ -40,7 +41,7 @@ module FB
 
       # If there is an umounted swap file, we don't know the 'formatted' size
       file_current_size_bytes = -1
-
+      additional_file_current_size_bytes = -1
       # ensure we only have things enabled that we understand
       swaps_enabled.each do |swap|
         if device && swap['file'] == device && swap['mode'] == 'partition'
@@ -49,8 +50,13 @@ module FB
         elsif swap['file'] == file && swap['mode'] == 'file'
           # found the swap file
           file_current_size_bytes = swap['size_bytes']
+        elsif swap['file'] == additional_file && swap['mode'] == 'file'
+          # found the additional swap file
+          additional_file_current_size_bytes = swap['size_bytes']
         else
-          fail "fb_swap: Found an unmanaged swap: #{swap}"
+          unless node['fb_swap']['allow_unmanaged']
+            fail "fb_swap: Found an unmanaged swap: #{swap}"
+          end
         end
       end
 
@@ -87,7 +93,7 @@ module FB
         elsif size_bytes <= 1048576 && node['fb_swap']['enabled']
           fail "fb_swap::default: #{size_bytes} is less than 1MiB. Use " +
                'enabled = false instead'
-        elsif node.default['fb_swap']['filesystem'] != '/'
+        elsif node['fb_swap']['filesystem'] != '/'
           device_size_bytes = 0
           file_size_bytes = size_bytes
         elsif size_bytes <= max_device_size_bytes
@@ -112,6 +118,15 @@ module FB
       else
         swapoff_needed = false
       end
+
+      file_size_bytes, additional_file_size_bytes =
+        self._validate_resize_additional_file(
+          file_size_bytes,
+          file_current_size_bytes,
+          additional_file_current_size_bytes,
+          node,
+        )
+
       file_swapoff_needed, file_size_bytes = self._validate_resize(
         node, 'file', file_size_bytes, file_current_size_bytes
       )
@@ -122,8 +137,77 @@ module FB
         'device_current_size_bytes' => device_current_size_bytes,
         'file_size_bytes' => file_size_bytes,
         'file_current_size_bytes' => file_current_size_bytes,
+        'additional_file_size_bytes' => additional_file_size_bytes,
+        'additional_file_current_size_bytes' =>
+          additional_file_current_size_bytes,
         'swapoff_needed' => swapoff_needed,
       }
+    end
+
+    def self._get_swap_partition_size_kb(node)
+      device = self._device(node)
+      device ? (self._get_max_device_size_bytes(device)/1024) : 0
+    end
+
+    def self._validate_resize_additional_file(
+      file_size_bytes,
+      file_current_size_bytes,
+      additional_file_current_size_bytes,
+      node
+    )
+      # returns a pair:
+      # file_size_bytes: size to use for main swap file
+      # additional_file_size_bytes: size to use for additional swap file
+      if node['fb_swap']['swapoff_allowed_because']
+        # If swapoff is allowed no need for additional swap file
+        Chef::Log.debug(
+          'fb_swap: additional swap file is not needed ' +
+          'when swapoff is allowed.',
+        )
+        return [file_size_bytes, -1]
+      end
+
+      if file_current_size_bytes == -1 ||
+         file_size_bytes <= file_current_size_bytes
+        # 1. Swap file does not exist. Big swap file is being created
+        # 2. Swap file exists and has at least requested size.
+        # In both cases no need for additional swap file.
+        additional_file_size_bytes = -1
+      elsif additional_file_current_size_bytes == -1
+        # Swap file exists, but smaller than requested. Additional swap file
+        # does not exist, need for additional swap file
+        # with (file_size_bytes - file_current_size_bytes) size.
+        additional_file_size_bytes = file_size_bytes - file_current_size_bytes
+
+        if node['fb_swap']['min_additional_file_size'] &&
+          additional_file_size_bytes <
+          1024 * node['fb_swap']['min_additional_file_size']
+          Chef::Log.debug(
+            'fb_swap: additional swap file requested size is less than min ' +
+            'possible value. Skipping additional file creation.',
+          )
+          additional_file_size_bytes = -1
+        end
+        file_size_bytes = file_current_size_bytes
+      elsif file_size_bytes ==
+            (file_current_size_bytes + additional_file_current_size_bytes)
+        # Both swap file and additional swap file exists, size sum is equal to
+        # requested size. No need to recreate them.
+        additional_file_size_bytes = additional_file_current_size_bytes
+        file_size_bytes = file_current_size_bytes
+      else
+        # Unexpected case
+        # As swapoff is not allowed, lets keep swap files as they are.
+        additional_file_size_bytes = additional_file_current_size_bytes
+        file_size_bytes = file_current_size_bytes
+        Chef::Log.error(
+          'fb_swap: additional swap file size change requested, but any ' +
+          'size change is not allowed. You can increase main swap file size ' +
+          'with \'swapoff_allowed_because\' API. Size change reverted.',
+        )
+      end
+
+      [file_size_bytes, additional_file_size_bytes]
     end
 
     def self._validate_resize(node, type, size_bytes, current_size_bytes)
@@ -166,7 +250,7 @@ module FB
     end
 
     def self._device(node)
-      swap_mounts = node['filesystem2']['by_device'].to_hash.select do |_k, v|
+      swap_mounts = node.filesystem_data['by_device'].to_hash.select do |_k, v|
         v['fs_type'] == 'swap'
       end
 
@@ -181,9 +265,21 @@ module FB
     end
 
     def self._file(node)
+      "#{self._filesystem(node)}swapvol/swapfile"
+    end
+
+    def self._additional_volume(node)
+      "#{self._filesystem(node)}additionalswapvol"
+    end
+
+    def self._additional_file(node)
+      "#{self._additional_volume(node)}/additionalswapfile"
+    end
+
+    def self._filesystem(node)
       filesystem = node['fb_swap']['filesystem']
       filesystem += '/' unless filesystem.end_with?('/')
-      "#{filesystem}swapvol/swapfile"
+      filesystem
     end
 
     def self._path(node, type)
@@ -192,6 +288,8 @@ module FB
         self._device(node)
       when 'file'
         self._file(node)
+      when 'additional_file'
+        self._additional_file(node)
       end
     end
 
@@ -236,7 +334,7 @@ module FB
     end
 
     def self._filesystem_map_for_fs(node)
-      node['filesystem2']['by_mountpoint'][node['fb_swap']['filesystem']]
+      node.filesystem_data['by_mountpoint'][node['fb_swap']['filesystem']]
     end
 
     def self.swap_file_possible?(node)
