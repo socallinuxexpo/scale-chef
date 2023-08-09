@@ -16,7 +16,8 @@ admins = {
   'jhoblitt' => '1006',
   'ron' => '1007',
   'leiz' => '1008',
-  'btmash' => '1009'
+  'btmash' => '1009',
+  'drupalphil' => '1010'
 }
 
 admins.each do |user, uid|
@@ -74,3 +75,6 @@ node.default['scale_ssh']['keys']['btmash'] = [
   'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDjcdNkU4jBgzTtV09P5RjkoOx+S2QBlj0ldAmShCi5DKNW4jrHBSzbNvOeYG25XjKi4lLXGoy/gXi2InhIApHEtnQy+wKhOIFIqPY2bZeBWRF5BW+Jl9R1zI+R7BrpDh6fAQ5R/govHsWKsTP4JqsamN/y/a7bkQpTdEObDQJOY8UVEkJELuQTs8XXQftThaU6RfJGtUcfQtkorsyYCYqEH7v8/X5cPNMyvj/zXBle0yB12nIgoBY6yks2L1NzHXFdhZgnTnHzNrJSkh3jakCC1DtKS4GVGXv9dSl42b5wU86m/VljbFHQzOiu1+8C5dNzCS3uK0jRU8NshqKI+HnEcgDdGBNp3CEqLlTW5iUp1SNfcx/r4l4lR4VFiWFfHexsO8gnvEcRsAMWZPTRq9dv4mnwOucOyrWuu0SJzOb9J3Qh8RU/pw4sPv1WI4xyVkPFRRpB92MzR554incY97bpbaqgqueB5VLnQZ6/INtcGRDFP8MZ8DXcWN3wSC3DTaUFaAswnvrS0t3OgPN2+BoKjBf6vpUcaWfmeDivFr1KxRYAA3EoTXd/ViEPmr7pDyK3cJW9+SW326az9kfBBsvRzhLURziQJoScFVQfQOD8/4azHwqqubQ/CUqZXBjgr3/wFZaBbDQRXuS5kl+epJ/W4kMnEccBDcGxsP4PLsrxhQ== ashokmodi@Ashoks-Mac-mini.local'
 ]
 
+node.default['scale_ssh']['keys']['drupalphil'] = [
+  'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDfLfRtg9pju73bHmL/nYpCTyfukBJ9luZAjmPCabtB8BFWcvpZRT+XxYC2WGY9/XIz89Q5CCMT41LluFQeS+dFtvmbtPsOdFUXTMVl3j4IsIp7djHoRAhxpZAy9VlYfEibD07nHw4MONQE8gCoU4dBKIBHOYEzYfjlE/ATq4lETd291mCFArbRUMpm6NC+YJFJc1eFz5C26/YlHkPP71uyYivJl8Y28swSjEL3/vdnSS0KnHfCNpiD4x2P3bzvom8iK9zupgWEI70D+IxV8Kiy9W05Yo4j8BD/OPTlLDYeyNX+46nJgJwUretpxJg5WYepx0eBqvJN7kqwTOvRcL+tN+zhEkXWp6h1ClDg/wK5Uw6jWkDq3E1W5jZOkQWBLVKrKeXBwhYWGPIul8FVa8qyh9+lNRDhu4qM8tAdo0JC8sT1yMvJr+v9aFQK34SuIvKBQsrpwSljx8deJThVmwLFzN0iLiVT3eCvRuLLLugIeve9zzCzH18aURV5A/i2sSe1Wald1BgAYB2E5GDNAMAsSs7xRobXfMS8UugmumG5l0ytQmHQrAMPBdsHCJoXcDIa83ELb9KEjxy1KKSKzMQfqZ3n2nw6l8R02bXe1wP/rf4mhMqzhSXMI6kEJE1d2b4RivhoWnhR9vMCrthwvmoeGwq+Jb6rlFdPmAyNQonKGw== phil@phils-imac.lan'
+]
