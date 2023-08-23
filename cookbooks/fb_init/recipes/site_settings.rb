@@ -100,7 +100,7 @@ node.default['fb_sysctl']['net.ipv6.conf.default.accept_ra'] = 1
 node.default['fb_sysctl'][
   "net.ipv6.conf.#{node['network']['default_interface']}.accept_ra"] = 1
 
-cookbook_file '/etc/cloud/cloud.cf.d/99-custom-networking.cfg' do
+cookbook_file '/etc/cloud/cloud.cfg.d/99-custom-networking.cfg' do
   # This should apply to 8+
   not_if { node.centos6? || node.centos7? }
   owner 'root'
