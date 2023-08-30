@@ -13,6 +13,12 @@ directory '/etc/httpd' do
   mode '0755'
 end
 
+directory '/var/log/httpd' do
+  owner 'root'
+  group 'root'
+  mode '0755'
+end
+
 include_recipe 'scale_apache::certs'
 
 {
