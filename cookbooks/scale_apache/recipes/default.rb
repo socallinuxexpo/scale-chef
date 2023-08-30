@@ -45,7 +45,7 @@ node.default['fb_apache']['sites']['*:80'] = common_config.merge({
     'https://www.socallinuxexpo.org/',
 })
 
-node.default['fb_apache']['extra_configs']['MaxConnectionsPerChild'] = 15
+node.default['fb_apache']['extra_configs']['MaxConnectionsPerChild'] = 5
 
 base_config = common_config.merge({
   'Alias' => [
