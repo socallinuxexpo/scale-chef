@@ -34,9 +34,7 @@ common_config = {
   },
   'Location /server-status' => {
     'SetHandler' => 'server-status',
-    'Order' => 'Deny,Allow',
-    'Deny' => 'from all',
-    'Allow' => 'from localhost',
+    'Require' => 'local',
   },
 }
 
