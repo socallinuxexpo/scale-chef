@@ -58,6 +58,7 @@ pkgs = %w{
 
 if node.centos7?
   pkgs += %w{
+    awscli
     php-mysql
     python-dns
     python2-boto
