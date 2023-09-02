@@ -16,7 +16,7 @@ echo "Uploading backup...."
 
 for type in archives configs
 do
-  aws s3 cp --region us-east-1 ${TMPFILE}/mailman-${type}_${HOSTNAME}_${TIME}.tar.gz s3://scale-mailman-backups/archives/${DATE}/mailman-${type}_${HOSTNAME}_${TIME}.tar.gz
+  aws s3 cp --region us-east-1 ${TMPFILE}/mailman-${type}_${HOSTNAME}_${TIME}.tar.gz s3://scale-mailman-backups/${type}/${DATE}/mailman-${type}_${HOSTNAME}_${TIME}.tar.gz
 
   if [ $? -eq 0 ]; then
     echo "Upload of mailman-${type} complete";
