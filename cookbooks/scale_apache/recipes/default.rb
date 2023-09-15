@@ -234,16 +234,30 @@ node.default['fb_apache']['sites']['_default_:443']['_rewrites'] = rewrites
   node.default['fb_apache']['sites']['_default_:443'][key] = val
 end
 
-pkgs = %w{
-  git
-  php
-  php-gd
-  php-mysql
-  php-pdo
-  php-xml
-  php-mbstring
-  python2-boto
-}
+if node.centos7?
+  pkgs = %w{
+    git
+    php
+    php-gd
+    php-mysql
+    php-pdo
+    php-xml
+    php-mbstring
+    python2-boto
+  }
+elsif node.centos8?
+  pkgs = %w{
+    git
+    php
+    php-gd
+    php-json
+    php-mysqlnd
+    php-pdo
+    php-xml
+    php-mbstring
+    python3-boto3
+  } 
+end
 
 if node.centos8?
   node.default['fb_dnf']['modules']['httpd'] = {
