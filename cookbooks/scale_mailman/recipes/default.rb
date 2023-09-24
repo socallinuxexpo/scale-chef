@@ -100,6 +100,13 @@ cookbook_file '/var/www/html/index.html' do
   mode '0644'
 end
 
+cookbook_file '/usr/lib/mailman/bin/list_requests' do
+  source 'list_requests'
+  owner 'root'
+  group 'mailman'
+  mode '0755'
+end
+
 if node.centos7?
   # CentOS 7's version of mailman only has 2.1.15, but that doesn't have any of
   # the necessary features for accepting mail from people with dmarc policies
