@@ -1,0 +1,21 @@
+#!/bin/bash
+
+BUCKET="scale-drupal-backups"
+TMPFILE=`mktemp -d`
+DATE=`date +%Y/%m/%d`
+TIME=`date +%H-%M-%S`
+TARGET="drupal-static_${HOSTNAME}_${TIME}.tar.gz"
+
+export AWS_ACCESS_KEY_ID="<%= node['scale_apache']['s3_aws_access_key_id'] %>"
+export AWS_SECRET_ACCESS_KEY="<%= node['scale_apache']['s3_aws_secret_access_key'] %>"
+
+echo "Starting backup...."
+tar cfz $TMPFILE/${TARGET} -C /home/drupal/scale-drupal/httpdocs/sites/default/ files
+
+echo "Uploading backup...."
+aws s3 cp --region us-east-1 ${TMPFILE}/${TARGET} s3://${BUCKET}/${TARGET}
+
+if [ $? -eq 0 ]; then
+  rm "${TMPFILE}/${TARGET}"
+  rmdir "${TMPFILE}"
+fi
