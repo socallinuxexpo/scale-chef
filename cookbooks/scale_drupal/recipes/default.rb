@@ -8,6 +8,12 @@
 #
 
 package 'drush' do
+  only_if { node.centos7? }
+  action :upgrade
+end
+
+package 'awscli' do
+  not_if { node.centos7? }
   action :upgrade
 end
 
@@ -68,18 +74,28 @@ template '/home/drupal/scale-drupal/httpdocs/sites/default/settings.php' do
   mode '0640'
 end
 
+# new stuff is py3
+restore_source = 'restore-drupal-static3.py.erb'
+backup_source = 'backup-drupal-static3.sh.erb'
+
+# support for older OSes until we finish upgrades/migrations
+if node.centos6? || node.centos7?
+  restore_source = 'restore-drupal-static.py.erb'
+  backup_source = 'backup-drupal-static.sh.erb'
+end
+
 template '/usr/local/bin/backup-drupal-static.sh' do
   owner 'root'
   group 'root'
   mode '0755'
-  source 'backup-drupal-static.sh.erb'
+  source backup_source
 end
 
 template '/usr/local/bin/restore-drupal-static.py' do
   owner 'root'
   group 'root'
   mode '0755'
-  source 'restore-drupal-static.py.erb'
+  source restore_source
 end
 
 execute '/usr/local/bin/restore-drupal-static.py' do

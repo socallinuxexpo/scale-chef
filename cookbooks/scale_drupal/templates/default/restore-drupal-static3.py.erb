@@ -1,0 +1,25 @@
+#!/usr/bin/python3
+import tempfile
+import tarfile
+import boto3
+import botocore
+
+#TODO: use instance profile instead of static keys
+access_key = "<%= node['scale_apache']['s3_aws_access_key_id'] %>"
+secret_key = "<%= node['scale_apache']['s3_aws_secret_access_key'] %>"
+
+backup_bucket = 'scale-drupal-backups'
+tmp_path = tempfile.mkdtemp()
+
+conn = boto3.client('s3', aws_access_key_id=access_key, aws_secret_access_key=secret_key)
+
+# Find most recent backup in S3
+backup_file_name = conn.list_objects(Bucket=backup_bucket)['Contents'][-1]["Key"]
+
+local_file = tmp_path + "/" + backup_file_name.split('/').pop()
+
+#Download to tmp file
+with open(local_file, 'wb') as data:
+    conn.download_fileobj(backup_bucket, backup_file_name, data)
+
+tarfile.open(local_file).extractall(path="/home/drupal/scale-drupal/httpdocs/sites/default")
