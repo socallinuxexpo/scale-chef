@@ -18,7 +18,8 @@ admins = {
   'leiz' => '1008',
   'btmash' => '1009',
   'drupalphil' => '1010',
-  'rothgar' => '1011'
+  'rothgar' => '1011',
+  'cbsmith' => '1012'
 }
 
 admins.each do |user, uid|
@@ -82,4 +83,8 @@ node.default['scale_ssh']['keys']['drupalphil'] = [
 
 node.default['scale_ssh']['keys']['rothgar'] = [
   'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDCn/WYbUnsZCXLPkEhRNBH3wkrkxZGu+sOlVVeqhvsdIRq0E6H8SOglYRJmt/sKgBNt8x+aFkW8rRGUMiGz46XBgx+gGnUBW5WVVPdQ3dKLBLchhyoh6jZc1kFpYpLb+QonWr7ne3FzgyEegUq9qkOcJpDqFJ7IKSlIiPxLb/6ztKRjEhcSHjSBeCYfQddatspaJP2/ei7LV85EsLykAYfIRs/pX0BkuHivC75eOfcs86P9bKnLJm0uWQ62Fkx684fzPPM18AhIEiojkBkluVFSXLI5VxKI58incVMmJ1CBReFg8oqTvSKtQ+rabRX71uGcf0SOM3GCmBJwFUf6noj'
+]
+
+node.default['scale_ssh']['keys']['rothgar'] = [
+  'AAAAB3NzaC1yc2EAAAADAQABAAABgQDa5cJJ4oDpykZcWok0JFzjT95KL4uVPkpFWMSpu3jFohVPZDgZs8bftjZFjFjN3Ly68MHESdZ0Dm2qv3e3DmZYf/j0xpCFeHfi95b+LBYoIgLDQJUKc4LtpXoCjtnGIoek5WYQ/igfHlIGIqyP6XWOvBubM95cub9d4UGYS4v9P4OFS7Xa0WFvYbSOj7xW0yOvQqJQ6seBkLJy/ish/meqo0zdjGsNa/Ct4DQmEM5calXgOid/Ui1xJ5n44jqYizLwFQ9DUQnyMVwxcwJdoWh/ey8m1kyYU+K1mAS/MWuuMNHTAqYP1vs7t/fHHdTc7THTz1ODEOCR6K6AtdtfVW7RgHunFH+iO5I1qNvS3ZuDHP8vvLRiTcJg4pbIdJUssxvTG1JWhEZBnLp3UrKkRfcBQiqq3q4IyOtQPHSnrRQminN9go0WpOkM9WzzlcF/yshDLGegO8OoAElJzMYm50gWzKGWUy2c3K0GcJEAMW1OHCW8l9xTDaolBPJ1swEhF9c= cbsmith@penguin'
 ]
