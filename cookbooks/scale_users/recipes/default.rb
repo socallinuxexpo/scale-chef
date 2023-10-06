@@ -17,7 +17,8 @@ admins = {
   'ron' => '1007',
   'leiz' => '1008',
   'btmash' => '1009',
-  'drupalphil' => '1010'
+  'drupalphil' => '1010',
+  'rothgar' => '1011'
 }
 
 admins.each do |user, uid|
@@ -77,4 +78,8 @@ node.default['scale_ssh']['keys']['btmash'] = [
 
 node.default['scale_ssh']['keys']['drupalphil'] = [
   'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDfLfRtg9pju73bHmL/nYpCTyfukBJ9luZAjmPCabtB8BFWcvpZRT+XxYC2WGY9/XIz89Q5CCMT41LluFQeS+dFtvmbtPsOdFUXTMVl3j4IsIp7djHoRAhxpZAy9VlYfEibD07nHw4MONQE8gCoU4dBKIBHOYEzYfjlE/ATq4lETd291mCFArbRUMpm6NC+YJFJc1eFz5C26/YlHkPP71uyYivJl8Y28swSjEL3/vdnSS0KnHfCNpiD4x2P3bzvom8iK9zupgWEI70D+IxV8Kiy9W05Yo4j8BD/OPTlLDYeyNX+46nJgJwUretpxJg5WYepx0eBqvJN7kqwTOvRcL+tN+zhEkXWp6h1ClDg/wK5Uw6jWkDq3E1W5jZOkQWBLVKrKeXBwhYWGPIul8FVa8qyh9+lNRDhu4qM8tAdo0JC8sT1yMvJr+v9aFQK34SuIvKBQsrpwSljx8deJThVmwLFzN0iLiVT3eCvRuLLLugIeve9zzCzH18aURV5A/i2sSe1Wald1BgAYB2E5GDNAMAsSs7xRobXfMS8UugmumG5l0ytQmHQrAMPBdsHCJoXcDIa83ELb9KEjxy1KKSKzMQfqZ3n2nw6l8R02bXe1wP/rf4mhMqzhSXMI6kEJE1d2b4RivhoWnhR9vMCrthwvmoeGwq+Jb6rlFdPmAyNQonKGw== phil@phils-imac.lan'
+]
+
+node.default['scale_ssh']['keys']['rothgar'] = [
+  'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDCn/WYbUnsZCXLPkEhRNBH3wkrkxZGu+sOlVVeqhvsdIRq0E6H8SOglYRJmt/sKgBNt8x+aFkW8rRGUMiGz46XBgx+gGnUBW5WVVPdQ3dKLBLchhyoh6jZc1kFpYpLb+QonWr7ne3FzgyEegUq9qkOcJpDqFJ7IKSlIiPxLb/6ztKRjEhcSHjSBeCYfQddatspaJP2/ei7LV85EsLykAYfIRs/pX0BkuHivC75eOfcs86P9bKnLJm0uWQ62Fkx684fzPPM18AhIEiojkBkluVFSXLI5VxKI58incVMmJ1CBReFg8oqTvSKtQ+rabRX71uGcf0SOM3GCmBJwFUf6noj'
 ]
