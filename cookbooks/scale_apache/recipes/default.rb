@@ -12,7 +12,7 @@ include_recipe 'fb_apache'
 
 if node['hostname'] == 'scale-web2'
   cron 'ugly restarts' do
-    time '*/30 * * * *'
+    minute '*/30'
     command '/usr/bin/systemctl restart httpd'
   end
 end
