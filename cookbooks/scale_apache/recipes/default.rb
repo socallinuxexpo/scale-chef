@@ -10,6 +10,13 @@
 include_recipe 'scale_apache::common'
 include_recipe 'fb_apache'
 
+if node['hostname'] == 'scale-web2'
+  cron 'ugly restarts' do
+    time '*/30 * * * *'
+    command '/usr/bin/systemctl restart httpd'
+  end
+end
+
 common_config = {
   'ServerName' => 'www.socallinuxexpo.org',
   'ServerAdmin' => 'webmaster@socallinuxexpo.org',
