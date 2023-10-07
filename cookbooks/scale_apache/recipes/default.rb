@@ -281,6 +281,11 @@ node.default['fb_systemd']['tmpfiles']['/tmp'] = {
 
 node.default['scale_datadog']['monitors']['apache'] = {
   "init_config" => nil,
+  "instances" => [
+    {
+      "apache_status_url" => "http://localhost/server-status?auto"
+    },
+  ],
   "logs" => [
     {
       "type" => "file",
