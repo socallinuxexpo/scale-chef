@@ -312,14 +312,14 @@ node.default['scale_datadog']['monitors']['apache'] = {
       "type" => "file",
       "path" => "/var/log/httpd/error.log",
       "source" => "apache",
-      "sourcecategory" => "http_web_access",
+      "sourcecategory" => "http_web_error",
       "service" => "apache"
     },
     {
       "type" => "file",
       "path" => "/var/log/httpd/error_log",
       "source" => "apache",
-      "sourcecategory" => "http_web_access",
+      "sourcecategory" => "http_web_error",
       "service" => "apache"
     },
     {
@@ -340,14 +340,14 @@ node.default['scale_datadog']['monitors']['apache'] = {
       "type" => "file",
       "path" => "/var/log/httpd/ssl_error_log",
       "source" => "apache",
-      "sourcecategory" => "http_web_access",
+      "sourcecategory" => "http_web_error",
       "service" => "apache"
     },
     {
       "type" => "file",
       "path" => "/var/log/httpd/ssl_error.log",
       "source" => "apache",
-      "sourcecategory" => "http_web_access",
+      "sourcecategory" => "http_web_error",
       "service" => "apache"
     },
   ]
