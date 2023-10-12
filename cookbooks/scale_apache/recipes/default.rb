@@ -10,12 +10,21 @@
 include_recipe 'scale_apache::common'
 include_recipe 'fb_apache'
 
+apache_debug_log = '/var/log/apache_status.log'
 if node['hostname'] == 'scale-web2'
   cron 'ugly restarts' do
     minute '*/30'
-    command '/usr/bin/systemctl restart httpd'
+    command "
+       date >> #{apache_debug_log}
+       ps auxwww | grep http >> #{apache_debug_log}
+       /usr/bin/systemctl restart httpd
+    "
   end
 end
+
+node.default['fb_logrotate']['configs']['apache_status'] = {
+  'files' => [apache_debug_log],
+}
 
 common_config = {
   'ServerName' => 'www.socallinuxexpo.org',
@@ -50,8 +59,21 @@ node.default['fb_apache']['sites']['*:80'] = common_config.merge({
     'https://www.socallinuxexpo.org/',
 })
 
-node.default['fb_apache']['extra_configs']['MaxConnectionsPerChild'] = 5
+node.default['fb_apache']['extra_configs']['MaxConnectionsPerChild'] = 50
 node.default['fb_apache']['extra_configs']['MaxRequestWorkers'] = 50
+
+# With event, increase this directive if the process number defined by your
+# MaxRequestWorkers and ThreadsPerChild settings, plus the number of gracefully
+# shutting down processes, is more than 16 server processes (default).
+#
+# Our MaxRequestWorkers is 50. We don't define ThreadsPerChild which defaults
+# to 25. So if I read that correctly (and I haven't tuned Apache for a living
+# in a looonnnggg time), we want something like 50+25=75 plus some more for
+# shutting down processes, so like... 80?
+node.default['fb_apache']['extra_configs']['ServerLimit'] = 80
+
+# see if this helps with hung processes...
+node.default['fb_apache']['extra_configs']['KeepAlive'] = 'off'
 
 base_config = common_config.merge({
   'Alias' => [
