@@ -38,7 +38,8 @@ group 'sudo' do
   gid 101
 end
 
-node.default['scale_sudo']['users']['%sudo'] = 'ALL=NOPASSWD: ALL'
+node.default['fb_sudo']['users']['%sudo']['admins can run anything'] =
+  'ALL=NOPASSWD: ALL'
 
 node.default['scale_ssh']['keys']['dcavalca'] = [
   'ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAyn0jNSc2AeYCjb90p3moeKTrNccFQLAgT5xIRrNqE+WdO0s23PccPmNAWQe6ymQVttfxPdL7w6kkl0nJeC+4YV5p/5l4AaaxKEVGds+UOxmsYVg7Ae5+P71bg+gsn0Im2TWCG6s18gyhHtiuoqo0Lm9JW9vgdYRA/5aIwNAcSDcRr2M8LLyxDxIHajN1hoFVH1bwPGF7M6wmf5+eEN7Zi2A9qsdlOul7FubrJ5zuX/i++8w+DITFY/SBTQKNU+PSqDfcmmBftEVymwylqWkwJVeTDlDse1QDRF9AES1JdE0nMwIjTsluZiUAXvQaFUJv6CjLgUaMri/00X38apOLhw== davide@sfera',

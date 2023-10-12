@@ -49,7 +49,7 @@ include_recipe 'fb_postfix'
 #include_recipe 'fb_logrotate'
 # HERE: autofs
 # HERE: tmpclean
-include_recipe 'scale_sudo'
+include_recipe 'fb_sudo'
 # HERE: ntp
 include_recipe 'fb_motd'
 unless node.vagrant?

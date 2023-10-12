@@ -7,7 +7,9 @@ node.default['scale_chef_client']['role_dir'] =
   '/var/chef/repo/roles'
 
 if node.vagrant?
-  node.default['scale_sudo']['users']['vagrant'] = 'ALL=NOPASSWD: ALL'
+  node.default['fb_sudo']['users']['vagrant'] = {
+    'vagrant has full access on dev VMs' => 'ALL=NOPASSWD: ALL',
+  }
 end
 
 d = {}
@@ -61,17 +63,22 @@ package %w{postfix-perl-scripts cyrus-sasl-plain cyrus-sasl-md5 atop} do
   action :upgrade
 end
 
+queues = ['incoming', 'active', 'deferred']
 node.default['scale_datadog']['monitors']['postfix'] = {
   'init_config' => nil,
   'instances' => [{
     'directory' => '/var/spool/postfix',
-    'queues' => ['incoming', 'active', 'deferred'],
+    'queues' => queues,
   }],
 }
 
-node.default['scale_sudo']['users']['dd-agent'] =
-  'ALL=(ALL) NOPASSWD:/usr/bin/find /var/spool/postfix/ -type f, ' +
-  '/bin/find /var/spool/postfix/ -type f'
+queues.each do |q|
+  # the docs say they use /usr/bin/find, but they seem to use /bin/find
+  # so just allow for both...
+  node.default['fb_sudo']['users']['dd-agent']["postfix_#{q}"] =
+    "ALL=(ALL) NOPASSWD:/usr/bin/find /var/spool/postfix/#{q} -type f," +
+    "/bin/find /var/spool/postfix/#{q} -type f"
+end
 
 d = {}
 if File.exists?('/etc/lists_secrets')
