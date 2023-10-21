@@ -13,8 +13,9 @@ include_recipe 'fb_apache'
 apache_debug_log = '/var/log/apache_status.log'
 if node['hostname'] == 'scale-web2'
   cron 'ugly restarts' do
-    # once an hour
+    # once every other hour
     minute '02'
+    hour '*/2'
     command "date >> #{apache_debug_log}; " +
       "ps auxwww | grep http >> #{apache_debug_log}; " +
       '/usr/bin/systemctl restart httpd'
