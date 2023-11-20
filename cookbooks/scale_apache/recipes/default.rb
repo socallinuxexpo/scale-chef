@@ -12,14 +12,13 @@ include_recipe 'fb_apache'
 
 apache_debug_log = '/var/log/apache_status.log'
 if node['hostname'] == 'scale-web2'
-  cron 'ugly restarts' do
-    # once every other hour
-    minute '02'
-    hour '*/2'
-    command "date >> #{apache_debug_log}; " +
+  node.default['fb_cron']['jobs']['ugly_restarts'] = {
+    # 2x a day
+    'time' => '02 11,23 * * *',
+    'command' => "date >> #{apache_debug_log}; " +
       "ps auxwww | grep http >> #{apache_debug_log}; " +
-      '/usr/bin/systemctl restart httpd'
-  end
+      '/usr/bin/systemctl restart httpd',
+  }
 end
 
 node.default['fb_logrotate']['configs']['apache_status'] = {
