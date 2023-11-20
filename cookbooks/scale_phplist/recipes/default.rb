@@ -73,3 +73,24 @@ link '/var/www/html/lists' do
     "/usr/local/phplist-#{node['scale_phplist']['version']}/public_html/lists" 
   }
 end
+
+cookbook_file '/usr/local/sbin/phplist_wrapper' do
+  source 'phplist_wrapper.sh'
+  owner 'root'
+  group 'root'
+  mode '0755'
+end
+
+# the queue will get process on it's own, but running this helps speed it up
+# See:
+# https://www.phplist.org/manual/books/phplist-manual/page/setting-up-your-cron
+node.default['fb_cron']['jobs']['process_queue'] = {
+  'time' => '*/5 * * * *',
+  'command' => '/usr/local/sbin/phplist_wrapper -pprocessqueue &>/dev/null',
+}
+
+# same
+node.default['fb_cron']['jobs']['process_bounces'] = {
+  'time' => '0 3 * * *',
+  'command' => '/usr/local/sbin/phplist_wrapper -pprocessbounces &>/dev/null',
+}
