@@ -15,8 +15,8 @@ if node['hostname'] == 'scale-web2'
   node.default['fb_cron']['jobs']['ugly_restarts'] = {
     # 2x a day
     'time' => '02 */2 * * *',
-    'command' => "date >> #{apache_debug_log}; " +
-      'ps -eL -o user,pid,lwp,nlwp,%cpu,%mem,vsz,rss,tty,stat,start,time,cmd ' +
+    'command' => "date >> #{apache_debug_log}; ps -eL " +
+      '-o user,pid,lwp,nlwp,%%cpu,%%mem,vsz,rss,tty,stat,start,time,cmd ' +
       "| grep ^apache >> #{apache_debug_log}; " +
       '/usr/bin/systemctl restart httpd',
   }
