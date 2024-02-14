@@ -1,4 +1,4 @@
 #!/bin/bash
 
-/usr/bin/php /home/website/public_html/lists/admin/index.php \
-  -c /home/website/public_html/lists/config/config.php "$@"
+/usr/bin/php /var/www/html/lists/admin/index.php  \
+  -c /var/www/html/lists/config/config.php "$@"
