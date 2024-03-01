@@ -203,12 +203,6 @@ rewrites = {
       '%{REQUEST_URI} ^/scale15x$',
     ],
   },
-  'safety' => {
-    'rule' => '^/safety https://www.socallinuxexpo.org/scale/15x/anti-harassment-policy [L,R,NE]',
-    'conditions' => [
-      '%{REQUEST_URI} ^/safety$',
-    ],
-  },
   'scale 14x' => {
     'rule' => '^/(.*) https://www.socallinuxexpo.org/scale/14x [L,R,NE]',
     'conditions' => [
