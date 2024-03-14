@@ -2,8 +2,9 @@
 
 set -u
 
-RUNLIST_FILE='/etc/chef/runlist.json'
-CHEF_PROD_CONFIG='/etc/chef/client-prod.rb'
+CONFDIR='/etc/cinc'
+RUNLIST_FILE="$CONFDIR/runlist.json"
+CHEF_PROD_CONFIG='/etc/cinc/client-prod.rb'
 ROLE=$(hostname -s | cut -f 2 -d- | sed -E 's/[0-9]+$//g')
 CHEFDIR='/var/chef'
 REPODIR="$CHEFDIR/repo"
@@ -12,10 +13,13 @@ OUTPUTS="/var/log/chef"
 bootstrap() {
   [ -x /bin/wget ] || yum install -y wget
   if [ ! -d /opt/cinc ]; then
-    mkdir -p /etc/chef $CHEFDIR $REPODIR $OUTPUTS
+    mkdir -p $CONFDIR $CHEFDIR $REPODIR $OUTPUTS
     wget -qO- 'https://omnitruck.cinc.sh/install.sh' | bash
   fi
-  ln -sf /etc/chef /etc/cinc
+  if [ ! -d /etc/cinc ]; then
+    mkdir -p $CONFDIR
+  fi
+  ln -sf $CONFDIR /etc/chef
   cat > $CHEF_PROD_CONFIG <<EOF
 cookbook_path [
   '/var/chef/repo/cookbooks',
@@ -32,7 +36,7 @@ json_attribs '$RUNLIST_FILE'
 EOF
 
   for key in client-prod validation; do
-      file="/etc/chef/$key.pem"
+      file="$CONFDIR/$key.pem"
       if ! [ -e "$file" ]; then
           # Key isn't used in local mode, so no specific options
           # are really necessary
@@ -40,10 +44,11 @@ EOF
       fi
   done
 
-  ln -sf /etc/chef/client-prod.rb /etc/chef/client.rb
-  ln -sf /etc/chef/client-prod.pem /etc/chef/client.pem
-  cp $REPODIR/cookbooks/scale_chef_client/files/default/chefctl_hooks.rb /etc/chef
+  ln -sf $CONFDIR/client-prod.rb $CONFDIR/client.rb
+  ln -sf $CONFDIR/client-prod.pem $CONFDIR/client.pem
+  cp $REPODIR/cookbooks/scale_chef_client/files/default/chefctl_hooks.rb $CONFDIR/
   cp $REPODIR/cookbooks/scale_chef_client/files/default/chefctl-config.rb /etc/
+  cp $REPODIR/cookbooks/scale_chef_client/files/default/chefctl.rb /usr/local/sbin/
 
   cat >$RUNLIST_FILE <<EOF
 {"run_list":["recipe[fb_init]","role[$ROLE]"]}
