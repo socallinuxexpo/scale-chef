@@ -59,7 +59,12 @@ end
 
 node.default['fb_postfix']['main.cf']['mydomain'] = 'localhost'
 
-package %w{postfix-perl-scripts cyrus-sasl-plain cyrus-sasl-md5 atop} do
+pkgs = %w{postfix-perl-scripts cyrus-sasl-plain cyrus-sasl-md5}
+if node.el_max_version?(8)
+  pkgs << 'atop'
+end
+
+package pkgs do
   action :upgrade
 end
 
