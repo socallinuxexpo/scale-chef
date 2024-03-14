@@ -38,11 +38,21 @@ package 'cinc' do
   notifies :run, 'ruby_block[reexec chef]', :immediately
 end
 
-%w{
-  /var/chef
-  /var/chef/outputs
-  /etc/chef
-}.each do |dir|
+if ::File.symlink?('/etc/cinc') && !::File.symlink?('/etc/chef')
+  symlink = '/etc/cinc'
+  confdir = '/etc/chef'
+elsif ::File.symlink?('/etc/chef') && !::File.symlink?('/etc/cinc')
+  symlink = '/etc/chef'
+  confdir = '/etc/cinc'
+else
+  fail 'Cannot determine which is the realdir /etc/cinc v /etc/chef'
+end
+
+[
+  '/var/chef',
+  '/var/chef/outputs',
+  confdir,
+].each do |dir|
   directory dir do
     owner 'root'
     group 'root'
@@ -50,8 +60,8 @@ end
   end
 end
 
-link '/etc/cinc' do
-  to '/etc/chef'
+link symlink do
+  to confdir
 end
 
 %w{
@@ -67,33 +77,33 @@ end
 
 ruby_block 'reload_client_config' do
   block do
-    Chef::Config.from_file('/etc/chef/client.rb')
+    Chef::Config.from_file("#{confdir}/client.rb")
   end
   action :nothing
 end
 
-template '/etc/chef/client-prod.rb' do
+template "#{confdir}/client-prod.rb" do
   owner 'root'
   group 'root'
   mode '0644'
   notifies :create, 'ruby_block[reload_client_config]', :immediately
 end
 
-link '/etc/chef/client.rb' do
+link "#{confdir}/client.rb" do
   # don't overwrite this if it's a link ot somewhere else, because
   # taste-tester
-  not_if { File.symlink?('/etc/chef/client.rb') }
-  to '/etc/chef/client-prod.rb'
+  not_if { File.symlink?("#{confdir}/client.rb") }
+  to "#{confdir}/client-prod.rb"
 end
 
-link '/etc/chef/client.pem' do
+link "#{confdir}/client.pem" do
   # don't overwrite this if it's a link ot somewhere else, because
   # taste-tester
-  not_if { File.symlink?('/etc/chef/client.pem') }
-  to '/etc/chef/client-prod.pem'
+  not_if { File.symlink?("#{confdir}/client.pem") }
+  to "#{confdir}/client-prod.pem"
 end
 
-template '/etc/chef/runlist.json' do
+template "#{confdir}/runlist.json" do
   owner 'root'
   group 'root'
   mode '0644'
@@ -122,7 +132,7 @@ end
   'chef' => {
     'time' => '*/15 * * * *',
     'command' => '/usr/bin/test -f /var/chef/cron.default.override -o ' +
-      '-f /etc/chef/test_timestamp || /usr/local/sbin/chefctl -q &>/dev/null'
+      "-f #{confdir}/test_timestamp || /usr/local/sbin/chefctl -q &>/dev/null"
   },
   'taste-untester' => {
     'time' => '*/5 * * * *',
