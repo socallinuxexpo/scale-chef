@@ -8,7 +8,11 @@
 #
 
 # omfg I hate this so much
-version = '17.10.0'
+if node.centos9?
+  version = '18.4.2'
+else
+  version = '17.10.0'
+end
 rpm = "cinc-#{version}-1.el#{node.major_platform_version}.x86_64.rpm"
 rpmpath = File.join(Chef::Config['file_cache_path'], rpm)
 remote_file rpmpath do
