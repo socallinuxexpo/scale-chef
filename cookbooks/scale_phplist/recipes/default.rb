@@ -3,6 +3,8 @@
 # Recipe:: default
 #
 
+return if node.centos9?
+
 if node.centos8?
   relpath = File.join(Chef::Config['file_cache_path'], 'remi-release-8.rpm')
   remote_file relpath do

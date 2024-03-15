@@ -7,6 +7,12 @@ node.default['fb_iptables']['filter']['INPUT']['rules']['allow_smtp'] = {
   'rule' => '-p tcp -m tcp -m conntrack --ctstate NEW --dport 25 -j ACCEPT',
 }
 
+execute 'enable crb' do
+  only_if { node.centos9? }
+  not_if "dnf repolist | grep crb"
+  command "dnf config-manager --set-enabled crb"
+end
+
 node.default['scale_apache']['ssl_hostname'] = 'lists.socallinuxexpo.org'
 
 include_recipe 'scale_apache::simple'
@@ -84,8 +90,10 @@ elsif node.centos8?
     'enable' => true,
     'stream' => '2.1',
   }
+elsif node.centos9?
+  # pass
 else
-  fail "scale_mailman: platform not supported"
+  fail "scale_mailman: platform not supported: #{node['platform']}"
 end
 
 package pkgs do
@@ -98,13 +106,6 @@ cookbook_file '/var/www/html/index.html' do
   owner 'root'
   group 'root'
   mode '0644'
-end
-
-cookbook_file '/usr/lib/mailman/bin/list_requests' do
-  source 'list_requests'
-  owner 'root'
-  group 'mailman'
-  mode '0755'
 end
 
 if node.centos7?
@@ -132,12 +133,35 @@ if node.centos7?
   end
 end
 
-package 'mailman' do
-  if node.centos7?
-    not_if { File.exists?('/usr/lib/mailman/bin/mailmanctl') }
-    source "#{Chef::Config['file_cache_path']}/mailman-2.1.21-1.fc25.x86_64.rpm"
-  else
-    action :upgrade
+if node.centos_max_version?(8)
+  pkgs = %w{
+    mailman
+  }
+else
+  pkgs = [
+    'mailman3',
+    # webui
+    'hyperkitty',
+    # admin ui
+    'postorius',
+    # glue between hyperkitty and postorius
+    'python3-mailman-web',
+    # new emails into archive
+    'python-mailman-hyperkitty',
+  ]
+end
+
+package 'mailman_packages' do
+  package_name pkgs
+  action :upgrade
+end
+
+unless node.centos9?
+  cookbook_file '/usr/lib/mailman/bin/list_requests' do
+    source 'list_requests'
+    owner 'root'
+    group 'mailman'
+    mode '0755'
   end
 end
 
@@ -166,15 +190,17 @@ file '/etc/cron.d/mailman' do
   action :delete
 end
 
-link '/etc/mailman/sitelist.cfg' do
-  to '/var/lib/mailman/data/sitelist.cfg'
-end
+unless node.centos9?
+  link '/etc/mailman/sitelist.cfg' do
+    to '/var/lib/mailman/data/sitelist.cfg'
+  end
 
-template '/etc/mailman/mm_cfg.py' do
-  source 'mm_cfg.py.erb'
-  owner 'root'
-  group 'root'
-  mode  '0644'
+  template '/etc/mailman/mm_cfg.py' do
+    source 'mm_cfg.py.erb'
+    owner 'root'
+    group 'root'
+    mode  '0644'
+  end
 end
 
 node.default['fb_cron']['jobs']['mailman_backups'] = {
@@ -241,19 +267,22 @@ node.default['fb_postfix']['main.cf']['inet_interfaces'] = "all"
   node.default['fb_postfix']['main.cf'][conf] = val
 end
 
-template '/var/lib/mailman/data/aliases' do
-  owner 'root'
-  group 'root'
-  mode '0644'
-  notifies :run, 'execute[update mailman aliases]', :immediately
-end
+unless node.centos9?
+  template '/var/lib/mailman/data/aliases' do
+    owner 'root'
+    group 'root'
+    mode '0644'
+    notifies :run, 'execute[update mailman aliases]', :immediately
+  end
 
-execute 'update mailman aliases' do
-  command 'postalias /var/lib/mailman/data/aliases'
-  action :nothing
+  execute 'update mailman aliases' do
+    command 'postalias /var/lib/mailman/data/aliases'
+    action :nothing
+  end
 end
 
 service 'mailman' do
+  service_name node.centos_min_version?(9) ? 'mailman3' : 'mailman'
   action [:enable, :start]
 end
 

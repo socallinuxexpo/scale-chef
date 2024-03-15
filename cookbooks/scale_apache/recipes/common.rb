@@ -58,9 +58,12 @@ node.default['fb_apache']['modules'] += [
   'systemd',
   # 10-h2.conf
   'http2',
-  # 15-php.conf
-  'php7',
 ]
+
+unless node.centos9?
+  # 15-php.conf
+  node.default['fb_apache']['modules'] << 'php7'
+end
 
 {
   'access_compat' => 'mod_access_compat.so',
