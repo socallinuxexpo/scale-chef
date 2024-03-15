@@ -35,12 +35,13 @@ esp_path = nil
   /efi
   /boot
 }.each do |path|
-  # we test for node['filesystem2'] as the plugin can occasionally fail
+  # we test for node.filesystem_data as the plugin can occasionally fail
   # in case of e.g. hung NFS mounts, and would cause a very early Chef failure
   # with a misleading error
-  if node['filesystem2'] && node['filesystem2']['by_mountpoint'][path] &&
-     node['filesystem2']['by_mountpoint'][path]['fs_type'] == 'vfat' &&
-     (File.exist?("#{path}/EFI") || File.exist?("#{path}/efi"))
+  if node.filesystem_data && node.filesystem_data['by_mountpoint'] &&
+      node.filesystem_data['by_mountpoint'][path] &&
+      node.filesystem_data['by_mountpoint'][path]['fs_type'] == 'vfat' &&
+      (File.exist?("#{path}/EFI") || File.exist?("#{path}/efi"))
     esp_path = path
     break
   end
@@ -59,15 +60,25 @@ if node.ubuntu? &&
    FB::Version.new(node['platform_version']) >= FB::Version.new('18.04')
   enable_networkd = true
   enable_resolved = true
+  enable_nss_resolve = true
   enable_timesyncd = true
 else
   enable_networkd = false
   enable_resolved = false
+  enable_nss_resolve = false
   enable_timesyncd = false
 end
 
+# This enables a workaround in Fedora systemd-nspawn containers
+# so that tmpfiles can be created
+# See https://bugzilla.redhat.com/show_bug.cgi?id=1945775
+need_nspawn_workaround = node.fedora? &&
+  node['virtualization'] &&
+  node['virtualization']['role'] == 'guest' &&
+  node['virtualization']['system'] == 'nspawn'
+
 default['fb_systemd'] = {
-  'default_target' => '/lib/systemd/system/multi-user.target',
+  'default_target' => 'multi-user.target',
   'modules' => [],
   'system' => {},
   'user' => {},
@@ -94,15 +105,24 @@ default['fb_systemd'] = {
     'enable' => false,
     'config' => {},
   },
+  'homed' => {
+    'enable' => false,
+  },
   'logind' => {
     'enable' => true,
     'config' => {},
   },
   'networkd' => {
     'enable' => enable_networkd,
+    'use_networkd_socket_with_networkd' => false,
+    'config' => {},
+  },
+  'nspawn' => {
+    'enable' => false,
   },
   'resolved' => {
     'enable' => enable_resolved,
+    'enable_nss_resolve' => enable_nss_resolve,
     'config' => {},
   },
   'timesyncd' => {
@@ -114,10 +134,13 @@ default['fb_systemd'] = {
   'tmpfiles_excluded_prefixes' => [],
   'preset' => {},
   'manage_systemd_packages' => true,
+  'manage_default_target' => true,
   'boot' => {
     'enable' => false,
     'path' => esp_path,
     'loader' => loader,
     'entries' => {},
   },
+  'ignore_targets' => [],
+  'fedora_nspawn_workaround' => need_nspawn_workaround,
 }

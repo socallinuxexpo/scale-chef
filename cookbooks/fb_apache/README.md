@@ -15,7 +15,9 @@ Attributes
 * node['fb_apache']['modules_directory']
 * node['fb_apache']['modules_mapping']
 * node['fb_apache']['module_packages']
+* node['fb_apache']['enable_default_site']
 * node['fb_apache']['extra_configs']
+* node['fb_apache']['mpm']
 
 Usage
 -----
@@ -41,17 +43,17 @@ syntax to a hash. So for example:
 node.default['fb_apache']['sites']['*:80'] = {
   'ServerName' => 'example.com',
   'ServerAdmin' => 'l33t@example.com',
-  'DocRoot' => '/var/www',
+  'DocumentRoot' => '/var/www',
 }
 ```
 
 Will produce:
 
-```
+```text
 <VirtualHost *:80>
   ServerName example.com
   ServerAdmin l33t@example.com
-  Docroot /var/www
+  DocumentRoot /var/www
 </VirtualHost>
 ```
 
@@ -69,7 +71,7 @@ node.default['fb_apache']['sites']['*:80'] = {
 
 Would produce:
 
-```
+```text
 <VirtualHost *:80>
   ServerAlias cool.example.com
   ServerAlias awesome.example.com
@@ -82,7 +84,7 @@ This can be used for anything which repeats such as `Alias`, `ServerAlias`, or
 If the value is a hash, then the key is treated like another markup tag in the
 config and the hash is values inside that tag. For example:
 
-```
+```ruby
 node.default['fb_apache']['sites']['*:80'] = {
   'Directory /var/www' => {
     'Options' => 'Indexes FollowSymLinks MultiViews',
@@ -94,7 +96,7 @@ node.default['fb_apache']['sites']['*:80'] = {
 
 Would produce:
 
-```
+```text
 <VirtualHost *:80>
   <Directory /var/www>
     Options Indexes FollowSymLinks MultiViews
@@ -109,6 +111,37 @@ instead of just `Directory`).
 
 Hashes like this work for all nested tags such as `Directory` and `Location`.
 
+If you want to have more than one virtual host with the same name, you can do
+so by giving them unique names and then setting `_virtualhost`, like so:
+
+```ruby
+node.default['fb_apache']['sites']['my cool site'] = {
+  '_virtualhost' => '*:80',
+  'ServerName' => 'example.com',
+  'ServerAdmin' => 'l33t@example.com',
+  'DocumentRoot' => '/var/www/cool',
+}
+
+node.default['fb_apache']['sites']['my uncool site'] = {
+  '_virtualhost' => '*:80',
+  'ServerName' => 'anotherexample.com',
+  'ServerAdmin' => 'l33t@example.com',
+  'DocumentRoot' => '/var/www/uncool',
+}
+```
+
+#### Debian/Ubuntu default site note
+
+By default the Debian and Ubuntu Apache packages lay down a default webserver
+config for a server listening on :80 and serving up files from /var/www/html.
+This can be undesirable if you want a custom document root or customizations.
+This cookbook provides an attribute,
+`node['fb_apache']['enable_default_site']`, to enable/disable this default
+configuration.  The default is `true`, which preserves the package default.
+Setting this to `false` will disable the default :80 configuration.  Note this
+only applies to Debian and Ubuntu systems. Other distributions may/may not have
+this default behaviour.
+
 #### Rewrite rules
 
 One exception to this generic 1:1 mapping is rewrite rules. Because of the
@@ -121,7 +154,7 @@ name (will be used as a comment) and the value is another hash with a
 apache, multiple conditionals in the same block will be ANDed together. To get
 OR, make an additional entry in the hash. So for example:
 
-```
+```ruby
 node.default['fb_apache']['sites']['*:80'] = {
   '_rewrites' => {
     'rewrite old thing to new thing' => {
@@ -137,7 +170,7 @@ node.default['fb_apache']['sites']['*:80'] = {
 
 Would produce:
 
-```
+```text
 <VirtualHost *:80>
   # rewrite old thing to new thing
   RewriteCond %{REQUEST_URI} ^/old_thing
@@ -179,3 +212,6 @@ directory for your distro, but you may override it if you'd like.
 Everything in `node['fb_apache']['extra_configs']` will be converted from hash
 syntax to Apache Config syntax in the same 1:1 manner as the `sites` hash above
 and put into an `fb_apache.conf` config file.
+
+### MPM
+Allows to chose mpm module used. It can be prefork, worker or event.

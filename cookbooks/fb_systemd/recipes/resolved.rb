@@ -31,25 +31,34 @@ template '/etc/systemd/resolved.conf' do
 end
 
 # nss-resolve enables DNS resolution via the systemd-resolved DNS/LLMNR caching
-# stub resolver. According to upstream this should replace the glibc "dns"
-# resolver and is required for systemd-resolved to work. This block attempts
-# to place the resolver between mymachines and myhostname as recommended by
+# stub resolver. According to upstream this should be used in favor of the glibc
+# "dns" resolver and is required for systemd-resolved to work. This block attempts
+# to place "resolver dns" between mymachines and myhostname as recommended by
 # upstream.
-ruby_block 'enable nss-resolve' do
-  only_if { node['fb_systemd']['resolved']['enable'] }
+# See: https://man7.org/linux/man-pages/man8/nss-resolve.8.html
+whyrun_safe_ruby_block 'enable nss-resolve' do
+  only_if do
+    node['fb_systemd']['resolved']['enable'] &&
+    node['fb_systemd']['resolved']['enable_nss_resolve']
+  end
   block do
     node.default['fb_nsswitch']['databases']['hosts'].delete('dns')
     idx = node['fb_nsswitch']['databases']['hosts'].index('mymachines')
     if idx
       node.default['fb_nsswitch']['databases']['hosts'].insert(idx + 1,
                                                                'resolve')
+      node.default['fb_nsswitch']['databases']['hosts'].insert(idx + 2,
+                                                               'dns')
     else
       idx = node['fb_nsswitch']['databases']['hosts'].index('myhostname')
       if idx
-        node.default['fb_nsswitch']['databases']['hosts'].insert(idx - 1,
+        node.default['fb_nsswitch']['databases']['hosts'].insert(idx - 2,
                                                                  'resolve')
+        node.default['fb_nsswitch']['databases']['hosts'].insert(idx - 1,
+                                                                 'dns')
       else
         node.default['fb_nsswitch']['databases']['hosts'] << 'resolve'
+        node.default['fb_nsswitch']['databases']['hosts'] << 'dns'
       end
     end
   end
