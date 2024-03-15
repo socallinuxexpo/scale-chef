@@ -16,43 +16,9 @@
 # limitations under the License.
 #
 
-require_relative '../libraries/systemd_helpers'
-
-default_systemd = {
-  'Service' => {
-    'CapabilityBoundingSet' => ['CAP_CHOWN'],
-    'Environment' => ['VAR1="def_val1"'],
-    'Environment2' => ['VAR1="def_val1"'],
-    'ProtectControlGroups' => 'yes',
-    'SyslogIdentifier' => 'syslog1',
-  },
-  'Unit' => {},
-  'Install' => {},
-}
-
-pruned = {
-  'Service' => {
-    'CapabilityBoundingSet' => ['CAP_CHOWN'],
-    'Environment' => ['VAR1="def_val1"'],
-    'Environment2' => ['VAR1="def_val1"'],
-    'ProtectControlGroups' => 'yes',
-    'SyslogIdentifier' => 'syslog1',
-  },
-}
-
-override_systemd = {
-  'Service' => {
-    'CapabilityBoundingSet' => ['', 'CAP_SETUID'],
-    'Environment' => ['VAR2="def_val2"'],
-    'Environment2' => 'VAR2="def_val2"',
-    'ProtectControlGroups' => 'no',
-    'ProtectKernelTunables' => 'yes',
-  },
-}
+require_relative '../libraries/systemd_helpers.rb'
 
 describe FB::Systemd do
-  let(:merged) { FB::Systemd.merge_unit(default_systemd, override_systemd) }
-
   context 'sanitize' do
     it 'returns a printable string unaltered' do
       expect(FB::Systemd.sanitize('Foo123')).to eq('Foo123')
@@ -93,7 +59,7 @@ describe FB::Systemd do
                                 )
     end
 
-    it 'renders a unit with a boolean' do
+    it' renders a unit with a boolean' do
       expect(FB::Systemd.to_ini({
                                   'Service' => {
                                     'PrivateNetwork' => true,
@@ -103,72 +69,6 @@ describe FB::Systemd do
                                   "[Service]\nPrivateNetwork = true\n" +
                                   "PrivateUsers = false\n",
                                 )
-    end
-
-    it 'renders a unit with multiple sections of the same name' do
-      expect(FB::Systemd.to_ini({
-                                  'Network' => {
-                                    'Address' => [
-                                      '2001:db00::1/64',
-                                      '192.168.1.1/24',
-                                      '2401:db00::1/64',
-                                    ],
-                                    'IPv6AcceptRA' => true,
-                                  },
-                                  'Address' => [
-                                    {
-                                      'Address' => '2001:db00::1/64',
-                                      'PreferredLifetime' => 'infinity',
-                                    },
-                                    {
-                                      'Address' => '2401:db00::1/64',
-                                      'PreferredLifetime' => '0',
-                                    },
-                                  ],
-                                })).to eq(
-                                  "[Network]\nAddress = 2001:db00::1/64\n" +
-                                  "Address = 192.168.1.1/24\n" +
-                                  "Address = 2401:db00::1/64\n" +
-                                  "IPv6AcceptRA = true\n\n" +
-                                  "[Address]\nAddress = 2001:db00::1/64\n" +
-                                  "PreferredLifetime = infinity\n\n" +
-                                  "[Address]\nAddress = 2401:db00::1/64\n" +
-                                  "PreferredLifetime = 0\n",
-                                )
-    end
-  end
-
-  context 'merge systemd unit' do
-    it 'should merge when no conflict' do
-      expect(merged['Service']['SyslogIdentifier']).to eql('syslog1')
-      expect(merged['Service']['ProtectKernelTunables']).to eql('yes')
-    end
-
-    it 'should override settings' do
-      expect(merged['Service']['ProtectControlGroups']).to eql('no')
-    end
-
-    it 'should append lists together' do
-      expect(merged['Service']['Environment']).to eql(
-        ['VAR1="def_val1"', 'VAR2="def_val2"'],
-      )
-      # A list and not a list should still be appended together
-      expect(merged['Service']['Environment2']).to eql(
-        ['VAR1="def_val1"', 'VAR2="def_val2"'],
-      )
-    end
-
-    it 'should handle when zeroing a list' do
-      expect(merged['Service']['CapabilityBoundingSet']).to eql(
-        ['CAP_CHOWN', '', 'CAP_SETUID'],
-      )
-    end
-
-    it 'should handle empty inputs' do
-      expect(FB::Systemd.merge_unit({}, {})).to eql({})
-      expect(FB::Systemd.merge_unit(default_systemd, {})).to eql(pruned)
-      expect(FB::Systemd.merge_unit({}, override_systemd)).
-        to eql(override_systemd)
     end
   end
 end

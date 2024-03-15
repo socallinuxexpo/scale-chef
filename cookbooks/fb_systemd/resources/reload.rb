@@ -15,11 +15,14 @@
 # limitations under the License.
 #
 
-unified_mode(false) if Chef::VERSION >= 18 # TODO(T144966423)
 default_action :reload
 
 property :instance, :kind_of => String, :default => 'system'
 property :user, :kind_of => [String, NilClass], :default => nil
+
+def whyrun_supported?
+  true
+end
 
 action_class do
   def daemon_reload_or_reexec(action)

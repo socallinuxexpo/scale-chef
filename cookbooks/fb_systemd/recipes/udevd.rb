@@ -18,26 +18,19 @@
 # limitations under the License.
 #
 
-udevadm = value_for_platform(
-  'centos' => {
-    '< 6.0' => '/sbin/udevadm',
-  },
-  'default' => '/bin/udevadm',
-)
-
 execute 'trigger udev' do
-  command "#{udevadm} trigger"
+  command '/sbin/udevadm trigger'
   action :nothing
 end
 
 execute 'reload udev' do
-  command "#{udevadm} control --reload"
+  command '/sbin/udevadm control --reload'
   action :nothing
   notifies :run, 'execute[trigger udev]', :immediately
 end
 
 execute 'update hwdb' do
-  command "#{udevadm} hwdb --update"
+  command '/sbin/udevadm hwdb --update'
   action :nothing
 end
 
@@ -65,11 +58,7 @@ template '/etc/udev/udev.conf' do
   notifies :run, 'execute[reload udev]', :immediately
 end
 
-file '/etc/udev/rules.d/00-chef.rules' do
-  action :delete
-end
-
-template '/etc/udev/rules.d/99-chef.rules' do
+template '/etc/udev/rules.d/00-chef.rules' do
   source 'rules.erb'
   owner 'root'
   group 'root'

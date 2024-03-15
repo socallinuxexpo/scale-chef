@@ -102,10 +102,6 @@ class Chef
       self.rhel? && self['platform_version'].start_with?('9')
     end
 
-    def rhel10?
-      self.rhel? && self['platform_version'].start_with?('10')
-    end
-
     def centos_min_version?(version)
       self.centos? && self.el_min_version?(version)
     end
@@ -116,10 +112,6 @@ class Chef
 
     def centos?
       self['platform'] == 'centos'
-    end
-
-    def centos10?
-      self.centos? && self['platform_version'].start_with?('10')
     end
 
     def centos9?
@@ -182,10 +174,6 @@ class Chef
       self.redhat? && self['platform_version'].start_with?('9')
     end
 
-    def redhat10?
-      self.redhat? && self['platform_version'].start_with?('10')
-    end
-
     def oracle?
       self['platform'] == 'oracle'
     end
@@ -196,10 +184,6 @@ class Chef
 
     def oracle_max_version?(version)
       self.oracle? && self.el_max_version?(version)
-    end
-
-    def oracle9?
-      self.oracle? && self['platform_version'].start_with?('9')
     end
 
     def oracle8?
@@ -264,22 +248,6 @@ class Chef
 
     def fedora36?
       self.fedora? && self['platform_version'] == '36'
-    end
-
-    def fedora37?
-      self.fedora? && self['platform_version'] == '37'
-    end
-
-    def fedora38?
-      self.fedora? && self['platform_version'] == '38'
-    end
-
-    def fedora39?
-      self.fedora? && self['platform_version'] == '39'
-    end
-
-    def fedora40?
-      self.fedora? && self['platform_version'] == '40'
     end
 
     def eln?
@@ -530,10 +498,6 @@ class Chef
 
     def aristaeos_4_28_or_newer?
       self.aristaeos? && self._self_version >= self._canonical_version('4.28')
-    end
-
-    def aristaeos_4_31_or_newer?
-      self.aristaeos? && self._self_version >= self._canonical_version('4.31')
     end
 
     def embedded?
@@ -1029,8 +993,7 @@ class Chef
 
     # returns the version-release of an rpm installed, or nil if not present
     def rpm_version(name)
-      if (self.centos? && !self.centos7?) || self.fedora? || self.redhat8? || self.oracle8? || self.redhat9? ||
-        self.oracle9? || self.aristaeos_4_31_or_newer?
+      if (self.centos? && !self.centos7?) || self.fedora? || self.redhat8? || self.oracle8? || self.redhat9?
         # returns epoch.version
         v = Chef::Provider::Package::Dnf::PythonHelper.instance.
             package_query(:whatinstalled, name).version
