@@ -7,10 +7,6 @@
 # All rights reserved - Do Not Redistribute
 #
 
-node.default['fb_apache']['modules'] += ['access_compat', 'rewrite']
-node.default['fb_apache']['modules_mapping']['access_compat'] =
-  'mod_access_compat.so'
-
 directory '/etc/httpd' do
   owner 'root'
   group 'root'

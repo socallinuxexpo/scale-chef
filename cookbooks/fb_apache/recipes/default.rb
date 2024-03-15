@@ -18,27 +18,6 @@
 # limitations under the License.
 #
 
-node.default['fb_apache']['module_packages']['wsgi'] =
-  case node['platform_family']
-  when 'rhel'
-    node['platform_version'].to_f >= 8 ? 'python3-mod_wsgi' : 'mod_wsgi'
-  when 'debian'
-    'libapache2-mod-wsgi-py3'
-  else
-    'mod_wsgi'
-  end
-
-# Case makes sense in every other case, so lets keep it here for consistency
-# rubocop:disable Chef/Style/UnnecessaryPlatformCaseStatement
-node.default['fb_apache']['modules_mapping']['wsgi'] =
-  case node['platform_family']
-  when 'rhel'
-    node['platform_version'].to_f >= 8 ? 'mod_wsgi_python3.so' : 'mod_wsgi.so'
-  else
-    'mod_wsgi.so'
-  end
-# rubocop:enable Chef/Style/UnnecessaryPlatformCaseStatement
-
 apache_version =
   case node['platform_family']
   when 'debian'
@@ -54,39 +33,34 @@ apache_version =
     node['platform_version'].to_f >= 7.0 ? '2.4' : '2.2'
   end
 
-httpdir = value_for_platform_family(
-  'rhel' => '/etc/httpd',
-  'debian' => '/etc/apache2',
-)
-
 confdir =
   case node['platform_family']
   when 'rhel'
-    "#{httpdir}/conf.d"
+    '/etc/httpd/conf.d'
   when 'debian'
     case apache_version
     when '2.2'
-      "#{httpdir}/conf.d"
+      '/etc/apache2/conf.d'
     when '2.4'
-      "#{httpdir}/conf-enabled"
+      '/etc/apache2/conf-enabled'
     end
   end
 
 sitesdir = value_for_platform_family(
   'rhel' => confdir,
-  'debian' => "#{httpdir}/sites-enabled",
+  'debian' => '/etc/apache2/sites-enabled',
 )
 
 moddir =
   case node['platform_family']
   when 'rhel'
-    "#{httpdir}/conf.modules.d"
+    '/etc/httpd/conf.modules.d'
   when 'debian'
     case apache_version
     when '2.2'
-      "#{httpdir}/modules-enabled"
+      '/etc/apache2/modules-enabled'
     when '2.4'
-      "#{httpdir}/mods-enabled"
+      '/etc/apache2/mods-enabled'
     end
   end
 
@@ -132,33 +106,11 @@ end
   end
 end
 
-if node.debian? || node.ubuntu?
-  # CentOS makes this symlink to the right module dir, and we make assumptions
-  # it exists, so be sure to do the same on debian
-  link '/etc/apache2/modules' do
-    to '/usr/lib/apache2/modules'
-  end
-
-  # For reasons I don't understand on Ubuntu, Apache looks for mime.types in
-  # /etc/apache2/mime.types even though it's not configured to. So make a
-  # symlink
-  link '/etc/apache2/mime.types' do
-    to '/etc/mime.types'
-  end
-end
-
-# The package comes pre-installed with module configs, but we dropp off our own
-# in fb_modules.conf. Also, we don't want non-Chef controlled module configs.
-fb_apache_cleanup_modules 'doit' do
-  mod_dir moddir
-end
-
 template "#{moddir}/fb_modules.conf" do
   not_if { node.centos6? }
   owner 'root'
   group 'root'
   mode '0644'
-  notifies :verify, 'fb_apache_verify_configs[doit]', :before
   notifies :restart, 'service[apache]'
 end
 
@@ -166,7 +118,6 @@ template "#{sitesdir}/fb_sites.conf" do
   owner 'root'
   group 'root'
   mode '0644'
-  notifies :verify, 'fb_apache_verify_configs[doit]', :before
   notifies :reload, 'service[apache]'
 end
 
@@ -174,54 +125,7 @@ template "#{confdir}/fb_apache.conf" do
   owner 'root'
   group 'root'
   mode '0644'
-  notifies :verify, 'fb_apache_verify_configs[doit]', :before
   notifies :reload, 'service[apache]'
-end
-
-template "#{moddir}/00-mpm.conf" do
-  owner 'root'
-  group 'root'
-  mode '0644'
-  # MPM cannot be changed on reload, only restart
-  notifies :verify, 'fb_apache_verify_configs[doit]', :before
-  notifies :restart, 'service[apache]'
-end
-
-# We want to collect apache stats
-template "#{confdir}/status.conf" do
-  source 'status.erb'
-  owner 'root'
-  group 'root'
-  mode '0644'
-  variables(:location => '/server-status')
-  notifies :verify, 'fb_apache_verify_configs[doit]', :before
-  notifies :restart, 'service[apache]'
-end
-
-moddirbase = ::File.basename(moddir)
-sitesdirbase = ::File.basename(sitesdir)
-confdirbase = ::File.basename(confdir)
-fb_apache_verify_configs 'doit' do
-  httpdir httpdir
-  moddir moddirbase
-  sitesdir sitesdirbase
-  confdir confdirbase
-  action :nothing
-end
-
-if node['platform_family'] == 'debian'
-  # By default the apache package lays down a '000-default.conf' symlink to
-  # sites-available/000-default.conf which contains a generic :80 listener.
-  # This can conflict if we want to control :80 ourselves.
-  file "#{sitesdir}/000-default.conf" do
-    not_if { node['fb_apache']['enable_default_site'] }
-    action :delete
-  end
-
-  link "#{sitesdir}/000-default.conf" do
-    only_if { node['fb_apache']['enable_default_site'] }
-    to '../sites-available/000-default.conf'
-  end
 end
 
 service 'apache' do

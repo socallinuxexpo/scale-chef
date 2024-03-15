@@ -35,7 +35,7 @@ end
 group 'sudo' do
   members admins.keys
   system true
-  gid node.el_max_version?(8) ? 101 : 1001
+  gid 101
 end
 
 node.default['fb_sudo']['users']['%sudo']['admins can run anything'] =
