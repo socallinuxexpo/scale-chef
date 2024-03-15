@@ -26,6 +26,12 @@ node.default['fb_logrotate']['configs']['apache_status'] = {
   'files' => [apache_debug_log],
 }
 
+cookbook_file '/etc/php.ini' do
+  owner 'root'
+  group 'root'
+  mode '0644'
+end
+
 common_config = {
   'ServerName' => 'www.socallinuxexpo.org',
   'ServerAdmin' => 'webmaster@socallinuxexpo.org',
