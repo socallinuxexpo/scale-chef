@@ -20,7 +20,6 @@ node.default['fb_apache']['modules'] += [
   'authz_dbd',
   'authz_dbm',
   'cache',
-  'cache_disk',
   'cache_socache',
   'data',
   'dbd',
@@ -70,10 +69,7 @@ end
   'allowmethods' => 'mod_allowmethods.so',
   'authn_socache' => 'mod_authn_socache.so',
   'authz_dbd' => 'mod_authz_dbd.so',
-  'authz_dbm' => 'mod_authz_dbm.so',
   'brotli' => 'mod_brotli.so',
-  'cache' => 'mod_cache.so',
-  'cache_disk' => 'mod_cache_disk.so',
   'cache_socache' => 'mod_cache_socache.so',
   'data' => 'mod_data.so',
   'dumpio' => 'mod_dumpio.so',
@@ -86,12 +82,8 @@ end
   'socache_dbm' => 'mod_socache_dbm.so',
   'socache_memcache' => 'mod_socache_memcache.so',
   'watchdog' => 'mod_watchdog.so',
-  # 00-ssl.conf
-  'ssl' => 'mod_ssl.so',
   # 10-h2.conf
   'http2' => 'mod_http2.so',
-  # 15-php.conf
-  'php7' => 'libphp7.so',
 }.each do |k, v|
   node.default['fb_apache']['modules_mapping'][k] = v
 end

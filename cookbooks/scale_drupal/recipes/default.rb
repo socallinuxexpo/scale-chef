@@ -13,7 +13,7 @@ package 'drush' do
 end
 
 package 'awscli' do
-  not_if { node.centos7? }
+  only_if { node.centos8? }
   action :upgrade
 end
 
