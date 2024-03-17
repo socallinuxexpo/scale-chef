@@ -3,6 +3,10 @@
 # Recipe:: default
 #
 
+return if node.centos9?
+
+# for PHP
+node.default['fb_apache']['mpm'] = 'prefork'
 node.default['fb_apache']['modules'] << 'php7'
 
 if node.centos8?
