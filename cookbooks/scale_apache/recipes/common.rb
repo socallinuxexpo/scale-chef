@@ -19,7 +19,6 @@ node.default['fb_apache']['modules'] += [
   'authn_socache',
   'authz_dbd',
   'authz_dbm',
-  'brotli',
   'cache',
   'cache_disk',
   'cache_socache',
@@ -56,12 +55,14 @@ node.default['fb_apache']['modules'] += [
   'ssl',
   # 00-systemd.conf
   'systemd',
-  # 10-h2.conf
-  'http2',
 ]
-unless node.centos9?
-  # 15-php.conf
-   node.default['fb_apache']['modules'] << 'php7'
+# reg is still c7 and doesn't have these
+unless node.centos7?
+  node.default['fb_apache']['modules'] += [
+    'brotli',
+    # 10-h2.conf
+    'http2',
+  ]
 end
 
 {
@@ -84,12 +85,9 @@ end
   'slotmem_shm' => 'mod_slotmem_shm.so',
   'socache_dbm' => 'mod_socache_dbm.so',
   'socache_memcache' => 'mod_socache_memcache.so',
-  'socache_shmcb' => 'mod_socache_shmcb.so',
   'watchdog' => 'mod_watchdog.so',
   # 00-ssl.conf
   'ssl' => 'mod_ssl.so',
-  # 00-systemd.conf
-  'systemd' => 'mod_systemd.so',
   # 10-h2.conf
   'http2' => 'mod_http2.so',
   # 15-php.conf
