@@ -1,30 +1,26 @@
+<% # ~FC034 %>
+<% # https://github.com/Foodcritic/foodcritic/issues/297 workaround for #54 %>
 # This file is maintained by Chef. Do not edit, all changes will be
 # overwritten. See fb_systemd/README.md
-
 <%
   if node['fb_systemd'][@config]['config']
     config = node['fb_systemd'][@config]['config'].to_hash
   else
     config = node['fb_systemd'][@config].to_hash
   end
+  sections = Hash.new
+  if @section.is_a?(String)
+    sections[@section] = config
+  else
+    @section.each do |s|
+      sections[s] = config.fetch(s, Hash.new)
+    end
+  end
 
-  if node.in_shard?(99)
+  sections.each do |section, section_config|
 %>
-<%=  FB::Systemd.to_ini({@section => Hash[config.sort]}) %>
-<% else %>
-[<%= @section %>]
+
+<%=  FB::Systemd.to_ini({section => Hash[section_config.sort]}) -%>
 <%
-     config.sort.each do |key, val|
-       if val.is_a?(TrueClass)
-         v = 'yes'
-       elsif val.is_a?(FalseClass)
-         v = 'no'
-       elsif val.is_a?(Array)
-         v = val.join(' ')
-       else
-         v = val
-       end
+  end
 %>
-<%=    key %>=<%= v %>
-<%  end %>
-<% end %>
