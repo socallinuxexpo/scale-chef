@@ -37,15 +37,16 @@ module FB
       buf << indentstr(indent)
       buf << "<#{kw}>\n"
       data.each do |key, val|
-        if val.is_a?(String)
+        case val
+        when String
           buf << indentstr(indent + 1)
           buf << "#{key} #{val}\n"
-        elsif val.is_a?(Hash)
+        when Hash
           template_hash_handler(buf, indent + 1, key, val)
         end
       end
       buf << indentstr(indent)
-      buf << "</#{kw.split(' ')[0]}>\n"
+      buf << "</#{kw.split[0]}>\n"
     end
 
     # Helper for rewrite syntax
@@ -53,7 +54,7 @@ module FB
       rules.each do |name, ruleset|
         buf << indentstr(1)
         buf << "# #{name}\n"
-        ruleset['conditions'].each do |cond|
+        ruleset['conditions']&.each do |cond|
           buf << indentstr(1)
           buf << "RewriteCond #{cond}\n"
         end
