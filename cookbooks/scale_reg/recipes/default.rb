@@ -9,7 +9,13 @@
 
 node.default['scale_apache']['ssl_hostname'] = 'register.socallinuxexpo.org'
 
-package 'MySQL-python' do
+if node.centos_max_version?(8)
+  pkg = 'MySQL-python'
+else
+  pkg = 'python3-mysqlclient'
+end
+
+package pkg do
   action :upgrade
 end
 
