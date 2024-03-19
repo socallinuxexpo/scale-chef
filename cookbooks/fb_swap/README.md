@@ -19,9 +19,11 @@ Attributes
 ----------
 * node['fb_swap']['enabled']
 * node['fb_swap']['size']
+* node['fb_swap']['min_additional_file_size']
 * node['fb_swap']['swapoff_allowed_because']
 * node['fb_swap']['filesystem']
 * node['fb_swap']['strict']
+* node['fb_swap']['allow_unmanaged']
 
 Usage
 -----
@@ -49,6 +51,12 @@ to a value smaller than 1024 (i.e. 1 MB), which is assumed to be a typo. If you
 really want a swap device this small consider disabling swap altogether. The
 resize operation triggers a swap disable / enable, which could potentially
 trigger the OOM killer if the machine is under memory pressure.
+
+Additional swap file unit size should be at least
+`node['fb_swap']['min_additional_file_size']` kb if it is defined. If it is
+less than this settings additional swap file unit will not be created.
+Default value for the setting is `nil`, which means there is no any
+restrictions for its size.
 
 For the new version:
 
@@ -82,3 +90,10 @@ node.default['fb_swap']['strict'] = false
 * btrfs root filesystem is not supported until https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=ed46ff3d423780fa5173b38a844bf0fdb210a2a7
 * If any device(s) belonging to the root filesystem are rotational, using a
   swap file is not recommended.
+
+### allow_unmanaged
+You can disable the sanity check which looks for unmanaged swap devices via:
+
+```ruby
+node.default['fb_swap']['allow_unmanaged'] = true
+```
