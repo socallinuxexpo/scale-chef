@@ -10,10 +10,12 @@
 include_recipe 'scale_apache::common'
 include_recipe 'fb_apache'
 
-# required for PHP
-node.default['fb_apache']['mpm'] = 'prefork'
-
-node.default['fb_apache']['modules'] << 'php7'
+# haven't sorted out PHP for C9 yet
+unless node.centos9?
+  # required for PHP
+  node.default['fb_apache']['mpm'] = 'prefork'
+  node.default['fb_apache']['modules'] << 'php7'
+end
 
 apache_debug_log = '/var/log/apache_status.log'
 if node['hostname'] == 'scale-web2'
