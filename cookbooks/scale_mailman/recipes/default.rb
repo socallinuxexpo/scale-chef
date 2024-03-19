@@ -7,10 +7,15 @@ node.default['fb_iptables']['filter']['INPUT']['rules']['allow_smtp'] = {
   'rule' => '-p tcp -m tcp -m conntrack --ctstate NEW --dport 25 -j ACCEPT',
 }
 
-# for PHP (phplist)
-node.default['fb_apache']['mpm'] = 'prefork'
 node.default['fb_apache']['modules'] << 'cgi'
 node.default['fb_apache']['modules_mapping']['cgi'] = "mod_cgi.so"
+
+# On CentOS9 the EPEL9 repo depends on the CRB repo
+execute 'enable crb' do
+  only_if { node.centos9? }
+  not_if "dnf repolist | grep crb"
+  command "dnf config-manager --set-enabled crb"
+end
 
 node.default['scale_apache']['ssl_hostname'] = 'lists.socallinuxexpo.org'
 
@@ -55,26 +60,20 @@ common_config.merge({
 end
 
 pkgs = %w{
-  php
-  php-gd
-  php-pdo
-  php-xml
+  python3
+  python3-boto3
 }
 
-if node.centos7?
+if node.centos8?
   pkgs += %w{
-    awscli
-    php-mysql
-    python-dns
-    python2-boto
-  }
-elsif node.centos8?
-  pkgs += %w{
+    php
+    php-gd
+    php-pdo
+    php-xml
     php-mysqlnd
     python2
     python2-dns
-    python3
-    python3-boto3
+    mailman
   }
 
   node.default['fb_dnf']['modules']['python27'] = {
@@ -90,7 +89,17 @@ elsif node.centos8?
     'stream' => '2.1',
   }
 else
-  fail "scale_mailman: platform not supported"
+  pkgs += [
+    'mailman3',
+    # webui
+    'hyperkitty',
+    # admin ui
+    'postorius',
+    # glue between hyperkitty and postorius
+    'python3-mailman-web',
+    # new emails into archive
+    'python-mailman-hyperkitty',
+  ]
 end
 
 package pkgs do
@@ -105,59 +114,12 @@ cookbook_file '/var/www/html/index.html' do
   mode '0644'
 end
 
-cookbook_file '/usr/lib/mailman/bin/list_requests' do
-  source 'list_requests'
-  owner 'root'
-  group 'mailman'
-  mode '0755'
-end
-
-if node.centos7?
-  # CentOS 7's version of mailman only has 2.1.15, but that doesn't have any of
-  # the necessary features for accepting mail from people with dmarc policies
-  # (https://wiki.list.org/DEV/DMARC)
-  #
-  # those only were added in 2.1.16. 2.1.18 and later releases. Thus, using the
-  # C7 version would mean:
-  # - emails from people with strict dmarc policies (eg @yahoo.com or
-  # owen@delong.com) emails will just bounce back when mailman tries to send it
-  # to list members. the receiving members will then be unsubscribed from the
-  # list instead of the sender.
-  # - for those that dont have reject set as their policy, but rather quarantine
-  # their mail will go to spam As such we've pulled 2.1.21 from FC25
-
-  mailman_file = 'mailman-2.1.21-1.fc25.x86_64.rpm'
-  remote_file "#{Chef::Config['file_cache_path']}/#{mailman_file}" do
-    not_if { File.exists?('/usr/lib/mailman/bin/mailmanctl') }
-    source "https://s3.amazonaws.com/scale-packages/#{mailman_file}"
+if node.centos8?
+  cookbook_file '/usr/lib/mailman/bin/list_requests' do
+    source 'list_requests'
     owner 'root'
-    group 'root'
-    mode '0644'
-    action :create
-  end
-end
-
-package 'mailman' do
-  if node.centos7?
-    not_if { File.exists?('/usr/lib/mailman/bin/mailmanctl') }
-    source "#{Chef::Config['file_cache_path']}/mailman-2.1.21-1.fc25.x86_64.rpm"
-  else
-    action :upgrade
-  end
-end
-
-## RESTORE BACKUPS
-if node.centos7?
-  # Probably never worked... but also would need a port to boto3 to even
-  # try to work in C8
-  template '/usr/local/bin/restore-mailman.py' do
-    owner 'root'
-    group 'root'
-    mode  '0755'
-  end
-
-  execute '/usr/local/bin/restore-mailman.py' do
-    creates '/var/lib/mailman/archives/private/tech'
+    group 'mailman'
+    mode '0755'
   end
 end
 
@@ -171,15 +133,17 @@ file '/etc/cron.d/mailman' do
   action :delete
 end
 
-link '/etc/mailman/sitelist.cfg' do
-  to '/var/lib/mailman/data/sitelist.cfg'
-end
+if node.centos8?
+  link '/etc/mailman/sitelist.cfg' do
+    to '/var/lib/mailman/data/sitelist.cfg'
+  end
 
-template '/etc/mailman/mm_cfg.py' do
-  source 'mm_cfg.py.erb'
-  owner 'root'
-  group 'root'
-  mode  '0644'
+  template '/etc/mailman/mm_cfg.py' do
+    source 'mm_cfg.py.erb'
+    owner 'root'
+    group 'root'
+    mode  '0644'
+  end
 end
 
 node.default['fb_cron']['jobs']['mailman_backups'] = {
@@ -246,19 +210,22 @@ node.default['fb_postfix']['main.cf']['inet_interfaces'] = "all"
   node.default['fb_postfix']['main.cf'][conf] = val
 end
 
-template '/var/lib/mailman/data/aliases' do
-  owner 'root'
-  group 'root'
-  mode '0644'
-  notifies :run, 'execute[update mailman aliases]', :immediately
-end
+unless node.centos9?
+  template '/var/lib/mailman/data/aliases' do
+    owner 'root'
+    group 'root'
+    mode '0644'
+    notifies :run, 'execute[update mailman aliases]', :immediately
+  end
 
-execute 'update mailman aliases' do
-  command 'postalias /var/lib/mailman/data/aliases'
-  action :nothing
+  execute 'update mailman aliases' do
+    command 'postalias /var/lib/mailman/data/aliases'
+    action :nothing
+  end
 end
 
 service 'mailman' do
+  service_name node.centos8? ? 'mailman' : 'mailman3'
   action [:enable, :start]
 end
 
