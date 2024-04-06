@@ -50,7 +50,6 @@ end
 
 [
   '/var/chef',
-  '/var/chef/outputs',
   confdir,
 ].each do |dir|
   directory dir do
@@ -146,7 +145,7 @@ end
   # keep two weeks of chef run logs
   'cleanup chef logs' => {
     'time' => '1 1 * * *',
-    'command' => '/usr/bin/find /var/chef/outputs -maxdepth 1 ' +
+    'command' => '/usr/bin/find /var/log/chef -maxdepth 1 ' +
       '-name chef.2* -mtime +14 -exec /bin/rm -f {} \; &>/dev/null'
   },
 }.each do |name, job|
