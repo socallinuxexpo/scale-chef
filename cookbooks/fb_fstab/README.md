@@ -18,6 +18,7 @@ Attributes
 * node['fb_fstab']['umount_ignores']['types']
 * node['fb_fstab']['umount_ignores']['mount_points']
 * node['fb_fstab']['umount_ignores']['mount_point_prefixes']
+* node['fb_fstab']['umount_delete_empty_mountdir']
 * node['fb_fstab']['mounts'][$NAME]['device']
 * node['fb_fstab']['mounts'][$NAME]['mount_point']
 * node['fb_fstab']['mounts'][$NAME]['type']
@@ -32,6 +33,7 @@ Attributes
 * node['fb_fstab']['mounts'][$NAME]['remount_with_umount']
 * node['fb_fstab']['mounts'][$NAME]['enable_remount']
 * node['fb_fstab']['mounts'][$NAME]['allow_mount_failure']
+* node['fb_fstab']['mounts'][$NAME]['allow_remount_failure']
 * node['fb_fstab']['mounts'][$NAME]['lock_file']
 
 Usage
@@ -83,9 +85,15 @@ on unmounting, even if unmounting is enabled. A list of defaults is in
 attributes, you may add or remove from this as you see fit. For example, you
 may want:
 
-```
+```ruby
 node.default['fb_fstab']['umount_ignores']['devices'] << '/dev/sdb'
 ```
+
+`node['fb_fstab']['umount_delete_empty_mountdir']` - only works if
+`node['fb_fstab']['enable_unmount']` is true. It will try to best effort
+remove the mount dir directory - it has to be empty and not mounted
+for this step to be successful. Does log warning on `rmdir` error but does not
+throw exception.
 
 ### Filesystem Options
 The following options map directly to their `/etc/fstab` counterparts, so see
@@ -111,6 +119,7 @@ The following are additional per-mount flags to `fb_fstab`:
   show up in `/etc/fstab`, but Chef will not crash if mounting fails. This
   option is designed for teams who can handle data-disk failures gracefully
   and don't want it to bother Chef.
+* `allow_remount_failure` - As above but when remounting.
 
 The following are additional per-mount flags, which are only put into effect
 if the underlying mountpoint does not exist:
@@ -121,7 +130,7 @@ if the underlying mountpoint does not exist:
 
 Example:
 
-```
+```ruby
 node.default['fb_fstab']['mounts']['foobar'] = {
   'device' => 'foobar-tmpfs',
   'type' => 'tmpfs',
@@ -142,7 +151,7 @@ need to create the directory for you, we make it the way you want.
 
 Using `only_if` is slightly different than with resources, and looks like this:
 
-```
+```ruby
 node.default['fb_fstab']['mounts']['foobar'] = {
   'only_if' => proc { foo == bar },
   'device' => 'foobar-tmpfs',
@@ -162,7 +171,7 @@ add other normalizations into this map. They are exact-string matches. Do not
 overwrite the hash or you will lose the pre-populated entries, instead
 add/modify:
 
-```
+```ruby
 node.default['fb_fstab']['fs_type_normalization_map']['fuse.gluster'] = 'gluster'
 ```
 
@@ -173,7 +182,7 @@ equality. For example we drop 'nofail' because while we may want to set that in
 options for a mounted filesystem. The entries can either be strings or regexes.
 Add to this list like so:
 
-```
+```ruby
 node.default['fb_fstab']['ignorable_opts'] << 'ignore_me'
 ```
 
@@ -183,7 +192,7 @@ come from the original installation from `/etc/.fstab.chef`. It is recommended
 you have your installation system create this file (e.g in an Anaconda
 post-script) with something like:
 
-```
+```text
 grep -v '^#' /etc/fstab > /etc/.fstab.chef
 chmod 444 /etc/.fstab.chef
 ```
@@ -205,7 +214,7 @@ If you want to not include swap devices from base mounts, you can set
 `fb_swap`, or just want to remove swap altogether on a system which was
 provisioned with swap.
 
-```
+```ruby
 node.default['fb_fstab']['exclude_base_swap'] = true
 ```
 
@@ -217,6 +226,15 @@ is one device, ala:
 * /dev/sdd1
 * /dev/sdq2
 
-If this file has not been touched in 7 days it will be assumed to be stale and
-will be removed. This is designed for online _repair_ not ignoring disks
-permanently.
+Chef will also read a file `/var/chef/in_maintenance_mounts` to determine any
+mounts that should be skipped, regardless of the status of the underlying
+devices. This is especially useful if maintenance needs to be performed on an
+array that can't be kept online (e.g. for RAID0). The format of the file is
+one mount, ala:
+
+* /mnt/d0
+* /mnt/d1
+
+For both these files, if this file has not been touched in 7 days it will be
+assumed to be stale and will be removed. This is designed for online
+_repair_, not for ignoring disks permanently.
