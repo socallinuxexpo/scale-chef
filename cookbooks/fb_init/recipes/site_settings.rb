@@ -42,11 +42,16 @@ end
 if File.exist?('/etc/postfix/skip_mailgun')
   Chef::Log.warn("fb_init: Skipping mailgun postfix setup!")
 elsif File.exist?('/etc/sasl_passwd')
+  if node.el_min_version?(10) || node.eln?
+    map_type = 'lmdb'
+  else
+    map_type = 'hash'
+  end
   {
     'smtp_sasl_auth_enable' => 'yes',
     'relayhost' => 'smtp.mailgun.org',
     'smtp_sasl_security_options' => 'noanonymous',
-    'smtp_sasl_password_maps' => 'hash:/etc/postfix/sasl_passwd',
+    'smtp_sasl_password_maps' => "#{map_type}:/etc/postfix/sasl_passwd",
   }.each do |k, v|
     node.default['fb_postfix']['main.cf'][k] = v
   end
