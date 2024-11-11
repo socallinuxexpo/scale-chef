@@ -115,10 +115,10 @@ your node.
     Is Redhat Enterprise Linux 10
 
 * `node.rhel_max_version?(v)`
-    Is Redhat Enterprise Linux with a maximum version number of v
+    Is Redhat Enterprise Linux with a maximum major version number of v
 
 * `node.rhel_min_version?(v)`
-    Is Redhat Enterprise Linux with a minimum version number of v
+    Is Redhat Enterprise Linux with a minimum major version number of v
 
 * `node.rhel?`
     Is Redhat Enterprise Linux
@@ -128,6 +128,9 @@ your node.
 
 * `node.rhel8?`
     Is Redhat Enterprise Linux 8
+
+* `node.rhel8_8?`
+    Is Redhat Enterprise Linux 8.8
 
 * `node.rhel9?`
     Is Redhat Enterprise Linux 9
@@ -240,8 +243,11 @@ your node.
 * `node.aristaeos_4_28_or_newer?`
     Is network switch running Arista EOS and OS version is 4.28 or newer
 
-* `node.aristaeos_4_31_or_newer?`
-    Is network switch running Arista EOS and OS version is 4.31 or newer
+* `node.aristaeos_4_30_or_newer?`
+    Is network switch running Arista EOS and OS version is 4.30 or newer
+
+* `node.aristaeos_4_32_or_newer?`
+    Is network switch running Arista EOS and OS version is 4.32 or newer
 
 * `node.embedded?`
     Is embedded Linux, implies 'node.aristaeos?'. These devices likely have
