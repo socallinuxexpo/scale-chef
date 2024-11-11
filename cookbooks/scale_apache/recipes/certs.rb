@@ -3,8 +3,10 @@ pkgs = ['certbot'] unless node.centos10?
 # undeclared dependency in c7
 pkgs << 'python-acme' if node.centos7?
 
-package pkgs do
-  action :upgrade
+unless pkgs.length.zero?
+  package pkgs do
+    action :upgrade
+  end
 end
 
 # Always run our renewal script
