@@ -8,7 +8,7 @@
 #
 
 # omfg I hate this so much
-if node.centos9?
+if node.centos9? || node.centos10?
   version = '18.4.2'
 else
   version = '17.10.0'
