@@ -1,4 +1,6 @@
-pkgs = ['certbot'] unless node.centos10?
+pkgs = []
+
+pkgs << 'certbot' unless node.centos10?
 
 # undeclared dependency in c7
 pkgs << 'python-acme' if node.centos7?
