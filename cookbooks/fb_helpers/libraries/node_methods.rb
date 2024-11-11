@@ -58,12 +58,12 @@ class Chef
 
     # Is this a RHEL-compatible OS with a minimum major version number of `version`
     def el_min_version?(version)
-      self.rhel_family? && self._self_version >= self._canonical_version(version)
+      self.rhel_family? && self._self_version[0] >= self._canonical_version(version)[0]
     end
 
     # Is this a RHEL-compatible OS with a maximum major version number of `version`
     def el_max_version?(version)
-      self.rhel_family? && self._self_version <= self._canonical_version(version)
+      self.rhel_family? && self._self_version[0] <= self._canonical_version(version)[0]
     end
 
     def rhel_family7?
@@ -96,6 +96,10 @@ class Chef
 
     def rhel8?
       self.rhel? && self['platform_version'].start_with?('8')
+    end
+
+    def rhel8_8?
+      self.rhel? && self['platform_version'].start_with?('8.8')
     end
 
     def rhel9?
@@ -383,8 +387,8 @@ class Chef
       macos? && node['platform_version'].start_with?('14.')
     end
 
-    def mac_mini_2014?
-      macos? && node['hardware']['machine_model'] == 'Macmini7,1'
+    def macos15?
+      macos? && node['platform_version'].start_with?('15.')
     end
 
     def mac_mini_2018?
@@ -532,8 +536,12 @@ class Chef
       self.aristaeos? && self._self_version >= self._canonical_version('4.28')
     end
 
-    def aristaeos_4_31_or_newer?
-      self.aristaeos? && self._self_version >= self._canonical_version('4.31')
+    def aristaeos_4_30_or_newer?
+      self.aristaeos? && self._self_version >= self._canonical_version('4.30')
+    end
+
+    def aristaeos_4_32_or_newer?
+      self.aristaeos? && self._self_version >= self._canonical_version('4.32')
     end
 
     def embedded?
@@ -990,7 +998,7 @@ class Chef
     end
 
     def root_user
-      value_for_platform(
+      @root_user ||= value_for_platform(
         'windows' => { 'default' => 'Administrator' },
         'default' => 'root',
       )
@@ -999,7 +1007,7 @@ class Chef
     def root_group
       # rubocop:disable Chef/Correctness/InvalidPlatformValueForPlatformHelper
       # See the `macos?` method above
-      value_for_platform(
+      @root_group ||= value_for_platform(
         %w{openbsd freebsd mac_os_x macos} => { 'default' => 'wheel' },
         'windows' => { 'default' => 'Administrators' },
         'default' => 'root',
@@ -1030,7 +1038,7 @@ class Chef
     # returns the version-release of an rpm installed, or nil if not present
     def rpm_version(name)
       if (self.centos? && !self.centos7?) || self.fedora? || self.redhat8? || self.oracle8? || self.redhat9? ||
-        self.oracle9? || self.aristaeos_4_31_or_newer?
+        self.oracle9? || self.aristaeos_4_30_or_newer?
         # returns epoch.version
         v = Chef::Provider::Package::Dnf::PythonHelper.instance.
             package_query(:whatinstalled, name).version
