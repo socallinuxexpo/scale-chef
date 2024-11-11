@@ -292,6 +292,7 @@ elsif node.centos10?
   pkgs += [
     'php-mysqlnd',
     'php-fpm',
+    'php-soap',
   ]
 else
   pkgs << 'python3-boto3'
