@@ -10,11 +10,18 @@
 include_recipe 'scale_apache::common'
 include_recipe 'fb_apache'
 
-# haven't sorted out PHP for C9 yet
-unless node.centos9? || node.centos10?
+node.default['fb_apache']['mpm'] = 'prefork'
+
+# haven't sorted out PHP for C9+ yet
+if node.centos_max_version?(8)
   # required for PHP
-  node.default['fb_apache']['mpm'] = 'prefork'
   node.default['fb_apache']['modules'] << 'php7'
+end
+
+if node.centos10?
+  node.default['fb_apache']['modules'] << 'fcgid'
+  node.default['fb_apache']['modules'] << 'proxy'
+  node.default['fb_apache']['modules'] << 'proxy_fcgi'
 end
 
 apache_debug_log = '/var/log/apache_status.log'
