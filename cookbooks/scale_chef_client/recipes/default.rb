@@ -13,11 +13,16 @@ if node.centos9? || node.centos10?
 else
   version = '17.10.0'
 end
-rpm = "cinc-#{version}-1.el#{node.major_platform_version}.x86_64.rpm"
+dl_plat = node.major_platform_version
+if node.centos10?
+  dl_plat = 9
+end
+
+rpm = "cinc-#{version}-1.el#{dl_plat}.x86_64.rpm"
 rpmpath = File.join(Chef::Config['file_cache_path'], rpm)
 remote_file rpmpath do
   source "http://downloads.cinc.sh/files/stable/cinc/#{version}/el/" +
-    "#{node.major_platform_version}/#{rpm}"
+    "#{dl_plat}/#{rpm}"
   owner 'root'
   group 'root'
   mode '0644'
