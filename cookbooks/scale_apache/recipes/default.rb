@@ -11,7 +11,7 @@ include_recipe 'scale_apache::common'
 include_recipe 'fb_apache'
 
 # haven't sorted out PHP for C9 yet
-unless node.centos9?
+unless node.centos9? || node.centos10?
   # required for PHP
   node.default['fb_apache']['mpm'] = 'prefork'
   node.default['fb_apache']['modules'] << 'php7'
@@ -281,6 +281,11 @@ pkgs = %w{
 if node.centos7?
   pkgs << 'python2-boto'
   pkgs << 'php-mysql'
+elsif node.centos10?
+  pkgs += [
+    'php-mysqlnd',
+    'php-fpm',
+  ]
 else
   pkgs << 'python3-boto3'
   pkgs << 'php-mysqlnd'
