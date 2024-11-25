@@ -17,6 +17,13 @@ if node.centos7?
     source "#{Chef::Config['file_cache_path']}/#{epel_pkg}"
   end
 else
+  # On CentOS9+ the EPEL repo depends on the CRB repo
+  execute 'enable crb' do
+    only_if { node.centos_min_version?(9) }
+    not_if "dnf repolist | grep crb"
+    command "dnf config-manager --set-enabled crb"
+  end
+
   package 'epel-release' do
     action :upgrade
   end

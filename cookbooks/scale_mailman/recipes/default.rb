@@ -10,13 +10,6 @@ node.default['fb_iptables']['filter']['INPUT']['rules']['allow_smtp'] = {
 node.default['fb_apache']['modules'] << 'cgi'
 node.default['fb_apache']['modules_mapping']['cgi'] = "mod_cgi.so"
 
-# On CentOS9 the EPEL9 repo depends on the CRB repo
-execute 'enable crb' do
-  only_if { node.centos9? }
-  not_if "dnf repolist | grep crb"
-  command "dnf config-manager --set-enabled crb"
-end
-
 node.default['scale_apache']['ssl_hostname'] = 'lists.socallinuxexpo.org'
 
 include_recipe 'scale_apache::simple'
