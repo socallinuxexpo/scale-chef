@@ -1,0 +1,19 @@
+[mailman]
+site_owner: root@localhost
+listinfo_url = /mailman3/
+
+# Set the paths to be Fedora-compliant
+layout: fhs
+[paths.fhs]
+bin_dir: /usr/libexec/mailman3
+var_dir: /var/lib/mailman3
+queue_dir: /var/spool/mailman3
+log_dir: /var/log/mailman3
+lock_dir: /run/lock/mailman3
+ext_dir: /etc/mailman3.d
+pid_file: /run/mailman3/master.pid
+
+[archiver.hyperkitty]
+class: mailman_hyperkitty.Archiver
+enable: yes
+configuration: /etc/mailman3.d/hyperkitty.cfg
