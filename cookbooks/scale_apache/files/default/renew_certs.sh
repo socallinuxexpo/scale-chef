@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# CentOS 10 workaround
+venv_activate='/usr/local/certbot-venv/bin/activate'
+if [ -e "$venv_activate" ]; then
+  source $venv_activate
+fi
+
 # This is how I got the certs:
 
 # FOR WWW
