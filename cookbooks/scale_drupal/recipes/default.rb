@@ -17,6 +17,27 @@ package 'awscli' do
   action :upgrade
 end
 
+# CentOS 10 doesn't yet have awscli2 and its dep python3-colorama
+# due to https://issues.redhat.com/browse/RHEL-64923 which is simply
+# a test failure, so we install the versions downloaded from Koji for now
+base_url = 'https://kojihub.stream.centos.org/kojifiles/vol/koji02/packages'
+colorama = "#{base_url}/python-colorama/0.4.6/13.el10/noarch" +
+  '/python3-colorama-0.4.6-13.el10.noarch.rpm'
+awscli2 = "#{base_url}/awscli2/2.17.18/4.el10/noarch" +
+  '/awscli2-2.17.18-4.el10.noarch.rpm'
+
+[colorama, awscli2].each do |url|
+  fname = File.basename(url)
+  src = "#{Chef::Config['file_cache_path']}/#{fname}"
+  remote_file src do
+    source url
+  end
+
+  package fname do
+    source src
+  end
+end
+
 cookbook_file '/usr/local/bin/deploy_site' do
   source 'deploy_site'
   owner 'root'
