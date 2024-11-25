@@ -1,0 +1,13 @@
+[Unit]
+Description=GNU Mailman Web UI
+After=syslog.target network.target postgresql.service mailman3.service
+
+[Service]
+Environment="PYTHONPATH=/etc/mailman3/"
+User=mailman
+Group=mailman
+ExecStart=/usr/sbin/uwsgi --ini /etc/mailman3/uwsgi.ini
+KillSignal=SIGINT
+
+[Install]
+WantedBy=multi-user.target

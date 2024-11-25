@@ -1,0 +1,27 @@
+[uwsgi]
+http-socket = localhost:8000
+
+plugins=logfile,python3
+module=mailman_web.wsgi:application
+# Set PYTHONPATH
+env = PYTHONPATH=/etc/mailman3/
+# The default settings module.
+env = DJANGO_SETTINGS_MODULE=settings
+
+# Setup default number of processes and threads per process.
+master = true
+processes = 2
+threads = 2
+
+# Setup the django_q related worker processes.
+attach-daemon = /usr/bin/mailman-web qcluster
+
+# Setup the request log.
+req-logger = file:/var/log/mailman3/uwsgi.log
+
+# Log qcluster commands separately.
+logger = qcluster file:/var/log/mailman3/uwsgi-qcluster.log
+log-route = qcluster uwsgi-daemons
+
+# Last log and it logs the rest of the stuff.
+logger = file:/var/log/mailman3/uwsgi-error.log

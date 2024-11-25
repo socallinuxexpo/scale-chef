@@ -1,0 +1,79 @@
+# Get the default settings.
+from mailman_web.settings.base import *
+from mailman_web.settings.mailman import *
+
+# Settings below supplement or override the defaults.
+
+#: Default list of admins who receive the emails from error logging.
+ADMINS = (
+    ('Mailman Suite Admin', 'root@localhost'),
+)
+
+# Postgresql database setup.
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'mailman3',
+        'USER': '<%= node['scale_mailman']['mailman3_mysql_user'] %>',
+        'PASSWORD': '<%= node['scale_mailman']['mailman3_mysql_password'] %>',
+        'HOST': '<%= node['scale_mailman']['mailman3_mysql_host'] %>',
+        'PORT': '3306',
+        # For MySQL/MariaDB, in addition to changing the 'ENGINE' setting,
+        # uncomment the following to enable utf8 4-byte encodings.
+        'OPTIONS': {'charset': 'utf8mb4'},
+    }
+}
+
+# 'collectstatic' command will copy all the static files here.
+# Alias this location from your webserver to `/static`
+STATIC_ROOT = '<%= @staticdir %>'
+
+# enable the 'compress' command.
+COMPRESS_ENABLED = True
+
+# Make sure that this directory is created or Django will fail on start.
+LOGGING['handlers']['file']['filename'] = '/var/log/mailman3/mailmanweb.log'
+
+#: See https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
+ALLOWED_HOSTS = [
+    "localhost",  # Archiving API from Mailman, keep it.
+    "127.0.0.1",
+    "lists.socallinuxexpo.org",
+    "lists.linuxfests.org",
+    "lists2.socallinuxexpo.org",
+]
+
+#: See https://docs.djangoproject.com/en/dev/ref/settings/#csrf-trusted-origins
+#: For Django <4.0 these are of the form 'lists.example.com' or
+#: '.example.com' to include subdomains and for Django >=4.0 they include
+#: the scheme as in 'https://lists.example.com' or 'https://*.example.com'.
+CSRF_TRUSTED_ORIGINS = [
+    "lists.socallinuxexpo.org",
+    "lists2.socallinuxexpo.org",
+    "lists.linuxfests.org",
+]
+
+#: Current Django Site being served. This is used to customize the web host
+#: being used to serve the current website. For more details about Django
+#: site, see: https://docs.djangoproject.com/en/dev/ref/contrib/sites/
+SITE_ID = 1
+
+# Set this to a new secret value.
+SECRET_KEY = '<%= node['scale_mailman']['mailman3_secret'] %>'
+
+# Set this to match the api_key setting in
+# /opt/mailman/mm/mailman-hyperkitty.cfg (quoted here, not there).
+MAILMAN_ARCHIVER_KEY = '<%= node['scale_mailman']['mailman3_archiver_secret'] %>'
+
+# The sender of emails from Django such as address confirmation requests.
+# Set this to a valid email address.
+#DEFAULT_FROM_EMAIL = 'listmaster@linuxfests.org'
+DEFAULT_FROM_EMAIL = 'listmaster@lists2.socallinuxexpo.org'
+
+# The sender of error messages from Django. Set this to a valid email
+# address.
+SERVER_EMAIL = 'listmaster@linuxfests.org'
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'localhost'
+EMAIL_PORT = 25
