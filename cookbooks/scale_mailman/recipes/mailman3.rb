@@ -15,6 +15,7 @@ pkgs = [
   'python3-mailman-web',
   # new emails into archive
   'python-mailman-hyperkitty',
+  'python3-xapian-haystack',
   # uwsgi
   'uwsgi',
   'uwsgi-logger-file',
