@@ -77,3 +77,9 @@ SERVER_EMAIL = 'listmaster@linuxfests.org'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'localhost'
 EMAIL_PORT = 25
+
+HAYSTACK_CONNECTIONS = {
+  'default': {
+    'PATH': '/var/lib/mailman3/fulltext_index',
+  },
+}
