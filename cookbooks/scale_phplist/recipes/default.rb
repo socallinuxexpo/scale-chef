@@ -3,13 +3,19 @@
 # Recipe:: default
 #
 
-return if node.centos9?
-
 # for PHP
 node.default['fb_apache']['mpm'] = 'prefork'
-node.default['fb_apache']['modules'] << 'php7'
+pkgs = %w{}
 
 if node.centos8?
+  node.default['scale_phplist']['version'] = '3.5.2'
+  pkgs += %w{
+    php
+    php-mysqlnd
+    php-imap
+  }
+
+  node.default['fb_apache']['modules'] << 'php7'
   relpath = File.join(Chef::Config['file_cache_path'], 'remi-release-8.rpm')
   remote_file relpath do
     source 'https://rpms.remirepo.net/enterprise/remi-release-8.rpm'
@@ -29,13 +35,49 @@ if node.centos8?
     'enable' => true,
     'stream' => 'remi-7.2',
   }
-end
+elsif node.centos9?
+  # this whole thing is fraught with ordering issues.
+  # 
+  # You need a run with just the remi-release RPM setup
+  #
+  # Another run with the DNF modulues
+  #
+  # Then another run to setup the packages
+  #
+  # Then another run with the fb_apache stuff...
 
-pkgs = %w{
-  php
-  php-mysqlnd
-  php-imap
-}
+  # enable this first...
+  relpath = File.join(Chef::Config['file_cache_path'], 'remi-release-9.rpm')
+  remote_file relpath do
+    source 'https://rpms.remirepo.net/enterprise/remi-release-9.rpm'
+    owner 'root'
+    group 'root'
+    mode '0644'
+    action :create
+  end
+
+  package 'remi-release-9' do
+    source relpath
+    action :install
+  end
+
+  # then this...
+  node.default['fb_dnf']['modules']['php'] = {
+    'enable' => true,
+    'stream' => 'remi-8.2',
+  }
+
+  # then this...
+  pkgs += %w{
+    php
+    php-mysqlnd
+    php-imap
+  }
+
+  # then this...
+  node.default['fb_apache']['modules_mapping']['php'] = 'libphp.so'
+  node.default['fb_apache']['modules'] << 'php'
+end
 
 package pkgs do
   action :upgrade
