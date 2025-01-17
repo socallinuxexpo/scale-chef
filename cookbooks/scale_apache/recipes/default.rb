@@ -22,6 +22,25 @@ if node.centos10?
   node.default['fb_apache']['modules'] << 'fcgid'
   node.default['fb_apache']['modules'] << 'proxy'
   node.default['fb_apache']['modules'] << 'proxy_fcgi'
+
+  relpath = File.join(Chef::Config['file_cache_path'], 'remi-release-10.rpm')
+  remote_file relpath do
+    source 'https://rpms.remirepo.net/enterprise/remi-release-10.rpm'
+    owner 'root'
+    group 'root'
+    mode '0644'
+    action :create
+  end
+
+  package 'remi-release-10' do
+    source relpath
+    action :install
+  end
+
+  node.default['fb_dnf']['modules']['php'] = {
+    'enable' => true,
+    'stream' => 'remi-8.0',
+  }
 end
 
 apache_debug_log = '/var/log/apache_status.log'
