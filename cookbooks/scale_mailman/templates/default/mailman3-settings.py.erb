@@ -80,6 +80,10 @@ EMAIL_PORT = 25
 
 HAYSTACK_CONNECTIONS = {
   'default': {
-    'PATH': '/var/lib/mailman3/fulltext_index',
+    # to use whoosh do:
+    # 'ENGINE': 'haystack.backends.whoosh_backend.WhooshEngine',
+    # 'PATH': '/var/lib/mailman3/fulltext_index',
+    'ENGINE': 'xapian_backend.XapianEngine',
+    'PATH': '/var/lib/mailman3/xapian_index',
   },
 }

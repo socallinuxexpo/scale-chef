@@ -206,3 +206,10 @@ node.default['scale_datadog']['monitors']['http_check'] = {
                     'url' => 'http://lists.linuxfests.org',
                     'timeout' => 2 }],
 }
+
+cookbook_file '/var/www/html/index.html' do
+  source 'index.html'
+  owner 'root'
+  group 'root'
+  mode '0644'
+end

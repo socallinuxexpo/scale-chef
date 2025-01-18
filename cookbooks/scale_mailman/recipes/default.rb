@@ -30,13 +30,6 @@ else
 end
 
 # some common stuff - backups, monitoring, service
-cookbook_file '/var/www/html/index.html' do
-  source 'index.html'
-  owner 'root'
-  group 'root'
-  mode '0644'
-end
-
 template '/usr/local/bin/backup-mailman.sh' do
   owner 'root'
   group 'root'

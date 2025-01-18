@@ -15,6 +15,10 @@ pkgs = [
   'python3-mailman-web',
   # new emails into archive
   'python-mailman-hyperkitty',
+  # xapian search backend
+  'python3-xapian-haystack',
+  # for xapian, bad deps
+  'python3-filelock',
   # uwsgi
   'uwsgi',
   'uwsgi-logger-file',
@@ -152,4 +156,11 @@ node.default['fb_cron']['jobs']['mailman3-quarter_hourly'] = {
     'command' => "/usr/bin/mailman-web runjobs #{job}",
     'user' => 'mailman',
   }
+end
+
+cookbook_file '/var/www/html/index.html' do
+  source 'index-mailman3.html'
+  owner 'root'
+  group 'root'
+  mode '0644'
 end
