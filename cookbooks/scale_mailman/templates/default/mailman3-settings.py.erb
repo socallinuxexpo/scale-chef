@@ -38,9 +38,8 @@ LOGGING['handlers']['file']['filename'] = '/var/log/mailman3/mailmanweb.log'
 ALLOWED_HOSTS = [
     "localhost",  # Archiving API from Mailman, keep it.
     "127.0.0.1",
-    "lists.socallinuxexpo.org",
     "lists.linuxfests.org",
-    "lists2.socallinuxexpo.org",
+    "lists.socallinuxexpo.org",
 ]
 
 #: See https://docs.djangoproject.com/en/dev/ref/settings/#csrf-trusted-origins
@@ -48,9 +47,8 @@ ALLOWED_HOSTS = [
 #: '.example.com' to include subdomains and for Django >=4.0 they include
 #: the scheme as in 'https://lists.example.com' or 'https://*.example.com'.
 CSRF_TRUSTED_ORIGINS = [
-    "lists.socallinuxexpo.org",
-    "lists2.socallinuxexpo.org",
     "lists.linuxfests.org",
+    "lists.socallinuxexpo.org",
 ]
 
 #: Current Django Site being served. This is used to customize the web host
@@ -67,8 +65,7 @@ MAILMAN_ARCHIVER_KEY = '<%= node['scale_mailman']['mailman3_archiver_secret'] %>
 
 # The sender of emails from Django such as address confirmation requests.
 # Set this to a valid email address.
-#DEFAULT_FROM_EMAIL = 'listmaster@linuxfests.org'
-DEFAULT_FROM_EMAIL = 'listmaster@lists2.socallinuxexpo.org'
+DEFAULT_FROM_EMAIL = 'listmaster@linuxfests.org'
 
 # The sender of error messages from Django. Set this to a valid email
 # address.
