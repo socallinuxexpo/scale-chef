@@ -67,6 +67,16 @@ staticdir = '/var/www/html/static'
 }.each do |key, val|
   node.default['fb_apache']['sites']['_default_:443'][key] = val
 end
+{
+  'RewriteEngine' => 'on',
+  '_rewrites' => {
+    'https-upgrade' => {
+      'rule' => '^/(.*) https://lists.linuxfests.org/$1',
+    },
+  },
+}.each do |key, val|
+  node.default['fb_apache']['sites']['*:80'][key] = val
+end
 
 directory staticdir do
   owner 'root'
