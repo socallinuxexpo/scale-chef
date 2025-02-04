@@ -64,6 +64,12 @@ staticdir = '/var/www/html/static'
   'ProxyPass /accounts' => 'http://127.0.0.1:8000/accounts',
   'ProxyPass /admin' => 'http://127.0.0.1:8000/admin',
   'ProxyPass /user-profile' => 'http://127.0.0.1:8000/user-profile',
+  'RewriteEngine' => 'on',
+  '_rewrites' => {
+    'old-mailman' => {
+      'rule' => '^/cgi-bin/mailman.* /mailman3 [R]',
+    },
+  },
 }.each do |key, val|
   node.default['fb_apache']['sites']['_default_:443'][key] = val
 end
@@ -71,7 +77,7 @@ end
   'RewriteEngine' => 'on',
   '_rewrites' => {
     'https-upgrade' => {
-      'rule' => '^/(.*) https://lists.linuxfests.org/$1',
+      'rule' => '^/(.*) https://lists.linuxfests.org/$1 [R]',
     },
   },
 }.each do |key, val|
