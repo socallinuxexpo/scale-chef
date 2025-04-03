@@ -24,8 +24,11 @@ if node.centos_min_version?(9) || node.fedora?
 else
   packages = ['iptables']
 end
+
 if node.ubuntu?
   packages << 'iptables-persistent'
+elsif node.centos_min_version?(9) || node.fedora?
+  packages << 'iptables-nft-services'
 else
   packages << 'iptables-services'
 end
