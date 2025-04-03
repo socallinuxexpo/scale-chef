@@ -27,7 +27,7 @@ end
 
 if node.ubuntu?
   packages << 'iptables-persistent'
-elsif node.centos_min_version?(9) || node.fedora?
+elsif node.centos_min_version?(9)
   packages << 'iptables-nft-services'
 else
   packages << 'iptables-services'
