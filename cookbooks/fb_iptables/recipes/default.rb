@@ -74,34 +74,35 @@ end
 
 ## iptables ##
 template '/etc/fb_iptables.conf' do
-  owner 'root'
-  group 'root'
+  owner node.root_user
+  group node.root_group
   mode '0644'
-end
-
-template '/usr/sbin/fb_iptables_reload' do
-  source 'fb_iptables_reload.erb'
-  owner 'root'
-  group 'root'
-  mode '0755'
   variables(
     :iptables_config_dir => iptables_config_dir,
-    :iptables_rules => iptables_rule_file,
-    :ip6tables_rules => ip6tables_rule_file,
+    :iptables_rules_file => iptables_rule_file,
+    :ip6tables_rules_file => ip6tables_rule_file,
   )
 end
 
+# DO NOT MAKE THIS A TEMPLATE! USE THE CONFIG FILE TEMPLATED ABOVE!!
+cookbook_file '/usr/sbin/fb_iptables_reload' do
+  source 'fb_iptables_reload.sh'
+  owner node.root_user
+  group node.root_group
+  mode '0755'
+end
+
 template "#{iptables_config_dir}/iptables-config" do
-  owner 'root'
-  group 'root'
+  owner node.root_user
+  group node.root_group
   mode '0640'
   variables(:ipversion => 4)
 end
 
 template iptables_rules do
   source 'iptables.erb'
-  owner 'root'
-  group 'root'
+  owner node.root_user
+  group node.root_group
   mode '0640'
   variables(:ip => 4)
   verify do |path|
@@ -112,11 +113,7 @@ template iptables_rules do
     # moving from "no rules" to any rules; otherwise we still verify
     # every time).
     if FB::Iptables.iptables_active?(4)
-      Mixlib::ShellOut.new(
-        # SCALE: backported
-        # https://github.com/facebook/chef-cookbooks/pull/56
-        "/sbin/iptables-restore --test #{path}",
-      ).run_command.exitstatus.zero?
+      shell_out("/sbin/iptables-restore --test #{path}").exitstatus.zero?
     else
       true
     end
@@ -126,26 +123,22 @@ end
 
 template "#{iptables_config_dir}/ip6tables-config" do
   source 'iptables-config.erb'
-  owner 'root'
-  group 'root'
+  owner node.root_user
+  group node.root_group
   mode '0640'
   variables(:ipversion => 6)
 end
 
 template ip6tables_rules do
   source 'iptables.erb'
-  owner 'root'
-  group 'root'
+  owner node.root_user
+  group node.root_group
   mode '0640'
   variables(:ip => 6)
   verify do |path|
     # See comment ip iptables_rules
     if FB::Iptables.iptables_active?(6)
-      Mixlib::ShellOut.new(
-        # SCALE: backported
-        # https://github.com/facebook/chef-cookbooks/pull/56
-        "/sbin/ip6tables-restore --test #{path}",
-      ).run_command.exitstatus.zero?
+      shell_out("/sbin/ip6tables-restore --test #{path}").exitstatus.zero?
     else
       true
     end
