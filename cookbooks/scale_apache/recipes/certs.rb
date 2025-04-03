@@ -11,25 +11,11 @@ unless pkgs.length.zero?
   end
 end
 
+# Note, web is c10 only now, but if we have to bring back
+# c9 for any reason, we'll need to bring back renew_certs.sh
+# unless we've moved to fb_letsencrypt by then
 if node.centos10?
-  cachefile = "#{Chef::Config['file_cache_path']}/certbot-venv.tar.bz2"
-  cookbook_file cachefile do
-    owner 'root'
-    group 'root'
-    mode '0640'
-  end
-
-  archive_file cachefile do
-    destination '/usr/local/certbot-venv'
-    strip_components 1
-  end
-end
-
-# Always run our renewal script
-cookbook_file '/usr/local/sbin/renew_certs.sh' do
-  owner 'root'
-  group 'root'
-  mode '0755'
+  include_recipe 'scale_certbot_hack'
 end
 
 node.default['fb_cron']['jobs']['renew_certs'] = {
