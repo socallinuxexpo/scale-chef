@@ -34,10 +34,15 @@ input_rules.each do |key, val|
     'rule' => val,
   }
 end
-# Connectivity doesn't go well over v6 without this
+
+# v6 connectivigy
 node.default['fb_iptables']['filter']['INPUT']['rules']['allow icmpv6'] = {
   'ip' => 6,
   'rule' => '-p icmpv6 -j ACCEPT',
+}
+node.default['fb_iptables']['filter']['INPUT']['rules']['allow dhcpv6'] = {
+  'ip' => 6,
+  'rule' => '-p udp --sport 547 --dport 546 -j ACCEPT',
 }
 
 {
