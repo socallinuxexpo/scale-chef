@@ -19,11 +19,7 @@
 # limitations under the License.
 #
 
-if node.centos_min_version?(9) || node.fedora?
-  packages = ['iptables-legacy']
-else
-  packages = ['iptables']
-end
+packages = ['iptables']
 
 if node.ubuntu?
   packages << 'iptables-persistent'

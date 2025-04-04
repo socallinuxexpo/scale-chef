@@ -1,8 +1,3 @@
-if node.centos_min_version?(10)
-  node.default['fb_iptables']['enable'] = false
-  return
-end
-
 node.default['fb_iptables']['enable'] = true
 
 %w{INPUT FORWARD OUTPUT}.each do |chain|
