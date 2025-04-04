@@ -5,3 +5,4 @@ Gemfile.lock
 .vagrant
 .chef/*.pem
 .ruby-version
+.sync_fb_cookbooks.conf
