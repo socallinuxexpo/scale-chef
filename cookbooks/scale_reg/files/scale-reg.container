@@ -1,0 +1,14 @@
+[Unit]
+Description=SCALE reg
+
+[Container]
+Image=ghcr.io/socallinuxexpo/scale-reg:latest 
+Exec=/usr/sbin/httpd -DFOREGROUND
+PublishPort=127.0.0.1:8080:8080
+Volume=/var/www/django:/var/www/django
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
