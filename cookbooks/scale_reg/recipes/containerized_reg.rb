@@ -1,3 +1,29 @@
+# INPUT rules (inbound http(s) requests)
+{
+  'allow_https' =>
+    '-p tcp -m tcp -m conntrack --ctstate NEW --dport 443 -j ACCEPT',
+  'allow_http' =>
+    '-p tcp -m tcp -m conntrack --ctstate NEW --dport 80 -j ACCEPT',
+}.each do |key, val|
+  node.default['fb_iptables']['filter']['INPUT']['rules'][key] = {
+    'rule' => val,
+  }
+end
+
+# FORWARD rules (for container)
+{
+  'allow_container_outbound' =>
+    '-i podman0 -m conntrack --ctstate NEW -j ACCEPT',
+  'no_invalid_state' =>
+    '-m conntrack --ctstate INVALID -j DROP',
+  'allow_related_states' =>
+    '-m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT',
+}.each do |key, val|
+  node.default['fb_iptables']['filter']['FORWARD']['rules'][key] = {
+    'rule' => val,
+  }
+end
+
 include_recipe 'fb_nginx'
 
 node.default['fb_nginx']['enable_default_site'] = false
@@ -42,3 +68,7 @@ node.default['fb_nginx']['sites']['reg'] = {
     'proxy_set_header X-Real-Ip' => '$remote_addr',
   },
 }
+
+service 'scale-reg' do
+  action [:enable, :start]
+end

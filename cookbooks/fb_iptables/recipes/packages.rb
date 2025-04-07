@@ -19,7 +19,11 @@
 # limitations under the License.
 #
 
-packages = ['iptables']
+if node.centos_min_version?(9)
+  packages = ['iptables-nft']
+else
+  packages = ['iptables']
+end
 
 if node.ubuntu?
   packages << 'iptables-persistent'
