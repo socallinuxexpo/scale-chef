@@ -29,6 +29,8 @@ if node.virtual?
 end
 
 default['fb_dracut'] = {
+  'disable' => false,
+  'manage_packages' => true,
   'conf' => {
     'add_dracutmodules' => [],
     'drivers' => [],
@@ -43,5 +45,6 @@ default['fb_dracut'] = {
     'lvmconf' => true,
     'kernel_only' => nil,
     'no_kernel' => nil,
+    'early_microcode' => true,
   },
 }
