@@ -7,16 +7,8 @@
 # All rights reserved - Do Not Redistribute
 #
 
-# omfg I hate this so much
-if node.centos9? || node.centos10?
-  version = '18.4.2'
-else
-  version = '17.10.0'
-end
+version = '18.7.3'
 dl_plat = node.major_platform_version
-if node.centos10?
-  dl_plat = 9
-end
 
 rpm = "cinc-#{version}-1.el#{dl_plat}.x86_64.rpm"
 rpmpath = File.join(Chef::Config['file_cache_path'], rpm)
