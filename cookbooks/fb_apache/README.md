@@ -7,31 +7,43 @@ Requirements
 
 Attributes
 ----------
+* node['fb_apache']['enable_default_site']
+* node['fb_apache']['enable_public_status']
+* node['fb_apache']['extra_configs']
 * node['fb_apache']['manage_packages']
-* node['fb_apache']['sites'][$SITE][$CONFIG]
-* node['fb_apache']['sysconfig'][$KEY]
-* node['fb_apache']['sysconfig']['_extra_lines']
+* node['fb_apache']['manage_service']
+* node['fb_apache']['module_packages']
 * node['fb_apache']['modules']
 * node['fb_apache']['modules_directory']
 * node['fb_apache']['modules_mapping']
-* node['fb_apache']['module_packages']
-* node['fb_apache']['enable_default_site']
-* node['fb_apache']['extra_configs']
 * node['fb_apache']['mpm']
+* node['fb_apache']['sites'][$SITE][$CONFIG]
+* node['fb_apache']['sysconfig'][$KEY]
+* node['fb_apache']['sysconfig']['_extra_lines']
 
 Usage
 -----
 ### Packages
-My default `fb_apache` will install and keep up to date the `apache` and
+By default `fb_apache` will install and keep up to date the `apache` and
 `mod_ssl` packages as relevant for your distribution. If you'd prefer to do
 this on your own then you can set `node['fb_apache']['manage_packages']` to
-`false`.
+`false` and get the set of packages by calling `FB::Apache.packages` - but
+you must do this at runtime (i.e. in a `lazy` block) if you want it to take
+into account your `node['fb_apache']['modules']` settings.
 
 For modules, we keep a mapping of the package required for modules in
 `node['fb_apache']['module_packages']`. If `manage_packages` is enabled, we will
 install the relevant packages for any modules you enable in
 `node['fb_apache']['modules']`. This is important since it'll happen before we
 attempt to start apache.
+
+### Service
+By default, `fb_apache` will enable and start the Apache service, whatever it
+may be called on your platform. If you'd prefer to do this on your own you can
+set `node['fb_apache']['manage_service']` to `false` and get the name of the
+service on your platform from `FB::Apache.service`. Do not name the resource
+`service[apache]`, however, as it'll conflict with the resource from this
+cookbook (which will be `only_if`'d out).
 
 ### Sites / VirtualHosts
 The `node['fb_apache']['sites']` hash configures virtual hosts. All virtual
@@ -207,6 +219,11 @@ and we've pre-populated all the common modules on both distro variants.
 
 Finally, `node['fb_apache']['modules_directory']` is set to the proper module
 directory for your distro, but you may override it if you'd like.
+
+### Global status
+By default this cookbook will enable a mod_status handler available publically
+at /server-status. You can disable this with
+`node.default['fb_apache']['enable_public_status'] = false`.
 
 ### Extra Configs
 Everything in `node['fb_apache']['extra_configs']` will be converted from hash

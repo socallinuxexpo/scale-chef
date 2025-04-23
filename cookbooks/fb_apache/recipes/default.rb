@@ -46,7 +46,11 @@ apache_version =
     when 'ubuntu'
       node['platform_version'].to_f >= 13.10 ? '2.4' : '2.2'
     when 'debian'
-      node['platform_version'].to_f >= 8.0 ? '2.4' : '2.2'
+      if node['platform_version'].end_with?('/sid')
+        '2.4'
+      else
+        node['platform_version'].to_f >= 8.0 ? '2.4' : '2.2'
+      end
     else
       '2.4'
     end
@@ -95,24 +99,9 @@ sysconfig = value_for_platform_family(
   'debian' => '/etc/default/apache2',
 )
 
-pkgs = value_for_platform_family(
-  'rhel' => ['httpd', 'mod_ssl'],
-  'debian' => ['apache2'],
-)
-
-svc = value_for_platform_family(
-  'rhel' => 'httpd',
-  'debian' => 'apache2',
-)
-
-package pkgs do
+package 'apache packages' do
   only_if { node['fb_apache']['manage_packages'] }
-  package_name lazy {
-    pkgs + FB::Apache.get_module_packages(
-      node['fb_apache']['modules'],
-      node['fb_apache']['module_packages'],
-    )
-  }
+  package_name lazy { FB::Apache.packages(node) }
   action :upgrade
 end
 
@@ -189,11 +178,19 @@ end
 
 # We want to collect apache stats
 template "#{confdir}/status.conf" do
+  only_if { node['fb_apache']['enable_public_status'] }
   source 'status.erb'
   owner node.root_user
   group node.root_group
   mode '0644'
   variables(:location => '/server-status')
+  notifies :verify, 'fb_apache_verify_configs[doit]', :before
+  notifies :restart, 'service[apache]'
+end
+
+file "#{confdir}/status.conf" do
+  not_if { node['fb_apache']['enable_public_status'] }
+  action :delete
   notifies :verify, 'fb_apache_verify_configs[doit]', :before
   notifies :restart, 'service[apache]'
 end
@@ -225,6 +222,7 @@ if node['platform_family'] == 'debian'
 end
 
 service 'apache' do
-  service_name svc
+  only_if { node['fb_apache']['manage_service'] }
+  service_name FB::Apache.service(node)
   action [:enable, :start]
 end

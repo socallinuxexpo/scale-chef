@@ -87,7 +87,9 @@ end
 
 default['fb_apache'] = {
   'sysconfig' => sysconfig,
+  'enable_public_status' => true,
   'manage_packages' => true,
+  'manage_service' => true,
   'enable_default_site' => true,
   'sites' => {},
   'extra_configs' => {},
@@ -150,6 +152,7 @@ default['fb_apache'] = {
     'proxy_fcgi' => 'mod_proxy_fcgi.so',
     'proxy_ftp' => 'mod_proxy_ftp.so',
     'proxy_http' => 'mod_proxy_http.so',
+    'proxy_http2' => 'mod_proxy_http2.so',
     'proxy_scgi' => 'mod_proxy_scgi.so',
     'reqtimeout' => 'mod_reqtimeout.so',
     'rewrite' => 'mod_rewrite.so',
