@@ -22,12 +22,7 @@ node.default['fb_postfix']['main.cf']['inet_interfaces'] = "all"
   node.default['fb_postfix']['main.cf'][conf] = val
 end
 
-# mailman version-specific setup
-if node.centos_min_version?(9)
-  include_recipe '::mailman3'
-else
-  include_recipe '::mailman2'
-end
+include_recipe '::mailman3'
 
 # some common stuff - backups, monitoring, service
 template '/usr/local/bin/backup-mailman.sh' do
@@ -42,8 +37,7 @@ node.default['fb_cron']['jobs']['mailman_backups'] = {
   'user' => 'mailman',
 }
 
-service 'mailman' do
-  service_name node.centos_min_version?(9) ? 'mailman3' : 'mailman'
+service 'mailman3' do
   action [:enable, :start]
 end
 

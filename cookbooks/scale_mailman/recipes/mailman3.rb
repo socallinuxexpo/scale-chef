@@ -33,7 +33,7 @@ pkgs = [
 package pkgs do
   action :upgrade
   notifies :restart, 'service[apache]'
-  notifies :restart, 'service[mailman]'
+  notifies :restart, 'service[mailman3]'
 end
 
 include_recipe 'scale_apache::simple'
@@ -108,14 +108,14 @@ template '/etc/mailman.cfg' do
   owner 'mailman'
   group 'mailman'
   mode '0640'
-  notifies :restart, 'service[mailman]'
+  notifies :restart, 'service[mailman3]'
 end
 
 template '/etc/mailman3/uwsgi.ini' do
   owner 'root'
   group 'root'
   mode '0644'
-  notifies :restart, 'service[mailman]'
+  notifies :restart, 'service[mailman3]'
   notifies :restart, 'service[mailmanweb]'
 end
 
@@ -127,7 +127,7 @@ template '/etc/mailman3/settings.py' do
   variables({
     :staticdir => staticdir,
   })
-  notifies :restart, 'service[mailman]'
+  notifies :restart, 'service[mailman3]'
   notifies :restart, 'service[mailmanweb]'
 end
 
@@ -135,7 +135,7 @@ template '/etc/mailman3.d/hyperkitty.cfg' do
   owner 'root'
   group 'root'
   mode '0644'
-  notifies :restart, 'service[mailman]'
+  notifies :restart, 'service[mailman3]'
   notifies :restart, 'service[mailmanweb]'
 end
 

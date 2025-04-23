@@ -20,35 +20,7 @@ pkgs = %w{}
   node.default['scale_phplist'][sec] = node['fb_init']['secrets'][sec]
 end
 
-if node.centos8?
-  node.default['scale_phplist']['version'] = '3.5.2'
-  pkgs += %w{
-    php
-    php-mysqlnd
-    php-imap
-  }
-
-  node.default['fb_apache']['modules'] << 'php7'
-  relpath = File.join(Chef::Config['file_cache_path'], 'remi-release-8.rpm')
-  remote_file relpath do
-    source 'https://rpms.remirepo.net/enterprise/remi-release-8.rpm'
-    owner 'root'
-    group 'root'
-    mode '0644'
-    action :create
-  end
-
-  package 'remi-release-8' do
-    source relpath
-    action :install
-  end
-
-  # for php-imap
-  node.default['fb_dnf']['modules']['php'] = {
-    'enable' => true,
-    'stream' => 'remi-7.2',
-  }
-elsif node.centos9?
+if node.centos9?
   # this whole thing is fraught with ordering issues.
   # 
   # You need a run with just the remi-release RPM setup
