@@ -20,15 +20,20 @@
 return if node.macos?
 
 package 'rsyslog' do
+  only_if { node['fb_syslog']['manage_packages'] }
   action :upgrade
 end
 
-fb_systemd_override 'override' do
-  unit_name 'rsyslog.service'
-  content({
-            'Unit' => { 'Requires' => 'syslog.socket' },
-            'Install' => { 'Alias' => 'syslog.service' },
-          })
+# TODO(davide125): Document this
+if node.systemd?
+  fb_systemd_override 'override' do
+    only_if { node['fb_syslog']['_enable_syslog_socket_override'] }
+    unit_name 'rsyslog.service'
+    content({
+              'Unit' => { 'Requires' => 'syslog.socket' },
+              'Install' => { 'Alias' => 'syslog.service' },
+            })
+  end
 end
 
 include_recipe 'fb_syslog::enable'
