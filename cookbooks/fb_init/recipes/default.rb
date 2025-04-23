@@ -104,7 +104,7 @@ include_recipe 'fb_swap'
 # but it requires some setup since it will take full ownership of /etc/fstab
 #include_recipe 'fb_fstab'
 #include_recipe 'fb_mlocate'
-#include_recipe 'fb_logrotate'
+include_recipe 'fb_logrotate'
 # HERE: autofs
 #include_recipe 'fb_tmpclean'
 include_recipe 'fb_sudo'
