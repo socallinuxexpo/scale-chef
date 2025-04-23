@@ -76,7 +76,7 @@ include_recipe 'scale_ssh'
 #if node.centos? && !node.container?
 #  include_recipe 'fb_storage'
 #end
-#include_recipe 'fb_modprobe'
+include_recipe 'fb_modprobe'
 include_recipe 'fb_securetty'
 #include_recipe 'fb_hostname'
 include_recipe 'fb_hosts'
