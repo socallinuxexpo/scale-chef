@@ -19,23 +19,29 @@
 # limitations under the License.
 #
 
-if node.centos_min_version?(9)
+# In modern Fedora and C9 and above, iptables-nft contains everything
+# that iptables-legacy does, they overlap (with iptables-legacy being
+# a strict subset), and both packages 'providing' `iptables`
+#
+# In EL10/C10 and above, it's the same but iptables-nft
+# obsoletes iptables-services, so they cannot both be installed.
+if node.el_min_version?(9) || node.fedora?
   packages = ['iptables-nft']
 else
   packages = ['iptables']
 end
 
-if node.ubuntu?
+if node.debian_family?
   packages << 'iptables-persistent'
-elsif node.centos_min_version?(9)
-  # In C9 and above, iptables-nft-services contains everything
+elsif node.el_min_version?(9)
+  # In EL9/C9 and above, iptables-nft-services contains everything
   # that iptables-services does, they overlap.
   #
-  # In C10 and above, it's the same but iptables-nft-services
+  # In EL10/C10 and above, it's the same but iptables-nft-services
   # obsoletes iptables-services
   #
   # In Fedora there is only 'iptables-services', and it's the
-  # superset package (like iptables-nft-services in CentOS)
+  # superset package (like iptables-nft-services in EL)
   packages << 'iptables-nft-services'
 else
   packages << 'iptables-services'
@@ -52,7 +58,6 @@ execute 'reload iptables' do
   only_if { node['fb_iptables']['enable'] }
   command '/usr/sbin/fb_iptables_reload 4 reload'
   action :nothing
-  subscribes :run, 'package[osquery]'
 end
 
 ## ip6tables ##
