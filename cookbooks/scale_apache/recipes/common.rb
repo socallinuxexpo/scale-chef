@@ -19,6 +19,7 @@ node.default['fb_apache']['modules'] += [
   'authn_socache',
   'authz_dbd',
   'authz_dbm',
+  'brotli',
   'cache',
   'cache_socache',
   'data',
@@ -28,6 +29,7 @@ node.default['fb_apache']['modules'] += [
   'expires',
   'ext_filter',
   'filter',
+  'http2',
   'include',
   'info',
   'macro',
@@ -55,14 +57,6 @@ node.default['fb_apache']['modules'] += [
   # 00-systemd.conf
   'systemd',
 ]
-# reg is still c7 and doesn't have these
-unless node.centos7?
-  node.default['fb_apache']['modules'] += [
-    'brotli',
-    # 10-h2.conf
-    'http2',
-  ]
-end
 
 {
   'access_compat' => 'mod_access_compat.so',

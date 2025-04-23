@@ -2,9 +2,6 @@ pkgs = []
 
 pkgs << 'certbot' unless node.centos10?
 
-# undeclared dependency in c7
-pkgs << 'python-acme' if node.centos7?
-
 unless pkgs.length.zero?
   package pkgs do
     action :upgrade
