@@ -87,7 +87,7 @@ include_recipe 'fb_hostconf'
 include_recipe 'fb_sysctl'
 # HERE: networking
 include_recipe 'scale_users'
-#include_recipe 'fb_syslog'
+include_recipe 'fb_syslog'
 #if node.linux? && !node.container?
 #  include_recipe 'fb_hdparm'
 #  include_recipe 'fb_sdparm'

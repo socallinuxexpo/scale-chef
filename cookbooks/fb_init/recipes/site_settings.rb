@@ -153,3 +153,9 @@ package 'systemd-libs' do
   arch 'i686'
   action :remove
 end
+
+node.default['fb_syslog']['rsyslog_early_lines'] += [
+  'global(workDirectory="/var/lib/rsyslog")',
+  'module(load="imjournal", UsePid="system", FileCreateMode="0644",' +
+    ' StateFile="imjournal.state")',
+]
