@@ -98,7 +98,7 @@ include_recipe 'scale_users'
 #end
 include_recipe 'fb_postfix'
 # HERE: nfs
-#include_recipe 'fb_swap'
+include_recipe 'fb_swap'
 # WARNING!
 # fb_fstab is one of the most powerful cookbooks in the facebook suite,
 # but it requires some setup since it will take full ownership of /etc/fstab
