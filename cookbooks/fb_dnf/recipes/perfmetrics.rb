@@ -1,8 +1,8 @@
 #
 # Cookbook Name:: fb_dnf
-# Recipe:: packages
+# Recipe:: perfmetrics
 #
-# Copyright (c) 2021-present, Facebook, Inc.
+# Copyright (c) 2024-present, Facebook, Inc.
 # All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,21 +18,29 @@
 # limitations under the License.
 #
 
-dnf_packages = %w{
-  dnf-data
-  libcomps
-  libdnf
-  libsolv
-  python3-dnf
-  python3-dnf-plugins-core
-  python3-libcomps
-}
-
-unless node.fedora? && node['platform_version'].to_i >= 41
-  dnf_packages += %w{dnf dnf-plugins-core dnf-utils}
+package 'python3-dnf-plugin-perfmetrics' do
+  only_if { node['fb_dnf']['perfmetrics'] }
+  action :upgrade
 end
 
-package dnf_packages do
-  only_if { node['fb_dnf']['manage_packages'] }
-  action :install
+config = '/etc/dnf/plugins/perfmetrics.conf'
+
+directory '/var/log/dnf' do
+  only_if { node['fb_dnf']['perfmetrics'] }
+  owner node.root_user
+  group node.root_group
+  mode '0755'
+end
+
+template config do
+  only_if { node['fb_dnf']['perfmetrics'] }
+  source 'perfmetrics.conf.erb'
+  owner node.root_user
+  group node.root_group
+  mode '0644'
+end
+
+file config do
+  not_if { node['fb_dnf']['perfmetrics'] }
+  action :delete
 end
