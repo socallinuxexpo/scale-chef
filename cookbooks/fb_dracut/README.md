@@ -8,6 +8,7 @@ Requirements
 Attributes
 ----------
 * node['fb_dracut']['conf']['add_dracutmodules']
+* node['fb_dracut']['conf']['omit_dracutmodules']
 * node['fb_dracut']['conf']['drivers']
 * node['fb_dracut']['conf']['add_drivers']
 * node['fb_dracut']['conf']['omit_drivers']
@@ -20,9 +21,14 @@ Attributes
 * node['fb_dracut']['conf']['lvmconf']
 * node['fb_dracut']['conf']['kernel_only']
 * node['fb_dracut']['conf']['no_kernel']
+* node['fb_dracut']['manage_packages']
+* node['fb_dracut']['disable']
 
 Usage
 -----
+By default `fb_dracut` will manage the dracut package; to disable this set
+`node['fb_dracut']['manage_packages']` to `false`.
+
 You can add any valid `dracut.conf` entry under `node['fb_dracut']['conf']`
 If an attribute is set to `nil` or an empty list, the `dracut.conf` entry
 for that attribute will not be written out. In this case the system
@@ -33,6 +39,11 @@ The following are pre-initialized for you as noted:
 
 * `node['fb_dracut']['conf']['add_dracutmodules']`
   Specify a list of dracut modules to add in the initramfs.
+  (Should be array of strings)
+  (default=empty)
+
+* `node['fb_dracut']['conf']['omit_dracutmodules']`
+  Specify a list of dracut modules to omit from the initramfs.
   (Should be array of strings)
   (default=empty)
 
@@ -93,3 +104,11 @@ The following are pre-initialized for you as noted:
 * `node['fb_dracut']['conf']['no_kernel']`
   Do not install kernel drivers and firmware files.  (true|false|nil)
   (default=nil)
+
+* `node['fb_dracut']['conf']['early_microcode']`
+  Include CPU microcode for early loading by the kernel.  (true|false|nil)
+  (default=true)
+
+* `node['fb_dracut']['disable']`
+  Disable all actions in this cookbook.  (true|false|nil)
+  (default=false)

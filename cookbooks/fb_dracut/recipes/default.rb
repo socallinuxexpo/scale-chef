@@ -24,21 +24,32 @@ end
 
 include_recipe 'fb_dracut::packages'
 
-template '/etc/dracut.conf' do
+template '/etc/dracut.conf.d/ZZ-chef.conf' do
+  not_if { node['fb_dracut']['disable'] }
   source 'dracut.conf.erb'
-  owner 'root'
-  group 'root'
+  owner node.root_user
+  group node.root_group
   mode '0644'
   notifies :run, 'execute[rebuild all initramfs]'
 end
 
+file '/etc/dracut.conf' do
+  not_if { node['fb_dracut']['disable'] }
+  action :delete
+  notifies :run, 'execute[rebuild all initramfs]'
+end
+
 execute 'rebuild all initramfs' do
-  not_if { node.container? }
-  command 'dracut --force'
+  not_if { node.container? || node.quiescent? || node['fb_dracut']['disable'] }
+  command 'dracut --force -vv'
   action :nothing
+  subscribes :run, 'template[/etc/sysctl.conf]'
+  subscribes :run, 'package[e2fsprogs]'
+  subscribes :run, 'template[/etc/e2fsck.conf]'
+  subscribes :run, 'template[/etc/modprobe.d/fb_modprobe.conf]'
+  subscribes :run, 'template[/etc/fstab]'
   if node.systemd?
     subscribes :run, 'package[systemd packages]'
     subscribes :run, 'template[/etc/systemd/system.conf]'
-    subscribes :run, 'template[/etc/sysctl.conf]'
   end
 end
