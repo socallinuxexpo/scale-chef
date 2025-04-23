@@ -23,6 +23,11 @@ systemd_packages = ['systemd', 'systemd-sysv']
 case node['platform_family']
 when 'rhel', 'fedora'
   systemd_packages << 'systemd-libs'
+  # Starting with Fedora 41, systemd-sysv is no longer supported and does not
+  # exist in the repo
+  if node.fedora? && node.os_min_version?('41', true)
+    systemd_packages.delete('systemd-sysv')
+  end
 when 'debian'
   systemd_packages += %w{
     libpam-systemd
@@ -40,7 +45,6 @@ when 'debian'
     systemd_packages += %w{
       libnss-myhostname
       libnss-mymachines
-      libnss-resolve
       systemd-container
       systemd-coredump
     }
@@ -60,10 +64,11 @@ package 'systemd packages' do
        !['trusty', 'jessie'].include?(node['lsb']['codename'])
       systemd_packages << 'systemd-journal-remote'
     end
-    if node['fb_systemd']['timesyncd']['enable']
+    if node['fb_systemd']['timesyncd']['enable'] &&
+        node['platform_family'] == 'debian'
       systemd_packages << 'systemd-timesyncd'
     end
-    if node['packages'] && node['packages']['systemd']['version']
+    if node.dig('packages', 'systemd', 'version')
       systemd_version = FB::Version.new(node['packages']['systemd']['version'])
       has_split_rpms = node.debian? || ((node.fedora? || node.centos?) &&
           systemd_version >= FB::Version.new('249'))
