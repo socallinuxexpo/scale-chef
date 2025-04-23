@@ -24,10 +24,13 @@ when 'rhel', 'fedora', 'suse'
   if node['platform'] == 'amazon' || node['platform_version'].to_i >= 6
     package_name = 'cronie'
   end
+when 'debian'
+  package_name = 'cron'
 end
 
-if package_name # ~FC023
+if package_name
   package package_name do
+    only_if { node['fb_cron']['manage_packages'] }
     action :upgrade
   end
 end
