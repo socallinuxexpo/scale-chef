@@ -110,7 +110,7 @@ include_recipe 'fb_postfix'
 include_recipe 'fb_sudo'
 # HERE: ntp
 if node.linux? && !node.container?
-  # include_recipe 'fb_chrony'
+  include_recipe 'fb_chrony'
 
   if node.centos?
     # node.default['fb_ipset']['auto_cleanup'] = false
