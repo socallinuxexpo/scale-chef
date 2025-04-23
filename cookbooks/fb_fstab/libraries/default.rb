@@ -21,10 +21,13 @@ module FB
     class Fstab
       BASE_FILENAME = '/etc/.fstab.chef'.freeze
       IN_MAINT_DISKS_FILENAME = '/var/chef/in_maintenance_disks'.freeze
+      IN_MAINT_MOUNTS_FILENAME = '/var/chef/in_maintenance_mounts'.freeze
+      BTRFS_ROOTPARENT = '5'.freeze
 
       def self.determine_base_fstab_entries(full_fstab)
         core_fs_line_matching = [
           '^LABEL=(\/|\/boot|SWAP.*|\/mnt\/d\d+)\s',
+          '^\S+\s/\s',
           '^UUID=',
           '^devpts',
           '^sysfs',
@@ -55,7 +58,7 @@ module FB
       end
 
       def self.generate_base_fstab
-        unless File.exist?(BASE_FILENAME) && File.size(BASE_FILENAME) > 0
+        unless File.exist?(BASE_FILENAME) && File.size?(BASE_FILENAME)
           FileUtils.cp('/etc/fstab', '/root/fstab.before_fb_fstab')
           FileUtils.chmod(0400, '/root/fstab.before_fb_fstab')
           full_fstab = File.read('/etc/fstab')
@@ -73,26 +76,33 @@ module FB
         node['fb_fstab']['_basefilecontents']
       end
 
-      # Returns an array of disks
-      def self.get_in_maint_disks
-        return [] unless File.exist?(IN_MAINT_DISKS_FILENAME)
+      # Returns an array of strings
+      def self.parse_in_maint_file(path)
+        return [] unless File.exist?(path)
+
         age = (
-          Time.now - File.stat(IN_MAINT_DISKS_FILENAME).mtime
+          Time.now - File.stat(path).mtime
         ).to_i
         if age > 60 * 60 * 24 * 7
           Chef::Log.warn(
-            "fb_fstab: Removing stale #{IN_MAINT_DISKS_FILENAME} " +
-            '- it is more than 1 week old.',
+            "fb_fstab: Removing stale #{path} - it is more than 1 week old.",
           )
-          File.unlink(IN_MAINT_DISKS_FILENAME)
+          File.unlink(path)
           return []
         end
-        disks = []
-        File.read(IN_MAINT_DISKS_FILENAME).each_line do |line|
+        entries = []
+        File.read(path).each_line do |line|
           next if line.start_with?('#')
           next if line.strip.empty?
-          disks << line.strip
+
+          entries << line.strip
         end
+        entries
+      end
+
+      # Returns an array of disks
+      def self.get_in_maint_disks
+        disks = self.parse_in_maint_file(IN_MAINT_DISKS_FILENAME)
         unless disks.empty?
           Chef::Log.warn(
             "fb_fstab: Will skip in-maintenance disks: #{disks.join(' ')}",
@@ -101,9 +111,22 @@ module FB
         disks
       end
 
+      # Returns an array of mounts
+      def self.get_in_maint_mounts
+        mounts = self.parse_in_maint_file(IN_MAINT_MOUNTS_FILENAME)
+        # Canonicalize mount paths (e.g. removing trailing slashes)
+        mounts.map! { |m| Pathname.new(m).cleanpath.to_s }
+        unless mounts.empty?
+          Chef::Log.warn(
+            "fb_fstab: Will skip in-maintenance mounts: #{mounts.join(' ')}",
+          )
+        end
+        mounts
+      end
+
       def self.get_autofs_points(node)
         autofs_points = []
-        get_filesystem_data(node)['by_pair'].to_hash.each_value do |data|
+        node.filesystem_data['by_pair'].to_hash.each_value do |data|
           autofs_points << data['mount'] if data['fs_type'] == 'autofs'
         end
         autofs_points
@@ -122,36 +145,22 @@ module FB
         false
       end
 
-      # On Linux and Mac, as of Chef 13, FS and FS2 were identical
-      # and in Chef 14, FS2 is dropped.
-      #
-      # For FreeBSD and other platforms, they become identical in late 15
-      # and FS2 is dropped in late 16
-      #
-      # So we always try 2 and fail back to 1 (if 2 isn't around, then 1
-      # is the new format)
-      def self.get_filesystem_data(node)
-        if node['filesystem2']
-          node['filesystem2']
-        else
-          node['filesystem']
-        end
-      end
-
       def self.label_to_device(label, node)
-        d = get_filesystem_data(node)['by_device'].select do |x, y|
+        d = node.filesystem_data['by_device'].select do |x, y|
           y['label'] && y['label'] == label && !x.start_with?('/dev/block')
         end
         fail "Requested disk label #{label} doesn't exist" if d.empty?
+
         Chef::Log.debug("fb_fstab: label #{label} is device #{d.keys[0]}")
         d.keys[0]
       end
 
       def self.uuid_to_device(uuid, node)
-        d = get_filesystem_data(node)['by_device'].to_hash.select do |x, y|
+        d = node.filesystem_data['by_device'].to_hash.select do |x, y|
           y['uuid'] && y['uuid'] == uuid && !x.start_with?('/dev/block')
         end
         fail "Requested disk UUID #{uuid} doesn't exist" if d.empty?
+
         Chef::Log.debug("fb_fstab: uuid #{uuid} is device #{d.keys[0]}")
         d.keys[0]
       end
@@ -168,18 +177,86 @@ module FB
         device
       end
 
-      def self.get_unmasked_base_mounts(format, node)
+      # This will always return the id of the subvolume specified in the option
+      def self._canonicalize_subvol_opt(mount, opts)
+        type = ''
+        value = ''
+
+        opts.split(',').each do |option|
+          if option.include?('subvol=') || option.include?('subvolid=')
+            data = option.split('=')
+            type = data[0]
+            value = data[1]
+            break
+          end
+        end
+
+        if type == 'subvolid' && !value.empty?
+          return value
+        elsif type != 'subvol'
+          fail "fb_fstab: Cannot canonicalize subvolume from options: #{opts}"
+        end
+
+        cmd = "/usr/sbin/btrfs subvol list #{mount}"
+        subvolume_data = Mixlib::ShellOut.new(cmd).run_command
+        subvolume_data.error!
+
+        subvolume_data.stdout.each_line do |line|
+          # eg. ID 260 gen 49 top level 5 path cache
+          fields = line.split
+
+          if fields[8] == value
+            return fields[1]
+          end
+        end
+        fail "fb_fstab: Cannot canonicalize subvolume: #{opts}"
+      end
+
+      def self.same_subvol?(mount, opts1, opts2)
+        a = self._canonicalize_subvol_opt(mount, opts1)
+        b = self._canonicalize_subvol_opt(mount, opts2)
+        a == b
+      end
+
+      def self.btrfs_subvol?(fs_type, mount_options)
+        fs_type == 'btrfs' &&
+          (
+            mount_options.include?('subvol=') ||
+            mount_options.include?('subvolid=')
+          )
+      end
+
+      def self.get_base_mount_opts(node, mountpoint)
+        FB::Fstab.base_fstab_contents(node).each_line do |line|
+          next if line.strip.empty?
+
+          line_parts = line.strip.split
+          if line_parts[1] == mountpoint
+            return line_parts[3]
+          end
+        end
+
+        fail "Could not retrieve mount opts for '#{mountpoint}'"
+      end
+
+      def self.get_unmasked_base_mounts(format, node, hash_by = 'device')
         res = case format
               when :hash
                 {}
               when :lines
                 []
               end
+        hash_by_values = Set['device', 'mount_point']
+        unless hash_by_values.include?(hash_by)
+          fail "fb_fstab: Invalid hash_by value, allowed are: #{hash_by_values}"
+        end
+
         desired_mounts = node['fb_fstab']['mounts'].to_hash
         FB::Fstab.base_fstab_contents(node).each_line do |line|
           next if line.strip.empty?
           # do not add swap if swap is managed elsewhere, e.g. fb_swap
           next if line.include?('swap') && node['fb_fstab']['exclude_base_swap']
+
           line_parts = line.strip.split
           line_dev_spec = line_parts[0]
 
@@ -191,6 +268,7 @@ module FB
           next if desired_mounts.any? do |_name, data|
             line_dev_spec == data['device']
           end
+
           # If that failed, we canonicalize (if possible) and try again against
           # canonicalized versions of what's in the user's config
           begin
@@ -205,35 +283,53 @@ module FB
               data['mount_point'] == line_parts[1] &&
                 data['device'].start_with?('LABEL=')
             end
+
             raise e
           end
           # If someone has a more specific mount, don't use the original
           next if desired_mounts.any? do |_name, data|
             begin
-              fs_spec == data['device'] ||
-                fs_spec == canonicalize_device(data['device'], node)
+              cdev = canonicalize_device(data['device'], node)
             rescue RuntimeError => e
               # If the entry in node['fstab']['mounts] failed to resolve,
-              # that's an error, orthogonal to what we're doing here, unless
-              # they set `allow_mount_failure`. So if it failed, raise an error,
-              # otherwise don't.
+              # that's an error, orthogonal to what we're doing here,
+              # unless they set `allow_mount_failure`. So if it failed,
+              # raise an error, otherwise don't.
               #
-              # HOWEVER, this `next` is not `next true`, because we're not
-              # skipping the mount - there was no valid comparison done. We're
-              # just moving to the next iteration of any?`
+              # HOWEVER, this `next` is not `next true`, because we're
+              # not skipping the mount - there was no valid comparison
+              # done. We're just moving to the next iteration of any?`
               next if data['allow_mount_failure']
+
               raise e
             end
+            # We want to skip btrfs subvolumes as
+            # it's valid to specifiy the same device multiple times
+            [data['device'], cdev].include?(fs_spec) &&
+              !self.btrfs_subvol?(data['type'], data['opts'])
           end
+
           case format
           when :hash
-            res[fs_spec] = {
-              'mount_point' => line_parts[1],
-              'type' => line_parts[2],
-              'opts' => line_parts[3],
-              'dump' => line_parts[4],
-              'pass' => line_parts[5],
-            }
+            mount_point = line_parts[1]
+            case hash_by
+            when 'device'
+              res[fs_spec] = {
+                'mount_point' => mount_point,
+                'type' => line_parts[2],
+                'opts' => line_parts[3],
+                'dump' => line_parts[4],
+                'pass' => line_parts[5],
+              }
+            when 'mount_point'
+              res[mount_point] = {
+                'device' => fs_spec,
+                'type' => line_parts[2],
+                'opts' => line_parts[3],
+                'dump' => line_parts[4],
+                'pass' => line_parts[5],
+              }
+            end
           when :lines
             res << line.strip
           end
