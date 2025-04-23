@@ -12,10 +12,13 @@ include_recipe 'fb_apache'
 
 node.default['fb_apache']['mpm'] = 'prefork'
 
-# haven't sorted out PHP for C9+ yet
-if node.centos_max_version?(8)
-  # required for PHP
-  node.default['fb_apache']['modules'] << 'php7'
+%w{crt key}.each do |type|
+  src = "/etc/apache2/#{name}.#{type}"
+  ssl_paths[type] = src
+  dst = FB::LetsEncrypt.send(type.to_sym, node, name)
+  link src do
+    to dst
+  end
 end
 
 if node.centos10?
@@ -298,33 +301,17 @@ end
 
 pkgs = %w{
   git
+  python3-boto3
   php
   php-gd
   php-pdo
   php-xml
   php-mbstring
+  php-mysqlnd
+  php-fpm
+  php-json
+  php-soap
 }
-if node.centos7?
-  pkgs << 'python2-boto'
-  pkgs << 'php-mysql'
-elsif node.centos10?
-  pkgs += [
-    'php-mysqlnd',
-    'php-fpm',
-    'php-soap',
-  ]
-else
-  pkgs << 'python3-boto3'
-  pkgs << 'php-mysqlnd'
-  pkgs << 'php-json'
-end
-
-if node.centos8?
-  node.default['fb_dnf']['modules']['httpd'] = {
-    'enable' => true,
-    'stream' => '2.4',
-  }
-end
 
 package pkgs do
   action :upgrade

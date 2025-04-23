@@ -72,12 +72,6 @@ end
 restore_source = 'restore-drupal-static3.py.erb'
 backup_source = 'backup-drupal-static3.sh.erb'
 
-# support for older OSes until we finish upgrades/migrations
-if node.centos6? || node.centos7?
-  restore_source = 'restore-drupal-static.py.erb'
-  backup_source = 'backup-drupal-static.sh.erb'
-end
-
 template '/usr/local/bin/backup-drupal-static.sh' do
   owner 'root'
   group 'root'
