@@ -19,7 +19,7 @@
 #
 
 fb_helpers_gated_template '/etc/systemd/networkd.conf' do
-  only_if { node['fb_systemd']['networkd']['enable'] }
+  only_if { defined?(FB::Networkd) && node['fb_systemd']['networkd']['enable'] }
   allow_changes node.nw_changes_allowed?
   source 'systemd.conf.erb'
   owner node.root_user
@@ -43,6 +43,18 @@ fb_systemd_override 'systemd-networkd wait for udev' do
   only_if { node['fb_systemd']['networkd']['enable'] }
   unit_name 'systemd-networkd.service'
   content wait_for_udev
+  action :create
+end
+
+extend_dbus_timeout = <<~EOF
+  [Service]
+  Environment=SYSTEMD_BUS_TIMEOUT=50
+EOF
+
+fb_systemd_override 'systemd-networkd extend dbus timeout' do
+  only_if { node['fb_systemd']['networkd']['enable'] }
+  unit_name 'systemd-networkd.service'
+  content extend_dbus_timeout
   action :create
 end
 
