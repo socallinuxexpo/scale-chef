@@ -39,9 +39,10 @@ whyrun_safe_ruby_block 'validate_data' do
   block do
     node['fb_cron']['jobs'].to_hash.each do |name, data|
       if data['only_if']
-        unless data['only_if'].class == Proc
+        unless data['only_if'].instance_of?(Proc)
           fail 'fb_cron\'s only_if requires a Proc'
         end
+
         unless data['only_if'].call
           Chef::Log.debug("fb_cron: Not including #{name} due to only_if")
           node.rm('fb_cron', 'jobs', name)
@@ -71,12 +72,18 @@ whyrun_safe_ruby_block 'validate_data' do
         if Integer(data['splaysecs']) <= 0 || Integer(data['splaysecs']) > 9600
           fail "unreasonable splaysecs #{data['splaysecs']} in #{name} cron"
         end
+
         sleepnum = node.get_seeded_flexible_shard(Integer(data['splaysecs']),
                                                   data['command'])
         node.default['fb_cron']['jobs'][name]['splaycmd'] =
           "/bin/sleep #{sleepnum}; "
       else
         node.default['fb_cron']['jobs'][name]['splaycmd'] = ''
+      end
+
+      # Populate comment field
+      unless data['comment']
+        node.default['fb_cron']['jobs'][name]['comment'] = name
       end
     end
   end
@@ -87,16 +94,16 @@ template 'fb_cron crontab' do
     node['fb_cron']['_crontab_path']
   }
   source 'fb_crontab.erb'
-  owner 'root'
-  group 'root'
+  owner node.root_user
+  group node.root_group
   mode '0644'
 end
 
 template '/etc/anacrontab' do
   only_if { node['platform_family'] == 'rhel' }
   source 'anacrontab.erb'
-  owner 'root'
-  group 'root'
+  owner node.root_user
+  group node.root_group
   mode '0644'
 end
 
@@ -104,11 +111,11 @@ envfile = value_for_platform_family(
   'debian' => '/etc/default/cron',
   ['rhel', 'fedora'] => '/etc/sysconfig/crond',
 )
-if envfile # ~FC023
+if envfile
   template envfile do
     source 'crond_env.erb'
-    owner 'root'
-    group 'root'
+    owner node.root_user
+    group node.root_group
     mode '0644'
     notifies :restart, 'service[cron]'
   end
@@ -124,7 +131,7 @@ end
 # Make sure we nuke all crons from the cron resource.
 root_crontab = value_for_platform_family(
   ['rhel', 'fedora', 'suse'] => '/var/spool/cron/root',
-  ['debian', 'ubuntu'] => '/var/spool/cron/crontabs/root',
+  ['debian'] => '/var/spool/cron/crontabs/root',
 )
 if root_crontab
   file 'clean out root crontab' do
@@ -135,20 +142,42 @@ end
 
 cookbook_file '/usr/local/bin/exclusive_cron.sh' do
   source 'exclusive_cron.sh'
-  owner 'root'
-  group 0
+  owner node.root_user
+  group node.root_group
   mode '0755'
 end
 
 if node.macos?
   cookbook_file '/usr/local/bin/osx_make_crond.sh' do
     source 'osx_make_crond.sh'
-    owner 'root'
-    group 0
+    owner node.root_user
+    group node.root_group
     mode '0755'
   end
 
   execute 'osx_make_crond.sh' do
     command '/usr/local/bin/osx_make_crond.sh'
+  end
+end
+
+{
+  'cron_deny' => '/etc/cron.deny',
+  'cron_allow' => '/etc/cron.allow',
+}.each do |key, cronfile|
+  file cronfile do
+    only_if { node['fb_cron'][key].empty? }
+    action :delete
+  end
+
+  template cronfile do
+    not_if { node['fb_cron'][key].empty? }
+    source 'fb_cron_allow_deny.erb'
+    owner node.root_user
+    group node.root_group
+    mode '0600'
+    variables(
+      :config => key,
+    )
+    action :create
   end
 end
