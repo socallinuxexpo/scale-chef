@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
+unified_mode(false) if Chef::VERSION >= 18 # TODO(T144966423)
 default_action :load
 
 property :module_name, :kind_of => String, :name_property => true
@@ -21,10 +23,6 @@ property :verbose, :kind_of => [TrueClass, FalseClass], :default => false
 property :timeout, :kind_of => Integer, :default => 300
 property :fallback, :kind_of => [TrueClass, FalseClass], :default => false
 property :module_params, :kind_of => [String, Array], :required => false
-
-def whyrun_supported?
-  true
-end
 
 action_class do
   def modprobe_module(new_resource, unload)
@@ -41,21 +39,21 @@ action_class do
     # Correctly handle built-in modules. If no parameters were supplied, we
     # just return true. If the caller supplied parameters, we fail the Chef run
     # and ask them to fix their cookbook, since we can't apply them.
-    if ::File.exist?("/sys/module/#{module_name}")
-      unless ::File.exist?("/sys/module/#{module_name}/initstate")
-        ::Chef::Log.warn(
-          "fb_modprobe called on built-in module '#{module_name}'",
-        )
-        unless params.empty?
-          fail <<-FAIL
+    if ::File.exist?("/sys/module/#{module_name}") &&
+        !::File.exist?("/sys/module/#{module_name}/initstate")
+      ::Chef::Log.warn(
+        "fb_modprobe called on built-in module '#{module_name}'",
+      )
+      unless params.empty?
+        fail <<-FAIL
           Cannot set parameters for built-in module '#{module_name}'!
           Parameters for built-in modules must be passed on the kernel cmdline.
           Prefix the parameter with the module name and a dot.
           Examples: "ipv6.autoconf=1", "mlx4_en.udp_rss=1"
-          FAIL
-        end
-        return True
+        FAIL
       end
+
+      return true
     end
 
     command = ['/sbin/modprobe'] + flags + [module_name] + params
@@ -85,9 +83,9 @@ action :load do
 end
 
 action :unload do
-  if !FB::Modprobe.module_loaded?(new_resource.module_name)
-    Chef::Log.debug("#{new_resource}: Module already unloaded")
-  else
+  if FB::Modprobe.module_loaded?(new_resource.module_name)
     modprobe_module(new_resource, true)
+  else
+    Chef::Log.debug("#{new_resource}: Module already unloaded")
   end
 end
