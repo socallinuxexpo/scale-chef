@@ -6,7 +6,7 @@ module FB
       elsif ::ChefUtils.debian?
         '/etc/nginx/modules-enabled'
       else
-        raise 'fb_nginx: unknown platform_family'
+        fail 'fb_nginx: unknown platform_family'
       end
     end
 
@@ -16,7 +16,7 @@ module FB
       elsif ::ChefUtils.debian?
         'www-data'
       else
-        raise 'fb_nginx: unknown platform_family'
+        fail 'fb_nginx: unknown platform_family'
       end
     end
   end
