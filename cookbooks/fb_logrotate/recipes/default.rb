@@ -22,8 +22,8 @@ if node.macos?
   template '/etc/newsyslog.d/fb_bsd_newsyslog.conf' do
     source 'fb_bsd_newsyslog.conf.erb'
     mode '0644'
-    owner 'root'
-    group 'root'
+    owner node.root_user
+    group node.root_group
   end
   return
 end
@@ -34,24 +34,48 @@ include_recipe 'fb_logrotate::packages'
 
 whyrun_safe_ruby_block 'munge logrotate configs' do
   block do
+    globals = node['fb_logrotate']['globals'] # Keep globals out of loop below to avoid deep merge cache flap
     node['fb_logrotate']['configs'].to_hash.each do |name, block|
-      if block['overrides']
-        if block['overrides']['rotation'] == 'weekly' &&
-           !block['overrides']['rotate']
-          node.default['fb_logrotate']['configs'][name][
-            'overrides']['rotate'] = '4'
+      config = block.dup
+      time = nil
+      if config['overrides']
+        rotation = config['overrides']['rotation']
+        size = config['overrides']['size']
+
+        if rotation && size
+          fail "fb_logrotate:[#{name}]: you can only use size or rotation " +
+            'not both'
         end
-        if block['overrides']['size']
-          time = "size #{block['overrides']['size']}"
-        elsif %w{hourly weekly monthly yearly}.include?(
-          block['overrides']['rotation'],
-        )
-          time = block['overrides']['rotation']
+
+        if rotation
+          # if someone wants to override weekly but didn't specify
+          # how many to keep, we default to 4
+          if rotation == 'weekly' && !config['overrides']['rotate']
+            config['overrides']['rotate'] = '4'
+          end
+
+          if %w{hourly daily weekly monthly yearly}.include?(rotation)
+            time = rotation
+            config['overrides']['rotation'] = nil
+          else
+            fail "fb_logrotate:[#{name}]: rotation #{rotation} invalid"
+          end
+        end
+
+        if size
+          time = "size #{size}"
+          config['overrides']['size'] = nil
+        end
+
+        if config['overrides']['nocompress'] && globals['nocompress']
+          # redundant, remove
+          config['overrides']['nocompress'] = nil
         end
       end
       if time
-        node.default['fb_logrotate']['configs'][name]['time'] = time
+        config['time'] = time
       end
+      node.default['fb_logrotate']['configs'][name] = config
     end
   end
 end
@@ -85,8 +109,8 @@ end
 
 template '/etc/logrotate.d/fb_logrotate.conf' do
   source 'fb_logrotate.conf.erb'
-  owner 'root'
-  group 'root'
+  owner node.root_user
+  group node.root_group
   mode '0644'
 end
 
@@ -107,8 +131,8 @@ if node['fb_logrotate']['systemd_timer'] && node.systemd?
   template service_logrotate do
     source 'logrotate.service.erb'
     mode '0644'
-    owner 'root'
-    group 'root'
+    owner node.root_user
+    group node.root_group
     notifies :run, 'execute[logrotate reload systemd]', :immediately
   end
 
@@ -116,8 +140,8 @@ if node['fb_logrotate']['systemd_timer'] && node.systemd?
   template timer_logrotate do
     source 'logrotate.timer.erb'
     mode '0644'
-    owner 'root'
-    group 'root'
+    owner node.root_user
+    group node.root_group
     notifies :run, 'execute[logrotate reload systemd]', :immediately
   end
 
@@ -137,15 +161,15 @@ else
     template cron_logrotate do
       source 'logrotate_rpm_cron_override.erb'
       mode '0755'
-      owner 'root'
-      group 'root'
+      owner node.root_user
+      group node.root_group
     end
   else
     # Fall back to the job RPM comes with CentOS7 RPM
     cookbook_file cron_logrotate do
       source 'logrotate.cron.daily'
-      owner 'root'
-      group 'root'
+      owner node.root_user
+      group node.root_group
       mode '0755'
       action :create
     end
@@ -162,7 +186,25 @@ else
   end
 end
 
-# syslog has been moved into the main fb_logrotate.conf
-file '/etc/logrotate.d/syslog' do
-  action 'delete'
+if node.centos9? || node.fedora38? || node.fedora39?
+  # This was a separate package but it's been subsumed again
+  # https://bugzilla.redhat.com/show_bug.cgi?id=2242243
+  # https://bugzilla.redhat.com/show_bug.cgi?id=1992153
+  package 'rsyslog-logrotate' do
+    action :remove
+  end
+else
+  # On all other systems the config is part of the main rsyslog package and
+  # needs to be clobbered directly. Note that CentOS and Debian use different
+  # files for their main syslog configuration.
+  syslog_config = value_for_platform_family(
+    ['rhel', 'fedora'] => '/etc/logrotate.d/syslog',
+    'debian' => '/etc/logrotate.d/rsyslog',
+  )
+
+  # We want to manage the rsyslog logrotate config with fb_logrote so we
+  # remove the one installed by the system package.
+  file syslog_config do
+    action 'delete'
+  end
 end

@@ -1,11 +1,9 @@
 fb_logrotate Cookbook
 ====================
-This configures the logrotate package with common configs that go on
-every server, but do not necessarily have a corresponding cookbook
-they should go in.
+This configures logrotate
 
 If the system that this cookbook is run on is MAC OS X, it will populate all
-the files outlined in the configration in the newsylog.d format.
+the files outlined in the configuration in the newsylog.d format.
 
 See http://www.freebsd.org/cgi/man.cgi?query=newsyslog.conf
 for more details about the newsyslog feature.
@@ -21,6 +19,7 @@ Attributes
 * node['fb_logrotate']['debug_log']
 * node['fb_logrotate']['systemd_timer']
 * node['fb_logrotate']['timer_settings']
+* node['fb_logrotate']['manage_packages']
 
 Usage
 -----
@@ -32,7 +31,7 @@ per logrotate configuration block.
 
 To rotate a new set of logs, add a new entry to this hash, like so:
 
-```
+```ruby
 node.default['fb_logrotate']['configs']['myapp'] = {
   'files' => ['/var/log/myapp.log'],
   'overrides' => {
@@ -62,7 +61,7 @@ MAC OS (BSD):
 * when *
 * flags J
 
-Of these compresscmd, rotate and maxage defaults are specified via
+Of these compresscmd, rotate, maxage, and nocompress defaults are specified via
 `node['fb_logrotate']['globals']['...']`
 
 These maybe overridden by recipes for a particular platform.
@@ -78,6 +77,9 @@ These maybe overridden by recipes for a particular platform.
   checked if the logfile is to be rotated. The files are mailed to
   the configured address if `maillast` and `mail` are configured.
   You can specify this by `node['fb_logrotate']['globals']['maxage']`
+* nocompress - Disables compressing the log files on rotation. Accepts a boolean
+  (see below). Useful to limit disk IO or if the filesystem uses transparent file
+  compression
 
 The following attributes are optional and not populated by default.
 These can be then later specified by setting the appropriate attribute
@@ -91,6 +93,10 @@ and would get picked up by this logrotate recipe.
 * compressext - Specifies which extension to use on compressed logfiles,
   if compression is enabled.
   specified by `node['fb_logrotate']['globals']['compressext']`
+* dateext (boolean) - Append daily extension to logfiles.
+  specified by `node['fb_logrotate']['globals']['dateext']`
+* dateformat - Format of daily extension.
+  specified by `node['fb_logrotate']['globals']['dateformat']`
 
 Overrides accepts the following booleans:
 
@@ -128,6 +134,8 @@ additional overrides are accepted and require values:
 Please don't turn off compression unless you know what you are doing, and
 please specify only the minimum of overrides.
 
+You can only use one of `size` or `rotation`.
+
 IMPORTANT NOTE: No syntax checking is done for the logrotate configs.
 You are responsible for ensuring you are entering correct, typo-free
 data. Please make sure that you use a valid options from logrotate(8)
@@ -136,7 +144,7 @@ otherwise warning message will be issued.
 Let's go ahead and now take a look at a full sample structure, and
 the resulting config file it would generate:
 
-```
+```ruby
 node.default['fb_logrotate']['configs']['mcproxy'] = {
   'files' => [
     "/var/log/mcproxy-tao.log",
@@ -161,7 +169,7 @@ node.default['fb_logrotate']['configs']['mcproxy'] = {
 
 From the above structure, the following config file is generated:
 
-```
+```text
 /var/log/mcproxy-tao.log /var/log/mcproxy-tao2.log /var/log/mcproxy.init.log /var/log/mcproxy.tao.log /var/log/mcproxy.tao2.log /var/log/mcproxy2.tao.log /var/log/mcproxy.log.global /var/log/mcproxy.log /var/log/mcproxy.global /var/log/mcproxy.regional.log {
   size 50M
   copytruncate
@@ -173,7 +181,7 @@ From the above structure, the following config file is generated:
 Another example that shows the newsyslog.d conf file as generated on a MAC
 machine using the following sample strucutre:
 
-```
+```ruby
 node.default['fb_logrotate']['configs']['mylogfile'] = {
   'files' => ['/var/log/mylogfile'],
   'overrides' => {
@@ -185,7 +193,7 @@ node.default['fb_logrotate']['configs']['mylogfile'] = {
 From the above structure, the a config file
 (/etc/newsyslog.d/fb_bsd_newsyslog.conf) is generated with output:
 
-```
+```text
 # logfilename                       [owner:group]        mode count size     when  flags [/pid_file] [sig_num]
 /var/log/messages                                        644  5     1024     24    J
 /var/log/mylogfile                                       644  14    1048576  *     J
@@ -231,3 +239,8 @@ Note that the use of the size property together with logrotate runs that are
 more frequent than daily will result in `duplicate log entry` errors in
 logrotate because the default dateformat is `-%Y%m%d`.  To handle this, specify
 a more granular dateformat, e.g. `-%Y%m%d%H`.
+
+### Packages
+By default this cookbook keeps the logrotate and pigz package up-to-date, but
+if you want to manage them locally, simply set
+`node['fb_logrotate']['manage_packages']` to false.
