@@ -82,8 +82,8 @@ include_recipe 'scale_ssh'
 include_recipe 'fb_hosts'
 #include_receip 'fb_ethers'
 # HERE: resolv
-#include_recipe 'fb_limits'
-#include_recipe 'fb_hostconf'
+include_recipe 'fb_limits'
+include_recipe 'fb_hostconf'
 include_recipe 'fb_sysctl'
 # HERE: networking
 include_recipe 'scale_users'
