@@ -18,20 +18,30 @@
 module FB
   # Module to be loaded into the provider namespace
   module FstabProvider
-    def mount(mount_data, in_maint_disks)
+    def mount(mount_data, in_maint_disks, in_maint_mounts)
+      if in_maint_mounts.include?(mount_data['mount_point'])
+        Chef::Log.warn(
+          "fb_fstab: Skipping mount of #{mount_data['mount_point']} because " +
+          'the mount is marked as in-maintenance',
+        )
+        return true
+      end
+
       relevant_disk = nil
-      if in_maint_disks.any? do |disk|
+      in_maint_disks.each do |disk|
         if mount_data['device'].start_with?(disk)
           relevant_disk = disk
-          next true
+          break
         end
       end
+      if relevant_disk
         Chef::Log.warn(
           "fb_fstab: Skipping mount of #{mount_data['mount_point']} because " +
           " device #{relevant_disk} is marked as in-maintenance",
         )
         return true
       end
+
       # We don't use a 'directory' resource, because that would happen
       # later. Also, we don't want to conflict with resources that may
       # actually managed this directory (though they better check it's
@@ -57,6 +67,7 @@ module FB
         # we pass in a relatively sane perm which is subject to umask If they
         # sent in perms, we'll do a real chmod right afterward which isn't
         # subject to umask.
+        # rubocop:disable Chef/Meta/DontUseFileUtils
         FileUtils.mkdir_p(mount_data['mount_point'], :mode => 0o755)
         if mount_data['mp_perms']
           FileUtils.chmod(mount_data['mp_perms'].to_i(8),
@@ -66,19 +77,23 @@ module FB
           FileUtils.chown(mount_data['mp_owner'], mount_data['mp_group'],
                           mount_data['mount_point'])
         end
+        # rubocop:enable Chef/Meta/DontUseFileUtils
         if mount_data['mp_immutable']
           readme = File.join(mount_data['mount_point'], 'README.txt')
           readme_body = 'This directory was created by chef to be an ' +
             'immutable mountpoint.  If you can see this, ' +
             "the mount is missing!\n"
-          File.open(readme, 'w') do |f| # ~FB030
+          # rubocop:disable Chef/Meta/NoFileWrites
+          File.open(readme, 'w') do |f| # rubocop:disable Chef/Meta/NoFileWrites
             f.write(readme_body)
           end
+          # rubocop:enable Chef/Meta/NoFileWrites
           s = Mixlib::ShellOut.new(
             "/bin/chattr +i #{mount_data['mount_point']}",
           ).run_command
           s.error!
         end
+
       end
       if node.systemd?
         # If you use FUSE mounts, and you're running Chef from a systemd timer,
@@ -126,7 +141,7 @@ module FB
       true
     end
 
-    def umount(mount_point, lock_file)
+    def umount(mount_point, lock_file, remove_dir)
       Chef::Log.info("fb_fstab: Unmounting #{mount_point}")
       s = Mixlib::ShellOut.new("/bin/umount #{mount_point}")
       _run_command_flocked(s, lock_file, mount_point)
@@ -141,10 +156,24 @@ module FB
       else
         s.error!
       end
+      if remove_dir == true
+        Chef::Log.info("fb_fstab: Best effort removing #{mount_point}")
+        s = Mixlib::ShellOut.new("/usr/bin/rmdir #{mount_point}")
+        _run_command_flocked(s, lock_file, mount_point)
+        if s.error?
+          Chef::Log.warn("fb_fstab: #{s.stderr.chomp}")
+          Chef::Log.warn(
+            "fb_fstab: Removing #{mount_point} failed",
+          )
+        end
+      end
       true
     end
 
-    def remount(mount_point, with_umount, lock_file)
+    def remount(mount_data)
+      mount_point = mount_data['mount_point']
+      with_umount = mount_data['remount_with_umount']
+      lock_file = mount_data['lock_file']
       Chef::Log.info("fb_fstab: Remounting #{mount_point}")
       if with_umount
         Chef::Log.debug("fb_fstab: umount and mounting #{mount_point}")
@@ -155,7 +184,14 @@ module FB
       end
       s = Mixlib::ShellOut.new(cmd)
       _run_command_flocked(s, lock_file, mount_point)
-      s.error!
+      if s.error? && mount_data['allow_remount_failure']
+        Chef::Log.warn(
+          "fb_fstab: Remounting #{mount_point} failed, but " +
+          '"allow_remount_failure" was set, so moving on.',
+        )
+      else
+        s.error!
+      end
     end
 
     def get_unmasked_base_mounts(format)
@@ -180,13 +216,14 @@ module FB
           desired_device = canonicalize_device(desired_data['device'])
         rescue RuntimeError
           next if desired_data['allow_mount_failure']
+
           raise
         end
         Chef::Log.debug("fb_fstab: --> Lets see if it matches #{desired_data}")
         # if the devices are the same *and* are real devices, the
         # rest doesn't matter - we won't unmount a moved device. moves
         # option changes, etc. are all the work of the 'mount' step later.
-        if mounted_data['device'] && mounted_data['device'].start_with?('/dev/')
+        if mounted_data['device']&.start_with?('/dev/')
           if desired_device == mounted_data['device']
             Chef::Log.debug(
               "fb_fstab: Device #{mounted_data['device']} is supposed to be " +
@@ -242,6 +279,8 @@ module FB
         node['fb_fstab']['umount_ignores']['mount_points'].dup
       mount_prefixes_to_skip =
         node['fb_fstab']['umount_ignores']['mount_point_prefixes'].dup
+      mount_regexes_to_skip =
+        node['fb_fstab']['umount_ignores']['mount_point_regexes'].dup
       fstypes_to_skip = node['fb_fstab']['umount_ignores']['types'].dup
 
       base_mounts = get_unmasked_base_mounts(:hash)
@@ -249,7 +288,7 @@ module FB
       # we're going to iterate over specified mounts a lot, lets dump it
       desired_mounts = node['fb_fstab']['mounts'].to_hash
 
-      fs_data = FB::Fstab.get_filesystem_data(node)
+      fs_data = node.filesystem_data
       fs_data['by_pair'].to_hash.each_value do |mounted_data|
         # ohai uses many things to populate this structure, one of which
         # is 'blkid' which gives info on devices that are not currently
@@ -289,7 +328,7 @@ module FB
           )
           next
         elsif dev_prefixes_to_skip.any? do |i|
-          mounted_data['device'] && mounted_data['device'].start_with?(i)
+          mounted_data['device']&.start_with?(i)
         end
           Chef::Log.debug(
             "fb_fstab: Skipping umount check for #{mounted_data['device']} " +
@@ -297,11 +336,19 @@ module FB
           )
           next
         elsif mount_prefixes_to_skip.any? do |i|
-          mounted_data['mount'] && mounted_data['mount'].start_with?(i)
+          mounted_data['mount']&.start_with?(i)
         end
           Chef::Log.debug(
             "fb_fstab: Skipping umount check for #{mounted_data['device']} " +
             "(#{mounted_data['mount']}) - exempted mount_point prefix",
+          )
+          next
+        elsif mount_regexes_to_skip.any? do |i|
+          mounted_data['mount'] =~ /#{i}/
+        end
+          Chef::Log.debug(
+            "fb_fstab: Skipping umount check for #{mounted_data['device']} " +
+            "(#{mounted_data['mount']}) - exempted mount_point regex",
           )
           next
         end
@@ -311,7 +358,7 @@ module FB
 
         if node['fb_fstab']['enable_unmount']
           converge_by "unmount #{mounted_data['mount']}" do
-            umount(mounted_data['mount'], mounted_data['lock_file'])
+            umount(mounted_data['mount'], mounted_data['lock_file'], node['fb_fstab']['umount_delete_empty_mountdir'])
           end
         else
           Chef::Log.warn(
@@ -328,6 +375,7 @@ module FB
       if node['fb_fstab']['type_normalization_map'][type]
         return node['fb_fstab']['type_normalization_map'][type]
       end
+
       type
     end
 
@@ -337,7 +385,7 @@ module FB
       type1 == type2 || _normalize_type(type1) == _normalize_type(type2)
     end
 
-    def delete_ignored_opts!(tlist)
+    def delete_ignored_opts!(tlist, skipped_opts)
       ignorable_opts_s = node['fb_fstab']['ignorable_opts'].select do |x|
         x.is_a?(::String)
       end
@@ -345,7 +393,7 @@ module FB
         x.is_a?(::Regexp)
       end
       tlist.delete_if do |x|
-        ignorable_opts_s.include?(x) ||
+        skipped_opts.include?(x) || ignorable_opts_s.include?(x) ||
           ignorable_opts_r.any? do |regex|
             x =~ regex
           end
@@ -361,6 +409,7 @@ module FB
       mag = val[-1].downcase
       mags = ['k', 'm', 'g', 't']
       return opt unless mags.include?(mag)
+
       num = val[0..-2].to_i
       mags.each do |d|
         num *= 1024
@@ -369,13 +418,13 @@ module FB
       fail RangeError "fb_fstab: Failed to translate #{opt}"
     end
 
-    def canonicalize_opts(opts)
+    def canonicalize_opts(opts, skipped_opts = [])
       # ensure both are arrays
       optsl = opts.is_a?(Array) ? opts.dup : opts.split(',')
       # 'rw' is implied, so if no readability is specified, add it to both,
       # so missing on one if them doesn't cause a false-negative
       optsl << 'rw' unless optsl.include?('ro') || optsl.include?('rw')
-      delete_ignored_opts!(optsl)
+      delete_ignored_opts!(optsl, skipped_opts)
       optsl.map! do |x|
         x.start_with?('size=') ? translate_size_opt(x) : x
       end
@@ -385,12 +434,17 @@ module FB
     end
 
     # Take opts in a variety of forms, and compare them intelligently
-    def compare_opts(opts1, opts2)
-      c1 = canonicalize_opts(opts1)
-      c2 = canonicalize_opts(opts2)
+    def compare_opts(opts1, opts2, skipped_opts = [])
+      c1 = canonicalize_opts(opts1, skipped_opts)
+      c2 = canonicalize_opts(opts2, skipped_opts)
 
       # Check that they're the same
       c1 == c2
+    end
+
+    # on Kernel >= 5.9, tmpfs are mounted with inode64 opt active
+    def _are_tmpfs_using_inode64?
+      return node.linux? && (FB::Version.new(node['kernel']['release']) > FB::Version.new('5.9'))
     end
 
     # Given a tmpfs desired mount `desired` check to see what it's status is;
@@ -405,8 +459,10 @@ module FB
     def tmpfs_mount_status(desired)
       # Start with checking if it was mounted the way we would mount it
       # this is ALMOST the same as the 'is it identical' check for non-tmpfs
-      # filesystems except that with tmpfs we don't treat 'auto' as equivalent
-      fs_data = FB::Fstab.get_filesystem_data(node)
+      # filesystems except that with tmpfs we don't treat 'auto' as equivalent and
+      # that we skip inode64 option on current mount status - because it's activated
+      # by default on Linux kernel >= 5.9
+      fs_data = node.filesystem_data
       key = "#{desired['device']},#{desired['mount_point']}"
       if fs_data['by_pair'][key]
         mounted = fs_data['by_pair'][key].to_hash
@@ -415,7 +471,15 @@ module FB
             "fb_fstab: tmpfs #{desired['device']} on " +
             "#{desired['mount_point']} is currently mounted...",
           )
-          if compare_opts(desired['opts'], mounted['mount_options'])
+
+          skipped_opts = []
+          if _are_tmpfs_using_inode64?
+
+            # inode64 is active by default on tmpfs for Linux kernel > 5.9
+            skipped_opts.push('inode64')
+          end
+
+          if compare_opts(desired['opts'], mounted['mount_options'], skipped_opts)
             Chef::Log.debug('fb_fstab: ... with identical options.')
             return :same
           else
@@ -491,7 +555,7 @@ module FB
       end
 
       key = "#{desired['device']},#{desired['mount_point']}"
-      fs_data = FB::Fstab.get_filesystem_data(node)
+      fs_data = node.filesystem_data
       mounted = nil
       if fs_data['by_pair'][key]
         mounted = fs_data['by_pair'][key].to_hash
@@ -546,9 +610,31 @@ module FB
       # expect. Assuming it's not NFS/Gluster which can be mounted in more than
       # once place, we look up this device and see if it moved or just isn't
       # mounted
-      unless ['nfs', 'glusterfs'].include?(desired['type'])
+      unless ['nfs', 'nfs4', 'glusterfs'].include?(desired['type'])
         device = fs_data['by_device'][desired['device']]
-        if device && device['mounts'] && !device['mounts'].empty?
+        # Here we are checking if the device we want
+        # has already a mount defined
+        # We want to return :moved if it does except
+        # in the case when it's a btrfs
+        # disk and our desired and current options
+        # are trying to mount different subvolumes
+        if device && device['mounts'] && !device['mounts'].empty? &&
+          !(
+            FB::Fstab.btrfs_subvol?(
+              device['fs_type'],
+              device['mount_options'].join(','),
+            ) &&
+            FB::Fstab.btrfs_subvol?(
+              desired['type'],
+              desired['opts'],
+            ) &&
+            !FB::Fstab.same_subvol?(
+              device['mounts'][0],
+              device['mount_options'].join(','),
+              desired['opts'],
+            )
+          )
+
           Chef::Log.warn(
             "fb_fstab: #{desired['device']} is at #{device['mounts']}, but" +
             " we want it at #{desired['mount_point']}",
@@ -577,6 +663,7 @@ module FB
       # to mountpoint, but that won't work for things with a device of "none",
       # so build a reverse mapping too
       in_maint_disks = FB::Fstab.get_in_maint_disks
+      in_maint_mounts = FB::Fstab.get_in_maint_mounts
 
       # walk desired mounts, see if it's mounted, and mount/update
       # as appropriate.
@@ -596,6 +683,17 @@ module FB
           next
         end
 
+        if desired_data['opts']
+          opt_list = desired_data['opts'].split(',')
+          if opt_list.include?('noauto')
+            Chef::Log.debug(
+              "fb_fstab: '#{desired_data['device']}' is configured with " +
+              "'noauto' option, we will not mount.",
+            )
+            next
+          end
+        end
+
         begin
           desired_data['device'] = canonicalize_device(desired_data['device'])
         rescue RuntimeError
@@ -612,7 +710,7 @@ module FB
           next
         when :missing
           converge_by "mount #{desired_data['mount_point']}" do
-            mount(desired_data, in_maint_disks)
+            mount(desired_data, in_maint_disks, in_maint_mounts)
           end
           # Device mounted, move on...
           next
@@ -635,9 +733,7 @@ module FB
              desired_data['enable_remount']
             Chef::Log.debug("fb_fstab: #{base_msg} - remounting")
             converge_by "remount #{desired_data['mount_point']}" do
-              remount(desired_data['mount_point'],
-                      desired_data['remount_with_umount'],
-                      desired_data['lock_file'])
+              remount(desired_data)
             end
             # There's nothing after us in the loop at this point, but I'm being
             # explicit with the 'next' here so that we never accidentally
@@ -650,12 +746,11 @@ module FB
       end
     end
 
-    # rubocop:disable Style/RedundantReturn
     def _run_command_flocked(shellout, lock_file, mount_point)
       if lock_file.nil?
         return shellout.run_command
       else
-        lock_fd = File.open(lock_file, 'a+')
+        lock_fd = File.open(lock_file, 'a+') # rubocop:disable Chef/Meta/NoFileWrites
         unless lock_fd.flock(File::LOCK_EX | File::LOCK_NB)
           fail IOError, "Couldn't grab lock at #{lock_file} for #{mount_point}"
         end
@@ -667,6 +762,5 @@ module FB
         end
       end
     end
-    # rubocop:enable Style/RedundantReturn
   end
 end

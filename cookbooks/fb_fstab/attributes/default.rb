@@ -67,6 +67,7 @@ default['fb_fstab'] = {
       # Core OS stuff to never umount...
       '/dev/shm',
       '/run',
+      '/sys/fs/bpf',
       '/sys/fs/cgroup',
       '/sys/fs/selinux',
       # Debian-isms
@@ -80,6 +81,7 @@ default['fb_fstab'] = {
     'mount_point_prefixes' => [
       '/run/user',
     ],
+    'mount_point_regexes' => [],
   },
   'type_normalization_map' => {
     # Gluster is mounted as '-t gluster', but shows up as 'fuse.gluster'
@@ -96,7 +98,12 @@ default['fb_fstab'] = {
     'nofail',
     # NFS sometimes automatically adds addr=<server_ip> here automagically,
     # which doesn't affect the mount, so don't compare it.
-    /^(mount)?(addr|port|proto)=.*/,
+    /^mount(addr|port|proto|vers)=|(client)?(addr|port)=.*/,
   ],
   'exclude_base_swap' => false,
+  # Best effort try to remove the mount point (only directory and only if empty)
+  # Does not throw exception on failure
+  'umount_delete_empty_mountdir' => false,
+  # In case anyone need to add a custom comment header to fstab file
+  'custom_comment_headers' => [],
 }
