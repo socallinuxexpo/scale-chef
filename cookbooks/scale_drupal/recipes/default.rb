@@ -96,13 +96,6 @@ execute '/usr/local/bin/restore-drupal-static.py' do
   creates '/home/drupal/scale-drupal/httpdocs/sites/default/files'
 end
 
-# enforce perms
-file '/etc/drupal_secrets' do
-  owner 'root'
-  group 'root'
-  mode '0600'
-end
-
 if node['env'] == 'prod'
     node.default['fb_cron']['jobs']['drupal_backup'] = {
       'time' => '30 0,12 * * *',

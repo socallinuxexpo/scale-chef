@@ -14,9 +14,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'mailman3',
-        'USER': '<%= node['scale_mailman']['mailman3_mysql_user'] %>',
-        'PASSWORD': '<%= node['scale_mailman']['mailman3_mysql_password'] %>',
-        'HOST': '<%= node['scale_mailman']['mailman3_mysql_host'] %>',
+        'USER': '<%= node['fb_init']['secrets']['mailman3_mysql_user'] %>',
+        'PASSWORD': '<%= node['fb_init']['secrets']['mailman3_mysql_password'] %>',
+        'HOST': '<%= node['fb_init']['secrets']['mailman3_mysql_host'] %>',
         'PORT': '3306',
         # For MySQL/MariaDB, in addition to changing the 'ENGINE' setting,
         # uncomment the following to enable utf8 4-byte encodings.
@@ -57,11 +57,11 @@ CSRF_TRUSTED_ORIGINS = [
 SITE_ID = 1
 
 # Set this to a new secret value.
-SECRET_KEY = '<%= node['scale_mailman']['mailman3_secret'] %>'
+SECRET_KEY = '<%= node['fb_init']['secrets']['mailman3_secret'] %>'
 
 # Set this to match the api_key setting in
 # /opt/mailman/mm/mailman-hyperkitty.cfg (quoted here, not there).
-MAILMAN_ARCHIVER_KEY = '<%= node['scale_mailman']['mailman3_archiver_secret'] %>'
+MAILMAN_ARCHIVER_KEY = '<%= node['fb_init']['secrets']['mailman3_archiver_secret'] %>'
 
 # The sender of emails from Django such as address confirmation requests.
 # Set this to a valid email address.

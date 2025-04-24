@@ -5,8 +5,8 @@ TMPFILE=`mktemp -d`
 DATE=`date +%Y/%m/%d`
 TIME=`date +%H-%M-%S`
 
-export AWS_ACCESS_KEY_ID="<%= node['scale_mailman']['s3_aws_access_key_id'] %>"
-export AWS_SECRET_ACCESS_KEY="<%= node['scale_mailman']['s3_aws_secret_access_key'] %>"
+export AWS_ACCESS_KEY_ID="<%= node['fb_init']['secrets']['s3_aws_access_key_id'] %>"
+export AWS_SECRET_ACCESS_KEY="<%= node['fb_init']['secrets']['s3_aws_secret_access_key'] %>"
 
 echo "Starting backup...."
 tar cfz ${TMPFILE}/mailman-archives_${HOSTNAME}_${TIME}.tar.gz -C /var/lib/mailman/ archives

@@ -67,15 +67,24 @@ untest with:
 
 ## Production secrets
 
-For production machines use the `scale-secrets` repo, to manually setup the following secrets:
+Secrets are currently stored in the `scale-secrets` repo, but being migrated
+to 1Password.
 
-On All Hosts:
-* common/datadog_secrets -> /etc/datadog_secrets
+Any secrets added to `/etc/chef_secrets` will appear in `node['fb_init']['secrets']` with the key lowercased. For example:
 
-On role[lists]:
-* lists/lists_secrets -> /etc/lists_secrets
+```text
+FOO='mysekret'
+```
 
-On role[www]:
-* www/drupal_secrets -> /etc/drupal_secrets
+Will be available in `node['fb_init']['secrets']['foo']`.
 
-To get dev certs on a dev machine touch /etc/httpd/need_dev_keys and chef will create self-signed certs for you
+For the webserver, if you touch `/etc/httpd/need_dev_keys`, Chef will create
+self-signed certs for you.
+
+## Making a new cookbook
+
+In the cookbooks directory:
+
+```bash
+chef generate cookbook -I apachev2 -g ../generators <name of cookbook>
+```

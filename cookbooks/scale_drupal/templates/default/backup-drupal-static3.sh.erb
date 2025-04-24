@@ -6,8 +6,8 @@ DATE=`date +%Y/%m/%d`
 TIME=`date +%H-%M-%S`
 TARGET="drupal-static_${HOSTNAME}_${TIME}.tar.gz"
 
-export AWS_ACCESS_KEY_ID="<%= node['scale_apache']['s3_aws_access_key_id'] %>"
-export AWS_SECRET_ACCESS_KEY="<%= node['scale_apache']['s3_aws_secret_access_key'] %>"
+export AWS_ACCESS_KEY_ID="<%= node['fb_init']['secrets']['s3_aws_access_key_id'] %>"
+export AWS_SECRET_ACCESS_KEY="<%= node['fb_init']['secrets']['s3_aws_secret_access_key'] %>"
 
 echo "Starting backup...."
 tar cfz $TMPFILE/${TARGET} -C /home/drupal/scale-drupal/httpdocs/sites/default/ files

@@ -7,6 +7,19 @@
 node.default['fb_apache']['mpm'] = 'prefork'
 pkgs = %w{}
 
+%w{
+  mysql_db
+  mysql_user
+  mysql_password
+  mysql_host
+  bounce_mailbox_host
+  bounce_mailbox_user
+  bounce_mailbox_password
+}.each do |sec|
+  next unless node['fb_init']['secrets'][sec]
+  node.default['scale_phplist'][sec] = node['fb_init']['secrets'][sec]
+end
+
 if node.centos8?
   node.default['scale_phplist']['version'] = '3.5.2'
   pkgs += %w{

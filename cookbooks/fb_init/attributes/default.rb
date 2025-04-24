@@ -11,4 +11,14 @@ tier = pieces[1]
 default['tier'] = tier
 default['env'] = env
 
-default['fb_init'] = {}
+d = {}
+if File.exists?('/etc/chef_secrets')
+  File.read('/etc/chef_secrets').each_line do |line|
+    k, v = line.strip.split(/\s*=\s*/)
+    d[k.downcase] = v
+  end
+end
+
+default['fb_init'] = {
+  'secrets' => d,
+}
