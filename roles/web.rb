@@ -1,4 +1,4 @@
 name "web"
 run_list [
-  "recipe[scale_apache]",
+  "recipe[scale_web]",
 ]

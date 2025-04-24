@@ -5,8 +5,8 @@ import boto3
 import botocore
 
 #TODO: use instance profile instead of static keys
-access_key = "<%= node['scale_apache']['s3_aws_access_key_id'] %>"
-secret_key = "<%= node['scale_apache']['s3_aws_secret_access_key'] %>"
+access_key = "<%= node['fb_init']['secrets']['s3_aws_access_key_id'] %>"
+secret_key = "<%= node['fb_init']['secrets']['s3_aws_secret_access_key'] %>"
 
 backup_bucket = 'scale-drupal-backups'
 tmp_path = tempfile.mkdtemp()

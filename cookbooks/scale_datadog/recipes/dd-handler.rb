@@ -20,8 +20,8 @@
 
 require 'uri'
 
-unless File.exist?('/etc/datadog_secrets')
-  Chef::Log.warn('No /etc/datadog_secrets, skipping datadog setup')
+unless node['fb_init']['secrets']['datadog_api_key']
+  Chef::Log.warn('No Datadog secrets available, skipping datadog setup')
   return
 end
 
@@ -32,8 +32,8 @@ end
 require 'chef/handler/datadog'
 
 handler_config = {
-  :api_key => node['scale_datadog']['config']['api_key'],
-  :application_key => node['scale_datadog']['config']['application_key'],
+  :api_key => node['fb_init']['secrets']['datadog_api_key'],
+  :application_key => node['fb_init']['secrets']['datadog_application_key'],
   :tag_prefix => 'tag:'
 }
 
