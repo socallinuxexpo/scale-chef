@@ -28,21 +28,14 @@ include_recipe 'fb_nginx'
 
 node.default['fb_nginx']['enable_default_site'] = false
 
-include_recipe 'scale_certbot_hack'
+include_recipe 'fb_letsencrypt'
 
-# TODO: move to fb_letsencrypt
-# https://github.com/socallinuxexpo/scale-chef/issues/374
-node.default['fb_cron']['jobs']['renew_certs'] = {
-  'command' => '/usr/local/sbin/renew_certs.sh',
-  'time' => '1 1 * * *',
-}
+name = 'register.socallinuxexpo.org'
 
-link '/etc/nginx/apache.crt' do
-  to '/etc/letsencrypt/live/register.socallinuxexpo.org/fullchain.pem'
-end
-
-link '/etc/nginx/apache.key' do
-  to '/etc/letsencrypt/live/register.socallinuxexpo.org/privkey.pem'
+%w{crt key}.each do |type|
+  link "/etc/nginx/apache.#{type}" do
+    to FB::LetsEncrypt.send(type.to_sym, node, name)
+  end
 end
 
 unless ::File.exist?('/etc/nginx/apache.key')
