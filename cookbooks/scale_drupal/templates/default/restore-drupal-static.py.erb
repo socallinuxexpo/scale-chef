@@ -3,8 +3,8 @@ import tempfile
 import tarfile
 from boto.s3.connection import S3Connection
 
-access_key = "<%= node['scale_apache']['s3_aws_access_key_id'] %>"
-secret_key = "<%= node['scale_apache']['s3_aws_secret_access_key'] %>"
+access_key = "<%= node['fb_init']['secrets']['s3_aws_access_key_id'] %>"
+secret_key = "<%= node['fb_init']['secrets']['s3_aws_secret_access_key'] %>"
 
 backup_bucket = 'scale-drupal-backups'
 tmp_path = tempfile.mkdtemp()

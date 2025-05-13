@@ -1,5 +1,12 @@
 # This is where you set your own stuff...
 
+# Make sure the perms for our secrets files are good
+file '/etc/chef_secrets' do
+  owner 'root'
+  group 'root'
+  mode '0600'
+end
+
 node.default['scale_chef_client']['cookbook_dirs'] = [
   '/var/chef/repo/cookbooks',
 ]
@@ -89,23 +96,6 @@ queues.each do |q|
     "ALL=(ALL) NOPASSWD:/usr/bin/find /var/spool/postfix/#{q} -type f," +
     "/bin/find /var/spool/postfix/#{q} -type f"
 end
-
-d = {}
-if File.exists?('/etc/lists_secrets')
-  File.read('/etc/lists_secrets').each_line do |line|
-    k, v = line.strip.split(/\s*=\s*/)
-    d[k.downcase] = v
-  end
-end
-
-node.default['scale_phplist']['mysql_db'] = d['mysql_db']
-node.default['scale_phplist']['mysql_user'] = d['mysql_user']
-node.default['scale_phplist']['mysql_password'] = d['mysql_password']
-node.default['scale_phplist']['mysql_host'] = d['mysql_host']
-node.default['scale_phplist']['bounce_mailbox_host'] = d['bounce_mailbox_host']
-node.default['scale_phplist']['bounce_mailbox_user'] = d['bounce_mailbox_user']
-node.default['scale_phplist']['bounce_mailbox_password'] = 
-  d['bounce_mailbox_password']
 
 # NOTE: this is technically the default, but because we end up
 # doing DHCPV6, network-scripts turns it back off. Which is dumb
