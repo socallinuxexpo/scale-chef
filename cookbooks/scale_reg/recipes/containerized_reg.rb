@@ -47,6 +47,18 @@ unless ::File.exist?('/etc/nginx/apache.key')
   return
 end
 
+node.default['fb_nginx']['sites']['reg-80'] = {
+  'listen 80' => nil,
+  'listen [::]:80' => nil,
+  'server_name' => 'reg.socallinuxexpo.org',
+  'location ^~ /.well-known/acme-challenge/' => {
+    'root' => '/var/www/html',
+  },
+  'location /' => {
+    'return 301' => 'https://$host$request_uri',
+  },
+}
+
 node.default['fb_nginx']['sites']['reg'] = {
   'listen 443' => 'ssl',
   'listen [::]:443' => 'ssl',
