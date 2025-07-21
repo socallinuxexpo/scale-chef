@@ -49,6 +49,7 @@ EOF
   cp $REPODIR/cookbooks/scale_chef_client/files/default/chefctl_hooks.rb $CONFDIR/
   cp $REPODIR/cookbooks/scale_chef_client/files/default/chefctl-config.rb /etc/
   cp $REPODIR/cookbooks/scale_chef_client/files/default/chefctl.rb /usr/local/sbin/
+  ln -s /usr/local/sbin/chefctl.rb /usr/local/sbin/chefctl
 
   cat >$RUNLIST_FILE <<EOF
 {"run_list":["recipe[fb_init]","role[$ROLE]"]}
@@ -68,3 +69,5 @@ if ! [ -d "$REPODIR" ]; then
 fi
 
 bootstrap
+
+echo "You probably need to adjust the role in $RUNLIST_FILE"
