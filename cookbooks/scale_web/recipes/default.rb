@@ -10,11 +10,12 @@ include_recipe 'fb_apache'
 
 node.default['fb_apache']['mpm'] = 'prefork'
 
-if node.centos10?
-  node.default['fb_apache']['modules'] << 'fcgid'
-  node.default['fb_apache']['modules'] << 'proxy'
-  node.default['fb_apache']['modules'] << 'proxy_fcgi'
+node.default['fb_apache']['modules'] << 'fcgid'
+node.default['fb_apache']['modules'] << 'proxy'
+node.default['fb_apache']['modules'] << 'proxy_fcgi'
 
+# for old-web, with old-drupal, we need remi for old-php
+if node['hostname'] == 'scale-web-centos10'
   relpath = File.join(Chef::Config['file_cache_path'], 'remi-release-10.rpm')
   remote_file relpath do
     source 'https://rpms.remirepo.net/enterprise/remi-release-10.rpm'
@@ -35,21 +36,22 @@ if node.centos10?
   }
 end
 
-apache_debug_log = '/var/log/apache_status.log'
-if node['hostname'] == 'scale-web2'
-  node.default['fb_cron']['jobs']['ugly_restarts'] = {
-    # 2x a day
-    'time' => '02 */2 * * *',
-    'command' => "date >> #{apache_debug_log}; ps -eL " +
-      '-o user,pid,lwp,nlwp,\%cpu,\%mem,vsz,rss,tty,stat,start,time,cmd ' +
-      "| grep ^apache >> #{apache_debug_log}; " +
-      '/usr/bin/systemctl restart httpd',
-  }
-end
-
-node.default['fb_logrotate']['configs']['apache_status'] = {
-  'files' => [apache_debug_log],
-}
+# we haven't used this in a bit, fortunately, but keeping it around
+# for easy re-enabling if we ever do.
+#if node['hostname'] == 'scale-web2'
+#  apache_debug_log = '/var/log/apache_status.log'
+#  node.default['fb_cron']['jobs']['ugly_restarts'] = {
+#    # 2x a day
+#    'time' => '02 */2 * * *',
+#    'command' => "date >> #{apache_debug_log}; ps -eL " +
+#      '-o user,pid,lwp,nlwp,\%cpu,\%mem,vsz,rss,tty,stat,start,time,cmd ' +
+#      "| grep ^apache >> #{apache_debug_log}; " +
+#      '/usr/bin/systemctl restart httpd',
+#  }
+#  node.default['fb_logrotate']['configs']['apache_status'] = {
+#    'files' => [apache_debug_log],
+#  }
+#end
 
 cookbook_file '/etc/php.ini' do
   owner 'root'
@@ -300,6 +302,7 @@ pkgs = %w{
   php-fpm
   php-json
   php-soap
+  composer
 }
 
 package pkgs do
