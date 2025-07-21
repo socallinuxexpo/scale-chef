@@ -7,6 +7,14 @@
 # All rights reserved - Do Not Redistribute
 #
 
+if node['hostname'] == 'scale-web-centos10'
+  node.default['scale_drupal']['mysql_host'] =
+    'scale-drupal.cluster-c19nohpiwnoo.us-east-1.rds.amazonaws.com'
+elsif node['hostname'] == 'scale-web-centos10-newsite'
+  node.default['scale_drupal']['mysql_host'] =
+    'scale-drupal-newsite.cluster-c19nohpiwnoo.us-east-1.rds.amazonaws.com'
+end
+
 package 'awscli2' do
   action :upgrade
 end
