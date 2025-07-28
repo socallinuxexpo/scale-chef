@@ -10,10 +10,15 @@
 if node['hostname'] == 'scale-web-centos10'
   node.default['scale_drupal']['mysql_host'] =
     'scale-drupal.cluster-c19nohpiwnoo.us-east-1.rds.amazonaws.com'
+  base_dir = 'httpdocs'
+  settings_source = 'settings.php.erb'
 elsif node['hostname'] == 'scale-web-centos10-newsite'
   node.default['scale_drupal']['mysql_host'] =
     'scale-drupal-newsite.cluster-c19nohpiwnoo.us-east-1.rds.amazonaws.com'
+  base_dir = 'web'
+  settings_source = 'settings-drupal10.php.erb'
 end
+settings_dest = "#{base_dir}/sites/default/settings.php"
 
 package 'awscli2' do
   action :upgrade
@@ -44,10 +49,10 @@ execute '/usr/local/bin/deploy_legacy_sites' do
 end
 
 # Ensure existance of drupal directories
-%w{
- /home/drupal/scale-drupal/httpdocs
- /home/drupal/scale-drupal/httpdocs/sites
- /home/drupal/scale-drupal/httpdocs/sites/default
+%W{
+ /home/drupal/scale-drupal/#{base_dir}
+ /home/drupal/scale-drupal/#{base_dir}/sites
+ /home/drupal/scale-drupal/#{base_dir}/sites/default
  /home/webroot/
 }.each do |tmpdir|
   directory tmpdir do
@@ -58,9 +63,9 @@ end
 end
 
 # Ensure existance of tmp directories required by drupal
-%w{
- /home/drupal/scale-drupal/httpdocs/sites/default/files
- /home/drupal/scale-drupal/httpdocs/sites/default/files/css
+%W{
+ /home/drupal/scale-drupal/#{base_dir}/sites/default/files
+ /home/drupal/scale-drupal/#{base_dir}/sites/default/files/css
  /home/drupal/scale-drupal/db
 }.each do |tmpdir|
   directory tmpdir do
@@ -70,7 +75,8 @@ end
   end
 end
 
-template '/home/drupal/scale-drupal/httpdocs/sites/default/settings.php' do
+template "/home/drupal/scale-drupal/#{settings_dest}" do
+  source settings_source
   owner 'root'
   group 'apache'
   mode '0640'
