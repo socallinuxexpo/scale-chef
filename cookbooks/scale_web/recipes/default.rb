@@ -5,6 +5,17 @@
 # Copyright 2016, SCALE
 #
 
+drupal10 = (node['hostname'] == 'scale-web-centos10-newsite')
+
+if drupal10
+  server_name = 'www-test.socallinuxexpo.org'
+  node.default['scale_apache']['ssl_hostname'] = server_name
+  docroot = '/home/drupal/scale-drupal/web'
+else
+  server_name = 'www.socallinuxexpo.org'
+  docroot = '/home/drupal/scale-drupal/httpdocs'
+end
+
 include_recipe 'scale_apache::common'
 include_recipe 'fb_apache'
 
@@ -60,9 +71,9 @@ cookbook_file '/etc/php.ini' do
 end
 
 common_config = {
-  'ServerName' => 'www.socallinuxexpo.org',
+  'ServerName' => server_name,
   'ServerAdmin' => 'webmaster@socallinuxexpo.org',
-  'ServerAlias' => [
+  'ServerAlias' => drupal10 ? [server_name] : [
     'socallinuxexpo.org',
     'socallinuxexpo.com',
     'www.socallinuxexpo.com',
@@ -76,8 +87,8 @@ common_config = {
   ],
   # Not used by much, because of our http->https redirect,
   # but needed for the LetsEncrypt tokens
-  'DocumentRoot' => '/home/drupal/scale-drupal/httpdocs',
-  'Directory /home/drupal/scale-drupal/httpdocs/.well-known' => {
+  'DocumentRoot' => docroot,
+  "Directory #{docroot}/.well-known" => {
     'Allow' => 'from all',
     'Require' => 'all granted',
   },
@@ -127,12 +138,12 @@ base_config = common_config.merge({
     '/doc /usr/share/doc',
   ],
   'RewriteEngine' => 'On',
-  'DocumentRoot' => '/home/drupal/scale-drupal/httpdocs',
+  'DocumentRoot' => docroot,
   'Directory /' => {
     'Options' => 'FollowSymLinks',
     'AllowOverride' => 'None',
   },
-  'Directory /home/drupal/scale-drupal/httpdocs' => {
+  "Directory #{docroot}" => {
     'Options' => 'Indexes FollowSymLinks MultiViews',
     'AllowOverride' => 'all',
     'Order' => 'allow,deny',
@@ -194,7 +205,7 @@ rewrites = {
       '%{REQUEST_URI} ^/$',
     ],
   },
-    'redirect scale21x short url to proper url' => {
+  'redirect scale21x short url to proper url' => {
     'rule' => '^/(.*) https://www.socallinuxexpo.org/scale/21x [L,R,NE]',
     'conditions' => [
       '%{REQUEST_URI} ^/scale21x$',
@@ -261,6 +272,17 @@ rewrites = {
     ],
   },
 }
+
+# for testing, we need to nuke these
+if drupal10
+  [
+    'redirect / to current site',
+    'not our host',
+    'always ensure www',
+  ].each do |redir|
+    rewrites.delete(redir)
+  end
+end
 
 node.default['fb_apache']['sites']['_default_:443'] = base_config
 node.default['fb_apache']['sites']['_default_:443']['_rewrites'] = rewrites
