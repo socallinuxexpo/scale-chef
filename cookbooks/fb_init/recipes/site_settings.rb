@@ -71,7 +71,13 @@ end
 
 node.default['fb_postfix']['main.cf']['mydomain'] = 'localhost'
 
-pkgs = %w{postfix-perl-scripts cyrus-sasl-plain cyrus-sasl-md5}
+pkgs = %w{
+  postfix-perl-scripts
+  cyrus-sasl-plain
+  cyrus-sasl-md5
+  openssl
+}
+
 if node.el_max_version?(8)
   pkgs << 'atop'
 end
