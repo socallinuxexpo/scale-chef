@@ -12,13 +12,15 @@ if node['hostname'] == 'scale-web-centos10'
     'scale-drupal.cluster-c19nohpiwnoo.us-east-1.rds.amazonaws.com'
   base_dir = 'httpdocs'
   settings_source = 'settings.php.erb'
+  settings_dst_file = 'settings.php'
 elsif node['hostname'] == 'scale-web-centos10-newsite'
   node.default['scale_drupal']['mysql_host'] =
     'scale-drupal-newsite.cluster-c19nohpiwnoo.us-east-1.rds.amazonaws.com'
   base_dir = 'web'
   settings_source = 'settings-drupal10.php.erb'
+  settings_dst_file = 'settings.chef.php'
 end
-settings_dest = "#{base_dir}/sites/default/settings.php"
+settings_dest = "#{base_dir}/sites/default/#{settings_dst_file}"
 
 package 'awscli2' do
   action :upgrade
