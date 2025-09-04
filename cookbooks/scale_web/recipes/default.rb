@@ -127,7 +127,7 @@ base_config = common_config.merge({
     '/scale7x /home/webroot/scale7x',
     '/scale7x-audio /home/webroot/scale7x-audio',
     '/scale8x /home/webroot/scale8x',
-    '/scale9x /home/webroot/scale9x',
+    '/scale9x /hoce/webroot/scale9x',
     '/scale9x-media /home/webroot/scale9x-media',
     '/scale10x /home/webroot/scale10x',
     '/scale10x-supporting /home/webroot/scale10x-supporting',
@@ -136,7 +136,7 @@ base_config = common_config.merge({
     '/scale12x /home/webroot/scale12x',
     '/scale12x-supporting /home/webroot/scale12x-supporting',
     '/scale/23x /home/webroot/scale23x-static',
-    '/scale/13x /home/webroot/scale/scale13x',
+    '/scale/13x /home/webroot/scale/13x',
 
     '/doc /usr/share/doc',
   ],
