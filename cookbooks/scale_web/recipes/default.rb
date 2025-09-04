@@ -136,7 +136,6 @@ base_config = common_config.merge({
     '/scale12x /home/webroot/scale12x',
     '/scale12x-supporting /home/webroot/scale12x-supporting',
     '/scale/23x /home/webroot/scale23x-static',
-    '/scale/13x /home/webroot/scale/13x',
 
     '/doc /usr/share/doc',
   ],
