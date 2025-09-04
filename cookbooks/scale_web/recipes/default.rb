@@ -135,6 +135,9 @@ base_config = common_config.merge({
     '/scale11x-supporting /home/webroot/scale11x-supporting',
     '/scale12x /home/webroot/scale12x',
     '/scale12x-supporting /home/webroot/scale12x-supporting',
+    '/scale/23x /home/webroot/scale23x-static'
+    '/scale/13x /home/webroot/past/scale13x',
+
     '/doc /usr/share/doc',
   ],
   'RewriteEngine' => 'On',
@@ -223,7 +226,7 @@ rewrites = {
       '%{REQUEST_URI} ^/scale22x$',
     ],
   },
-  'scale 15x 2' => {
+  'scale 22x 2' => {
     'rule' => '^/scale22x/(.*) https://www.socallinuxexpo.org/scale/22x/$1 [L,R=301,NE]',
     'conditions' => [
       '%{REQUEST_URI} ^/scale22x/',
