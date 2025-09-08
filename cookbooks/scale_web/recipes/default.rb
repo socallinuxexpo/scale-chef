@@ -202,7 +202,7 @@ rewrites = {
     ],
   },
   'redirect / to current site' => {
-    'rule' => '^/(.*) https://www.socallinuxexpo.org/scale/22x [L,R,NE]',
+    'rule' => '^/(.*) https://www.socallinuxexpo.org/scale/23x [L,R,NE]',
     'conditions' => [
       '%{REQUEST_URI} ^/$',
     ],
