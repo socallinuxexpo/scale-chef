@@ -7,4 +7,4 @@
 # All rights reserved - Do Not Redistribute
 #
 
-include_recipe '::containerized_reg'
+include_recipe '::native_reg'
