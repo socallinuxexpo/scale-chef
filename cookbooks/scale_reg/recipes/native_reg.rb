@@ -50,7 +50,7 @@ template "#{dynamic_dir}/scalereg3/scalereg3/settings.py" do
 end
 
 static_src = '/usr/local/lib/python3.12/site-packages/django/contrib' +
-  '/admin/static/admin'
+  '/admin/static'
 static_dst = '/var/www/django_static'
 
 # more init

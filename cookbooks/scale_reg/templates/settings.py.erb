@@ -56,7 +56,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'scalereg',
         'USER': '<%= node['fb_init']['secrets']['reg_db_user'] %>',
-        'PASSWORD': '<%= node['fb_init']['secrets']['reg_db_password'] %>'
+        'PASSWORD': '<%= node['fb_init']['secrets']['reg_db_password'] %>',
         'HOST': 'scalereg.cluster-c19nohpiwnoo.us-east-1.rds.amazonaws.com',
         'PORT': '3306',
         'OPTIONS': {
