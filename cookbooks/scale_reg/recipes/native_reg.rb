@@ -103,6 +103,7 @@ vhost_config = {
     '/ /var/www/django/scalereg3/scalereg3/wsgi.py',
   ],
   'Alias' => [
+    '/static /var/www/django_static',
     # because of the "/" alias, in order for letsencrypt/certbot to work
     # we need this alias
     '/.well-known /var/www/html/.well-known',
