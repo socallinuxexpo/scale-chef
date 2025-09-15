@@ -62,8 +62,8 @@ end
 # enforce perms
 [static_dst, dynamic_dir].each do |dir|
   directory dir do
-    owner 'apache'
-    group 'apache'
+    owner 'root'
+    group 'root'
     mode '0755'
   end
 end
