@@ -355,7 +355,7 @@ rewrites = {
 }
 
 # for testing, we need to nuke these
-if drupal10
+if drupal10_staging
   [
     'redirect / to current site',
     'not our host',
