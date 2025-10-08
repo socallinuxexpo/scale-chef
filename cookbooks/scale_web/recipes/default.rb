@@ -140,7 +140,7 @@ base_config = common_config.merge({
     '/scale11x-supporting /home/webroot/scale11x-supporting',
     '/scale12x /home/webroot/scale12x',
     '/scale12x-supporting /home/webroot/scale12x-supporting',
-    '/scale/13x /home/webroot/scale23x-static',
+    '/scale/13x /home/webroot/scale/13x',
     '/scale/14x /home/webroot/scale/14x',
     '/scale/15x /home/webroot/scale/15x',
     '/scale/16x /home/webroot/scale/16x',
