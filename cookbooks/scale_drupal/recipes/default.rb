@@ -19,6 +19,13 @@ elsif node['hostname'] == 'scale-web-centos10-newsite'
   base_dir = 'web'
   settings_source = 'settings-drupal10.php.erb'
   settings_dst_file = 'settings.chef.php'
+elsif node['hostname'] == 'scale-web-centos10-staging'
+  node.default['scale_drupal']['mysql_host'] =
+    'scale-drupal-newsite-staging1.cluster-c19nohpiwnoo.us-east-1.rds.amazonaws.com'
+  base_dir = 'web'
+  settings_source = 'settings-drupal10.php.erb'
+  settings_dst_file = 'settings.chef.php'
+e
 end
 settings_dest = "#{base_dir}/sites/default/#{settings_dst_file}"
 

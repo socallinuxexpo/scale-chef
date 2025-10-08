@@ -6,9 +6,14 @@
 #
 
 drupal10 = (node['hostname'] == 'scale-web-centos10-newsite')
+drupal10_staging = (node['hostname'] == 'scale-web-centos10-staging')
 
 if drupal10
-  server_name = 'www-test.socallinuxexpo.org'
+  server_name = 'www.socallinuxexpo.org'
+  node.default['scale_apache']['ssl_hostname'] = server_name
+  docroot = '/home/drupal/scale-drupal/web'
+elsif drupal10_staging
+  server_name = 'www-staging.socallinuxexpo.org'
   node.default['scale_apache']['ssl_hostname'] = server_name
   docroot = '/home/drupal/scale-drupal/web'
 else
@@ -135,8 +140,16 @@ base_config = common_config.merge({
     '/scale11x-supporting /home/webroot/scale11x-supporting',
     '/scale12x /home/webroot/scale12x',
     '/scale12x-supporting /home/webroot/scale12x-supporting',
-    '/scale/23x /home/webroot/scale23x-static',
-
+    '/scale/13x /home/webroot/scale/13x',
+    '/scale/14x /home/webroot/scale/14x',
+    '/scale/15x /home/webroot/scale/15x',
+    '/scale/16x /home/webroot/scale/16x',
+    '/scale/17x /home/webroot/scale/17x',
+    '/scale/18x /home/webroot/scale/18x',
+    '/scale/19x /home/webroot/scale/19x',
+    '/scale/20x /home/webroot/scale/20x',
+    '/scale/21x /home/webroot/scale/21x',
+    '/scale/22x /home/webroot/scale/22x',
     '/doc /usr/share/doc',
   ],
   'RewriteEngine' => 'On',
