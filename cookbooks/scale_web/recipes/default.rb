@@ -6,7 +6,7 @@
 #
 
 drupal10 = (node['hostname'] == 'scale-web-centos10-newsite')
-drupal10 = (node['hostname'] == 'scale-web-centos10-staging')
+drupal10_staging = (node['hostname'] == 'scale-web-centos10-staging')
 
 if drupal10
   server_name = 'www.socallinuxexpo.org'
