@@ -25,7 +25,6 @@ elsif node['hostname'] == 'scale-web-centos10-staging'
   base_dir = 'web'
   settings_source = 'settings-drupal10.php.erb'
   settings_dst_file = 'settings.chef.php'
-e
 end
 settings_dest = "#{base_dir}/sites/default/#{settings_dst_file}"
 
