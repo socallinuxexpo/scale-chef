@@ -192,178 +192,167 @@ base_config = common_config.merge({
 })
 
 rewrites = {
-  'CFPs' => {
-    'rule' => '^/(.*) https://www.socallinuxexpo.org/cfp/ [L,R,NE]',
-    'conditions' => [
-      '%{HTTP_HOST} ^cfp.socallinuxexpo.org [NC]'
+  "CFPs" => {
+    "rule" => "^/(.*) https://#{server_name}/cfp/ [L,R,NE]",
+    "conditions" => [
+      "%{HTTP_HOST} ^cfp.socallinuxexpo.org [NC]"
     ],
   },
-  'not our host' => {
-     'rule' => '^/(.*) https://www.socallinuxexpo.org/$1 [L,R,NE]',
-     'conditions' => [
-       '%{REQUEST_URI} !^/server-status',
-       '%{HTTP_HOST} !^www.socallinuxexpo.org [NC]',
-       '%{HTTP_HOST} !^$',
+  "not our host" => {
+     "rule" => "^/(.*) https://#{server_name}/$1 [L,R,NE]",
+     "conditions" => [
+       "%{REQUEST_URI} !^/server-status",
+       "%{HTTP_HOST} !^#{server_name} [NC]",
+       "%{HTTP_HOST} !^$",
      ],
   },
-  'always ensure www' => {
-    'rule' => '^ https://www.%{HTTP_HOST}%{REQUEST_URI} [L,R=301]',
-    'conditions' => [
-      '%{HTTP_HOST} .',
-      '%{REQUEST_URI} !^/server-status',
-      '%{HTTP_HOST} !^www\. [NC]',
+  "always ensure www" => {
+    "rule" => "^ https://#{server_name}%{REQUEST_URI} [L,R=301]",
+    "conditions" => [
+      "%{HTTP_HOST} .",
+      "%{REQUEST_URI} !^/server-status",
+      "%{HTTP_HOST} !^#{server_name} [NC]",
     ],
   },
-  'redirect / to current site' => {
-    'rule' => '^/(.*) https://www.socallinuxexpo.org/scale/23x [L,R,NE]',
-    'conditions' => [
-      '%{REQUEST_URI} ^/$',
+  "redirect / to current site" => {
+    "rule" => "^/(.*) https://#{server_name}/scale/23x [L,R,NE]",
+    "conditions" => [
+      "%{REQUEST_URI} ^/$",
     ],
   },
-  'redirect scale23x short url to proper url' => {
-    'rule' => '^/(.*) https://www.socallinuxexpo.org/scale/23x [L,R,NE]',
-    'conditions' => [
-      '%{REQUEST_URI} ^/scale23x$',
+  "redirect scale23x short url to proper url" => {
+    "rule" => "^/(.*) https://#{server_name}/scale/23x [L,R,NE]",
+    "conditions" => [
+      "%{REQUEST_URI} ^/scale23x$",
     ],
   },
-  'scale 23x 2' => {
-    'rule' => '^/scale23x/(.*) https://www.socallinuxexpo.org/scale/23x/$1 [L,R=301,NE]',
-    'conditions' => [
-      '%{REQUEST_URI} ^/scale23x/',
+  "scale 23x 2" => {
+    "rule" => "^/scale23x/(.*) https://#{server_name}/scale/23x/$1 [L,R=301,NE]",
+    "conditions" => [
+      "%{REQUEST_URI} ^/scale23x/",
     ],
   },
-  'redirect scale22x short url to proper url' => {
-    'rule' => '^/(.*) https://www.socallinuxexpo.org/scale/22x [L,R,NE]',
-    'conditions' => [
-      '%{REQUEST_URI} ^/scale22x$',
+  "redirect scale22x short url to proper url" => {
+    "rule" => "^/(.*) https://#{server_name}/scale/22x [L,R,NE]",
+    "conditions" => [
+      "%{REQUEST_URI} ^/scale22x$",
     ],
   },
-  'scale 22x 2' => {
-    'rule' => '^/scale22x/(.*) https://www.socallinuxexpo.org/scale/22x/$1 [L,R=301,NE]',
-    'conditions' => [
-      '%{REQUEST_URI} ^/scale22x/',
+  "scale 22x 2" => {
+    "rule" => "^/scale22x/(.*) https://#{server_name}/scale/22x/$1 [L,R=301,NE]",
+    "conditions" => [
+      "%{REQUEST_URI} ^/scale22x/",
     ],
   },
-  'redirect scale21x short url to proper url' => {
-    'rule' => '^/(.*) https://www.socallinuxexpo.org/scale/21x [L,R,NE]',
-    'conditions' => [
-      '%{REQUEST_URI} ^/scale21x$',
+  "redirect scale21x short url to proper url" => {
+    "rule" => "^/(.*) https://#{server_name}/scale/21x [L,R,NE]",
+    "conditions" => [
+      "%{REQUEST_URI} ^/scale21x$",
     ],
   },
-  'scale 21x 2' => {
-    'rule' => '^/scale21x/(.*) https://www.socallinuxexpo.org/scale/21x/$1 [L,R=301,NE]',
-    'conditions' => [
-      '%{REQUEST_URI} ^/scale21x/',
+  "scale 21x 2" => {
+    "rule" => "^/scale21x/(.*) https://#{server_name}/scale/21x/$1 [L,R=301,NE]",
+    "conditions" => [
+      "%{REQUEST_URI} ^/scale21x/",
     ],
   },
-  'redirect scale20x short url to proper url' => {
-    'rule' => '^/(.*) https://www.socallinuxexpo.org/scale/20x [L,R,NE]',
-    'conditions' => [
-      '%{REQUEST_URI} ^/scale20x$',
+  "redirect scale20x short url to proper url" => {
+    "rule" => "^/(.*) https://#{server_name}/scale/20x [L,R,NE]",
+    "conditions" => [
+      "%{REQUEST_URI} ^/scale20x$",
     ],
   },
-  'scale 20x 2' => {
-    'rule' => '^/scale20x/(.*) https://www.socallinuxexpo.org/scale/20x/$1 [L,R=301,NE]',
-    'conditions' => [
-      '%{REQUEST_URI} ^/scale20x/',
+  "scale 20x 2" => {
+    "rule" => "^/scale20x/(.*) https://#{server_name}/scale/20x/$1 [L,R=301,NE]",
+    "conditions" => [
+      "%{REQUEST_URI} ^/scale20x/",
     ],
   },
-  'redirect scale19x short url to proper url' => {
-    'rule' => '^/(.*) https://www.socallinuxexpo.org/scale/19x [L,R,NE]',
-    'conditions' => [
-      '%{REQUEST_URI} ^/scale19x$',
+  "redirect scale19x short url to proper url" => {
+    "rule" => "^/(.*) https://#{server_name}/scale/19x [L,R,NE]",
+    "conditions" => [
+      "%{REQUEST_URI} ^/scale19x$",
     ],
   },
-  'scale 19x 2' => {
-    'rule' => '^/scale19x/(.*) https://www.socallinuxexpo.org/scale/19x/$1 [L,R=301,NE]',
-    'conditions' => [
-      '%{REQUEST_URI} ^/scale19x/',
+  "scale 19x 2" => {
+    "rule" => "^/scale19x/(.*) https://#{server_name}/scale/19x/$1 [L,R=301,NE]",
+    "conditions" => [
+      "%{REQUEST_URI} ^/scale19x/",
     ],
   },
-  'redirect scale18x short url to proper url' => {
-    'rule' => '^/(.*) https://www.socallinuxexpo.org/scale/18x [L,R,NE]',
-    'conditions' => [
-      '%{REQUEST_URI} ^/scale18x$',
+  "redirect scale18x short url to proper url" => {
+    "rule" => "^/(.*) https://#{server_name}/scale/18x [L,R,NE]",
+    "conditions" => [
+      "%{REQUEST_URI} ^/scale18x$",
     ],
   },
-  'scale 18x 2' => {
-    'rule' => '^/scale18x/(.*) https://www.socallinuxexpo.org/scale/18x/$1 [L,R=301,NE]',
-    'conditions' => [
-      '%{REQUEST_URI} ^/scale18x/',
+  "scale 18x 2" => {
+    "rule" => "^/scale18x/(.*) https://#{server_name}/scale/18x/$1 [L,R=301,NE]",
+    "conditions" => [
+      "%{REQUEST_URI} ^/scale18x/",
     ],
   },
-  'redirect scale17x short url to proper url' => {
-    'rule' => '^/(.*) https://www.socallinuxexpo.org/scale/17x [L,R,NE]',
-    'conditions' => [
-      '%{REQUEST_URI} ^/scale17x$',
+  "redirect scale17x short url to proper url" => {
+    "rule" => "^/(.*) https://#{server_name}/scale/17x [L,R,NE]",
+    "conditions" => [
+      "%{REQUEST_URI} ^/scale17x$",
     ],
   },
-  'scale 17x 2' => {
-    'rule' => '^/scale17x/(.*) https://www.socallinuxexpo.org/scale/17x/$1 [L,R=301,NE]',
-    'conditions' => [
-      '%{REQUEST_URI} ^/scale17x/',
+  "scale 17x 2" => {
+    "rule" => "^/scale17x/(.*) https://#{server_name}/scale/17x/$1 [L,R=301,NE]",
+    "conditions" => [
+      "%{REQUEST_URI} ^/scale17x/",
     ],
   },
-  'redirect scale16x short url to proper url' => {
-    'rule' => '^/(.*) https://www.socallinuxexpo.org/scale/16x [L,R,NE]',
-    'conditions' => [
-      '%{REQUEST_URI} ^/scale16x$',
+  "redirect scale16x short url to proper url" => {
+    "rule" => "^/(.*) https://#{server_name}/scale/16x [L,R,NE]",
+    "conditions" => [
+      "%{REQUEST_URI} ^/scale16x$",
     ],
   },
-  'scale 16x 2' => {
-    'rule' => '^/scale16x/(.*) https://www.socallinuxexpo.org/scale/16x/$1 [L,R=301,NE]',
-    'conditions' => [
-      '%{REQUEST_URI} ^/scale16x/',
+  "scale 16x 2" => {
+    "rule" => "^/scale16x/(.*) https://#{server_name}/scale/16x/$1 [L,R=301,NE]",
+    "conditions" => [
+      "%{REQUEST_URI} ^/scale16x/",
     ],
   },
-  'redirect scale15x short url to proper url' => {
-    'rule' => '^/(.*) https://www.socallinuxexpo.org/scale/15x [L,R,NE]',
-    'conditions' => [
-      '%{REQUEST_URI} ^/scale15x$',
+  "redirect scale15x short url to proper url" => {
+    "rule" => "^/(.*) https://#{server_name}/scale/15x [L,R,NE]",
+    "conditions" => [
+      "%{REQUEST_URI} ^/scale15x$",
     ],
   },
-  'scale 15x 2' => {
-    'rule' => '^/scale15x/(.*) https://www.socallinuxexpo.org/scale/15x/$1 [L,R=301,NE]',
-    'conditions' => [
-      '%{REQUEST_URI} ^/scale15x/',
+  "scale 15x 2" => {
+    "rule" => "^/scale15x/(.*) https://#{server_name}/scale/15x/$1 [L,R=301,NE]",
+    "conditions" => [
+      "%{REQUEST_URI} ^/scale15x/",
     ],
   },
-  'scale 14x' => {
-    'rule' => '^/(.*) https://www.socallinuxexpo.org/scale/14x [L,R,NE]',
-    'conditions' => [
-      '%{REQUEST_URI} ^/scale14x$',
+  "scale 14x" => {
+    "rule" => "^/(.*) https://#{server_name}/scale/14x [L,R,NE]",
+    "conditions" => [
+      "%{REQUEST_URI} ^/scale14x$",
     ],
   },
-  'scale 14x 2' => {
-    'rule' => '^/scale14x/(.*) https://www.socallinuxexpo.org/scale/14x/$1 [L,R=301,NE]',
-    'conditions' => [
-      '%{REQUEST_URI} ^/scale14x/',
+  "scale 14x 2" => {
+    "rule" => "^/scale14x/(.*) https://#{server_name}/scale/14x/$1 [L,R=301,NE]",
+    "conditions" => [
+      "%{REQUEST_URI} ^/scale14x/",
     ],
   },
-  'scale 13x' => {
-    'rule' => '^/(.*) https://www.socallinuxexpo.org/scale/13x [L,R,NE]',
-    'conditions' => [
-      '%{REQUEST_URI} ^/scale13x$',
+  "scale 13x" => {
+    "rule" => "^/(.*) https://#{server_name}/scale/13x [L,R,NE]",
+    "conditions" => [
+      "%{REQUEST_URI} ^/scale13x$",
     ],
   },
-  'scale 13x 2' => {
-    'rule' => '^/scale13x/(.*) https://www.socallinuxexpo.org/scale/13x/$1 [L,R=301,NE]',
-    'conditions' => [
-      '%{REQUEST_URI} ^/scale13x/',
+  "scale 13x 2" => {
+    "rule" => "^/scale13x/(.*) https://#{server_name}/scale/13x/$1 [L,R=301,NE]",
+    "conditions" => [
+      "%{REQUEST_URI} ^/scale13x/",
     ],
   },
 }
-
-# for testing, we need to nuke these
-if drupal10_staging
-  [
-    'redirect / to current site',
-    'not our host',
-    'always ensure www',
-  ].each do |redir|
-    rewrites.delete(redir)
-  end
-end
 
 node.default['fb_apache']['sites']['_default_:443'] = base_config
 node.default['fb_apache']['sites']['_default_:443']['_rewrites'] = rewrites
