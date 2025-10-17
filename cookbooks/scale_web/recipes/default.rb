@@ -220,136 +220,66 @@ rewrites = {
       "%{REQUEST_URI} ^/$",
     ],
   },
-  "redirect scale23x short url to proper url" => {
-    "rule" => "^/(.*) https://#{server_name}/scale/23x [L,R,NE]",
+  "year short url" => {
+    "rule" => "^/scale(1[3-9]|[2-9][0-9])x$ https://#{server_name}/scale/$1x [L,R,NE]",
+      "conditions" => [
+      "%{REQUEST_URI} ^/scale(1[3-9]|[2-9][0-9])x$",
+    ],
+  }
+  "year deep path" => {
+    "rule" => "^/scale(1[3-9]|[2-9][0-9])x/(.*)$ https://#{server_name}/scale/$1x/$2 [L,R=301,NE]",
     "conditions" => [
-      "%{REQUEST_URI} ^/scale23x$",
+      "%{REQUEST_URI} ^/scale(1[3-9]|[2-9][0-9])x/",
     ],
   },
-  "scale 23x 2" => {
-    "rule" => "^/scale23x/(.*) https://#{server_name}/scale/23x/$1 [L,R=301,NE]",
+  "scale4x short url" => {
+    "rule" => "^/scale4x$ https://#{server_name}/past/2006/ [L,R,NE]",
     "conditions" => [
-      "%{REQUEST_URI} ^/scale23x/",
+      "%{REQUEST_URI} ^/scale4x$",
     ],
   },
-  "redirect scale22x short url to proper url" => {
-    "rule" => "^/(.*) https://#{server_name}/scale/22x [L,R,NE]",
+  "scale4x deep path" => {
+    "rule" => "^/scale4x/(.*)$ https://#{server_name}/past/2006/$1 [L,R=301,NE]",
     "conditions" => [
-      "%{REQUEST_URI} ^/scale22x$",
+      "%{REQUEST_URI} ^/scale4x/",
     ],
   },
-  "scale 22x 2" => {
-    "rule" => "^/scale22x/(.*) https://#{server_name}/scale/22x/$1 [L,R=301,NE]",
+  "scale3x short url" => {
+    "rule" => "^/scale3x$ https://#{server_name}/past/2005/ [L,R,NE]",
     "conditions" => [
-      "%{REQUEST_URI} ^/scale22x/",
+      "%{REQUEST_URI} ^/scale3x$",
     ],
   },
-  "redirect scale21x short url to proper url" => {
-    "rule" => "^/(.*) https://#{server_name}/scale/21x [L,R,NE]",
+  "scale3x deep path" => {
+    "rule" => "^/scale3x/(.*)$ https://#{server_name}/past/2005/$1 [L,R=301,NE]",
     "conditions" => [
-      "%{REQUEST_URI} ^/scale21x$",
+      "%{REQUEST_URI} ^/scale3x/",
     ],
   },
-  "scale 21x 2" => {
-    "rule" => "^/scale21x/(.*) https://#{server_name}/scale/21x/$1 [L,R=301,NE]",
+  
+  "scale2x short url" => {
+    "rule" => "^/scale2x$ https://#{server_name}/past/2003/ [L,R,NE]",
     "conditions" => [
-      "%{REQUEST_URI} ^/scale21x/",
+      "%{REQUEST_URI} ^/scale2x$",
     ],
   },
-  "redirect scale20x short url to proper url" => {
-    "rule" => "^/(.*) https://#{server_name}/scale/20x [L,R,NE]",
+  "redirect scale2x deep path to past" => {
+    "rule" => "^/scale2x/(.*)$ https://#{server_name}/past/2003/$1 [L,R=301,NE]",
     "conditions" => [
-      "%{REQUEST_URI} ^/scale20x$",
+      "%{REQUEST_URI} ^/scale2x/",
     ],
   },
-  "scale 20x 2" => {
-    "rule" => "^/scale20x/(.*) https://#{server_name}/scale/20x/$1 [L,R=301,NE]",
+  
+  "redirect scale1x short url to past" => {
+    "rule" => "^/scale1x$ https://#{server_name}/past/2002/ [L,R,NE]",
     "conditions" => [
-      "%{REQUEST_URI} ^/scale20x/",
+      "%{REQUEST_URI} ^/scale1x$",
     ],
   },
-  "redirect scale19x short url to proper url" => {
-    "rule" => "^/(.*) https://#{server_name}/scale/19x [L,R,NE]",
+  "redirect scale1x deep path to past" => {
+    "rule" => "^/scale1x/(.*)$ https://#{server_name}/past/2002/$1 [L,R=301,NE]",
     "conditions" => [
-      "%{REQUEST_URI} ^/scale19x$",
-    ],
-  },
-  "scale 19x 2" => {
-    "rule" => "^/scale19x/(.*) https://#{server_name}/scale/19x/$1 [L,R=301,NE]",
-    "conditions" => [
-      "%{REQUEST_URI} ^/scale19x/",
-    ],
-  },
-  "redirect scale18x short url to proper url" => {
-    "rule" => "^/(.*) https://#{server_name}/scale/18x [L,R,NE]",
-    "conditions" => [
-      "%{REQUEST_URI} ^/scale18x$",
-    ],
-  },
-  "scale 18x 2" => {
-    "rule" => "^/scale18x/(.*) https://#{server_name}/scale/18x/$1 [L,R=301,NE]",
-    "conditions" => [
-      "%{REQUEST_URI} ^/scale18x/",
-    ],
-  },
-  "redirect scale17x short url to proper url" => {
-    "rule" => "^/(.*) https://#{server_name}/scale/17x [L,R,NE]",
-    "conditions" => [
-      "%{REQUEST_URI} ^/scale17x$",
-    ],
-  },
-  "scale 17x 2" => {
-    "rule" => "^/scale17x/(.*) https://#{server_name}/scale/17x/$1 [L,R=301,NE]",
-    "conditions" => [
-      "%{REQUEST_URI} ^/scale17x/",
-    ],
-  },
-  "redirect scale16x short url to proper url" => {
-    "rule" => "^/(.*) https://#{server_name}/scale/16x [L,R,NE]",
-    "conditions" => [
-      "%{REQUEST_URI} ^/scale16x$",
-    ],
-  },
-  "scale 16x 2" => {
-    "rule" => "^/scale16x/(.*) https://#{server_name}/scale/16x/$1 [L,R=301,NE]",
-    "conditions" => [
-      "%{REQUEST_URI} ^/scale16x/",
-    ],
-  },
-  "redirect scale15x short url to proper url" => {
-    "rule" => "^/(.*) https://#{server_name}/scale/15x [L,R,NE]",
-    "conditions" => [
-      "%{REQUEST_URI} ^/scale15x$",
-    ],
-  },
-  "scale 15x 2" => {
-    "rule" => "^/scale15x/(.*) https://#{server_name}/scale/15x/$1 [L,R=301,NE]",
-    "conditions" => [
-      "%{REQUEST_URI} ^/scale15x/",
-    ],
-  },
-  "scale 14x" => {
-    "rule" => "^/(.*) https://#{server_name}/scale/14x [L,R,NE]",
-    "conditions" => [
-      "%{REQUEST_URI} ^/scale14x$",
-    ],
-  },
-  "scale 14x 2" => {
-    "rule" => "^/scale14x/(.*) https://#{server_name}/scale/14x/$1 [L,R=301,NE]",
-    "conditions" => [
-      "%{REQUEST_URI} ^/scale14x/",
-    ],
-  },
-  "scale 13x" => {
-    "rule" => "^/(.*) https://#{server_name}/scale/13x [L,R,NE]",
-    "conditions" => [
-      "%{REQUEST_URI} ^/scale13x$",
-    ],
-  },
-  "scale 13x 2" => {
-    "rule" => "^/scale13x/(.*) https://#{server_name}/scale/13x/$1 [L,R=301,NE]",
-    "conditions" => [
-      "%{REQUEST_URI} ^/scale13x/",
+      "%{REQUEST_URI} ^/scale1x/",
     ],
   },
 }
