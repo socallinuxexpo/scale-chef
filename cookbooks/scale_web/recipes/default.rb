@@ -495,6 +495,13 @@ node.default['scale_datadog']['monitors']['apache'] = {
   ]
 }
 
+if drupal10_staging
+  rewrites['robots.txt'] = {
+    'rule' => '^/robots\.txt$ /home/webroot/robots-staging.txt [L]',
+    'conditions' => [],
+  }
+end
+
 node.default['scale_datadog']['monitors']['dns_check'] = {
    "init_config" => {
      "default_timeout" => 4
