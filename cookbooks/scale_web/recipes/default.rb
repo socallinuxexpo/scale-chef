@@ -284,6 +284,13 @@ rewrites = {
   },
 }
 
+if drupal10_staging
+  rewrites['robots.txt'] = {
+    'rule' => '^/robots\.txt$ /home/webroot/robots-staging.txt [L]',
+    'conditions' => [],
+  }
+end
+
 node.default['fb_apache']['sites']['_default_:443'] = base_config
 node.default['fb_apache']['sites']['_default_:443']['_rewrites'] = rewrites
 
