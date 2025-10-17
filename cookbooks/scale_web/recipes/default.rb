@@ -225,7 +225,7 @@ rewrites = {
       "conditions" => [
       "%{REQUEST_URI} ^/scale(1[3-9]|[2-9][0-9])x$",
     ],
-  }
+  },
   "year deep path" => {
     "rule" => "^/scale(1[3-9]|[2-9][0-9])x/(.*)$ https://#{server_name}/scale/$1x/$2 [L,R=301,NE]",
     "conditions" => [
