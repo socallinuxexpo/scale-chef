@@ -105,7 +105,7 @@ common_config = {
 
 node.default['fb_apache']['sites']['*:80'] = common_config.merge({
   'RedirectMatch permanent ^/(?!server-status|.well-known)' =>
-    'https://www.socallinuxexpo.org/',
+    "https://#{server_name}/",
 })
 
 node.default['fb_apache']['extra_configs']['MaxConnectionsPerChild'] = 50
