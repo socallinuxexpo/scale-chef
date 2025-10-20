@@ -151,10 +151,10 @@ include_recipe 'fb_motd'
 #  include_recipe 'fb_stunnel'
 #end
 #
-#unless node.vagrant?
-#  include_recipe 'scale_datadog'
-#  include_recipe 'scale_datadog::dd-handler'
-#end
+unless node.vagrant?
+  include_recipe 'scale_datadog'
+  include_recipe 'scale_datadog::dd-handler'
+end
 
 # we recommend you put this as late in the list as possible - it's one of the
 # few places where APIs need to use another API directly... other cookbooks
