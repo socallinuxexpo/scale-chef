@@ -19,7 +19,8 @@ admins = {
   'btmash' => '1009',
   'drupalphil' => '1010',
   'rothgar' => '1011',
-  'cbsmith' => '1012'
+  'cbsmith' => '1012',
+  'karen' => '1013',
 }
 
 admins.each do |user, uid|
@@ -88,5 +89,9 @@ node.default['scale_ssh']['keys']['rothgar'] = [
 ]
 
 node.default['scale_ssh']['keys']['cbsmith'] = [
-  'AAAAB3NzaC1yc2EAAAADAQABAAABgQDa5cJJ4oDpykZcWok0JFzjT95KL4uVPkpFWMSpu3jFohVPZDgZs8bftjZFjFjN3Ly68MHESdZ0Dm2qv3e3DmZYf/j0xpCFeHfi95b+LBYoIgLDQJUKc4LtpXoCjtnGIoek5WYQ/igfHlIGIqyP6XWOvBubM95cub9d4UGYS4v9P4OFS7Xa0WFvYbSOj7xW0yOvQqJQ6seBkLJy/ish/meqo0zdjGsNa/Ct4DQmEM5calXgOid/Ui1xJ5n44jqYizLwFQ9DUQnyMVwxcwJdoWh/ey8m1kyYU+K1mAS/MWuuMNHTAqYP1vs7t/fHHdTc7THTz1ODEOCR6K6AtdtfVW7RgHunFH+iO5I1qNvS3ZuDHP8vvLRiTcJg4pbIdJUssxvTG1JWhEZBnLp3UrKkRfcBQiqq3q4IyOtQPHSnrRQminN9go0WpOkM9WzzlcF/yshDLGegO8OoAElJzMYm50gWzKGWUy2c3K0GcJEAMW1OHCW8l9xTDaolBPJ1swEhF9c= cbsmith@penguin'
+  'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDa5cJJ4oDpykZcWok0JFzjT95KL4uVPkpFWMSpu3jFohVPZDgZs8bftjZFjFjN3Ly68MHESdZ0Dm2qv3e3DmZYf/j0xpCFeHfi95b+LBYoIgLDQJUKc4LtpXoCjtnGIoek5WYQ/igfHlIGIqyP6XWOvBubM95cub9d4UGYS4v9P4OFS7Xa0WFvYbSOj7xW0yOvQqJQ6seBkLJy/ish/meqo0zdjGsNa/Ct4DQmEM5calXgOid/Ui1xJ5n44jqYizLwFQ9DUQnyMVwxcwJdoWh/ey8m1kyYU+K1mAS/MWuuMNHTAqYP1vs7t/fHHdTc7THTz1ODEOCR6K6AtdtfVW7RgHunFH+iO5I1qNvS3ZuDHP8vvLRiTcJg4pbIdJUssxvTG1JWhEZBnLp3UrKkRfcBQiqq3q4IyOtQPHSnrRQminN9go0WpOkM9WzzlcF/yshDLGegO8OoAElJzMYm50gWzKGWUy2c3K0GcJEAMW1OHCW8l9xTDaolBPJ1swEhF9c= cbsmith@penguin'
+]
+
+node.default['scale_ssh']['keys']['karen'] = [
+  'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG3tfvvDtFh0I37XSJ0KA6bYzjW38XfOD2I2dfFvK7KJ kaquintanilla@UR-17VQ05N-LT'
 ]
