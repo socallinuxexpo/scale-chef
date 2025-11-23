@@ -20,6 +20,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'reg23',
     'reports',
+    'sponsorship',
 ]
 
 MIDDLEWARE = [
@@ -119,6 +120,9 @@ SCALEREG_PAYFLOW_PARTNER = 'verisign'
 
 # Secret used for express check-in and scanned badges.
 SCALEREG_EXPRESS_CHECKIN_SECRET = '<%= node['fb_init']['secrets']['reg_checkin_secret_key'] %>'
+
+# URL for the sponsorship agreement document.
+SCALEREG_SPONSORSHIP_AGREEMENT_URL = ''
 
 # Set to True if you want scalereg to be able to email attendees.
 # You need to set EMAIL_HOST, EMAIL_PORT, and other EMAIL_ settings
