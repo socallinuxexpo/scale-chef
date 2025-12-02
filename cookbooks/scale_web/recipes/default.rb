@@ -318,6 +318,7 @@ node.default['fb_apache']['sites']['_default_:443']['_rewrites'] = rewrites
   node.default['fb_apache']['sites']['_default_:443'][key] = val
 end
 
+node.default['fb_dnf']['config']['main']['exclude'] = 'php8.4*'
 pkgs = %w{
   git
   python3-boto3
