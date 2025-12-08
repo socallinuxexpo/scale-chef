@@ -28,9 +28,11 @@ module(load="omprog")
 <% if node['fb_syslog']['rsyslog_server'] -%>
 # UDP / TCP reception
 module(load="imtcp")
-input(type="imtcp" port="514")
 module(load="imudp")
+<% unless node['fb_syslog']['rsyslog_server_force_no_listen'] %>
+input(type="imtcp" port="514")
 input(type="imudp" port="514")
+<% end %>
 
 <% if node['fb_syslog']['rsyslog_server_address'] -%>
 $UDPServerAddress <%= node['fb_syslog']['rsyslog_server_address'] %>
