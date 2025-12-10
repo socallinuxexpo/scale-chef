@@ -5,7 +5,7 @@
 # Copyright 2016, SCALE
 #
 
-drupal10 = (node['hostname'] == 'scale-web-centos10-newsite')
+drupal10 = (node['hostname'] == 'scale-web-centos10')
 drupal10_staging = (node['hostname'] == 'scale-web-centos10-staging')
 
 if drupal10
@@ -29,45 +29,6 @@ node.default['fb_apache']['mpm'] = 'prefork'
 node.default['fb_apache']['modules'] << 'fcgid'
 node.default['fb_apache']['modules'] << 'proxy'
 node.default['fb_apache']['modules'] << 'proxy_fcgi'
-
-# for old-web, with old-drupal, we need remi for old-php
-if node['hostname'] == 'scale-web-centos10'
-  relpath = File.join(Chef::Config['file_cache_path'], 'remi-release-10.rpm')
-  remote_file relpath do
-    source 'https://rpms.remirepo.net/enterprise/remi-release-10.rpm'
-    owner 'root'
-    group 'root'
-    mode '0644'
-    action :create
-  end
-
-  package 'remi-release-10' do
-    source relpath
-    action :install
-  end
-
-  node.default['fb_dnf']['modules']['php'] = {
-    'enable' => true,
-    'stream' => 'remi-8.0',
-  }
-end
-
-# we haven't used this in a bit, fortunately, but keeping it around
-# for easy re-enabling if we ever do.
-#if node['hostname'] == 'scale-web2'
-#  apache_debug_log = '/var/log/apache_status.log'
-#  node.default['fb_cron']['jobs']['ugly_restarts'] = {
-#    # 2x a day
-#    'time' => '02 */2 * * *',
-#    'command' => "date >> #{apache_debug_log}; ps -eL " +
-#      '-o user,pid,lwp,nlwp,\%cpu,\%mem,vsz,rss,tty,stat,start,time,cmd ' +
-#      "| grep ^apache >> #{apache_debug_log}; " +
-#      '/usr/bin/systemctl restart httpd',
-#  }
-#  node.default['fb_logrotate']['configs']['apache_status'] = {
-#    'files' => [apache_debug_log],
-#  }
-#end
 
 cookbook_file '/etc/php.ini' do
   owner 'root'
