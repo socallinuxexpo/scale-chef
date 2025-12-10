@@ -7,24 +7,15 @@
 # All rights reserved - Do Not Redistribute
 #
 
+base_dir = 'web'
+settings_source = 'settings-drupal10.php.erb'
+settings_dst_file = 'settings.chef.php'
 if node['hostname'] == 'scale-web-centos10'
   node.default['scale_drupal']['mysql_host'] =
-    'scale-drupal.cluster-c19nohpiwnoo.us-east-1.rds.amazonaws.com'
-  base_dir = 'httpdocs'
-  settings_source = 'settings.php.erb'
-  settings_dst_file = 'settings.php'
-elsif node['hostname'] == 'scale-web-centos10-newsite'
-  node.default['scale_drupal']['mysql_host'] =
     'scale-drupal-newsite.cluster-c19nohpiwnoo.us-east-1.rds.amazonaws.com'
-  base_dir = 'web'
-  settings_source = 'settings-drupal10.php.erb'
-  settings_dst_file = 'settings.chef.php'
 elsif node['hostname'] == 'scale-web-centos10-staging'
   node.default['scale_drupal']['mysql_host'] =
     'scale-drupal-newsite-staging1.cluster-c19nohpiwnoo.us-east-1.rds.amazonaws.com'
-  base_dir = 'web'
-  settings_source = 'settings-drupal10.php.erb'
-  settings_dst_file = 'settings.chef.php'
 end
 settings_dest = "#{base_dir}/sites/default/#{settings_dst_file}"
 
