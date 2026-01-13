@@ -22,7 +22,14 @@ node.default['fb_postfix']['main.cf']['inet_interfaces'] = "all"
   node.default['fb_postfix']['main.cf'][conf] = val
 end
 
-node.default['fb_postfix']['main.cf']['smtpd_tls_security_level'] = 'may'
+hname = "lists.socallinuxexpo.org"
+{
+  'smtpd_tls_cert_file' => FB::LetsEncrypt.cert(node, hname),
+  'smtpd_tls_key_file' => FB::LetsEncrypt.key(node, hname),
+  'smtpd_tls_security_level' => 'may',
+}.each do |conf, val|
+  node.default['fb_postfix']['main.cf'][conf] = val
+end
 
 include_recipe '::mailman3'
 
