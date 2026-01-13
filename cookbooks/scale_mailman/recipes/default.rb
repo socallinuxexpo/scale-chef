@@ -22,6 +22,8 @@ node.default['fb_postfix']['main.cf']['inet_interfaces'] = "all"
   node.default['fb_postfix']['main.cf'][conf] = val
 end
 
+node.default['fb_postfix']['main.cf']['smtpd_tls_security_level'] = 'may'
+
 include_recipe '::mailman3'
 
 # some common stuff - backups, monitoring, service
