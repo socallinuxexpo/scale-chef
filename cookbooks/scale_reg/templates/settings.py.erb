@@ -109,6 +109,11 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Set django.middleware.clickjacking.XFrameOptionsMiddleware to allow same
+# origin iframes.
+
+X_FRAME_OPTIONS = 'SAMEORIGIN'
+
 # PayFlow Account Settings must be set to use PayFlow.
 #
 # PayFlow URL:
@@ -120,6 +125,9 @@ SCALEREG_PAYFLOW_PARTNER = 'verisign'
 
 # Secret used for express check-in and scanned badges.
 SCALEREG_EXPRESS_CHECKIN_SECRET = '<%= node['fb_init']['secrets']['reg_checkin_secret_key'] %>'
+
+# Secret used in browser user agent for identifying kiosks.
+SCALEREG_KIOSK_AGENT_SECRET = '<%= node['fb_init']['secrets']['reg_user_agent_secret'] %>:'
 
 # URL for the sponsorship agreement document.
 SCALEREG_SPONSORSHIP_AGREEMENT_URL = 'https://register.socallinuxexpo.org/static/sponsorship/scale-sponsorship-contract.pdf'
