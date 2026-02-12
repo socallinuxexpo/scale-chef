@@ -31,6 +31,21 @@ hname = "lists.socallinuxexpo.org"
   node.default['fb_postfix']['main.cf'][conf] = val
 end
 
+# Mailgun will re-sign our messages, but strip incoming signatures,
+# because it causes some confusion.
+{
+  'strip incoming ARC headers' => {
+    'regexp' => '/^ARC-.*:/',
+    'action' => 'IGNORE',
+  },
+  'strip incoming DKIM headers' => {
+    'regexp' => '/^DKIM-Signature:/',
+    'action' => 'IGNORE',
+  },
+}.each do |name, conf|
+  node.default['fb_postfix']['custom_headers'][name] = conf
+end
+
 include_recipe '::mailman3'
 
 # some common stuff - backups, monitoring, service
