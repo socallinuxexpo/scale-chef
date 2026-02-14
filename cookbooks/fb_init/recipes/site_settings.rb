@@ -155,3 +155,5 @@ node.default['fb_syslog']['rsyslog_early_lines'] += [
   'module(load="imjournal" UsePid="system" FileCreateMode="0644"' +
     ' StateFile="imjournal.state")',
 ]
+
+include_recipe 'scale_certbot_hack::cleanup'
