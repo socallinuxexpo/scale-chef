@@ -23,6 +23,8 @@ package 'awscli2' do
   action :upgrade
 end
 
+include_recipe 'scale_misc::rds_cert'
+
 cookbook_file '/usr/local/bin/deploy_site' do
   source 'deploy_site'
   owner 'root'

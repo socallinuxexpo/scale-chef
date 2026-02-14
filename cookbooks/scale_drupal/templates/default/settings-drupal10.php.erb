@@ -46,6 +46,13 @@ $databases['default']['default'] = [
   'prefix' => '',
 ];
 
+<% if node['hostname'] == 'scale-web-centos10-staging' %>
+$databases['default']['default']['pdo'] = [
+  PDO::MYSQL_ATTR_SSL_CA => '/etc/ssl/certs/rds-combined-ca-bundle.pem',
+  PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => true,
+];
+<% end %>
+
 /**
  * Salt for one-time login links, cancel links, form tokens, etc.
  *
@@ -65,4 +72,3 @@ $databases['default']['default'] = [
  * @endcode
  */
 $settings['hash_salt'] = '<%= node['fb_init']['secrets']['drupal_hash_salt'] %>';
-

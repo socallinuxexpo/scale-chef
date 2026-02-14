@@ -1,0 +1,7 @@
+name 'scale_misc'
+maintainer 'SCALE'
+maintainer_email 'phil@ipom.com'
+license 'All Rights Reserved'
+description 'Misc recipes for Scale'
+version '0.1.0'
+chef_version '>= 15.0'
