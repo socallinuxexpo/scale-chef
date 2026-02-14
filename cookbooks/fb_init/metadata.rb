@@ -33,7 +33,6 @@ version '0.0.1'
   scale_ssh
   scale_users
   scale_yum
-  scale_certbot_hack
 }.each do |cb|
   depends cb
 end
