@@ -8,6 +8,8 @@ node.default['scale_apache']['ssl_hostname'] = name
   end
 end
 
+include_recipe 'scale_misc::rds_cert'
+
 pkgs = %w{
   python3-mod_wsgi
   python3-mysqlclient
