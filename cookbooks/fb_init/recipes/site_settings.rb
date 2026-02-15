@@ -69,7 +69,12 @@ else
   fail 'fb_init: /etc/sasl_passwd is missing, cannot setup mailgun'
 end
 
-node.default['fb_postfix']['main.cf']['mydomain'] = 'localhost'
+{
+  'mydomain' => 'localhost',
+  'smtp_tls_security_level' => 'may',
+}.each do |k, v|
+  node.default['fb_postfix']['main.cf'][k] = v
+end
 
 pkgs = %w{
   postfix-perl-scripts
