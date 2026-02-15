@@ -1,0 +1,2 @@
+default['scale_misc'] = {
+}
