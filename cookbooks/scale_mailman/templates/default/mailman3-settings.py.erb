@@ -20,7 +20,13 @@ DATABASES = {
         'PORT': '3306',
         # For MySQL/MariaDB, in addition to changing the 'ENGINE' setting,
         # uncomment the following to enable utf8 4-byte encodings.
-        'OPTIONS': {'charset': 'utf8mb4'},
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+            'ssl': {
+                'ca': '/etc/ssl/certs/rds-combined-ca-bundle.pem',
+                'ssl_mode': 'VERIFY_IDENTITY',
+            },
+        },
     }
 }
 
