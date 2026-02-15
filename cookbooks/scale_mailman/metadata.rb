@@ -9,6 +9,7 @@ version '0.1.0'
 
 %w{
   scale_apache
+  scale_misc
 }.each do |cb|
   depends cb
 end

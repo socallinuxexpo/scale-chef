@@ -8,6 +8,8 @@ node.default['fb_iptables']['filter']['INPUT']['rules']['allow_smtp'] = {
   'rule' => '-p tcp -m tcp -m conntrack --ctstate NEW --dport 25 -j ACCEPT',
 }
 
+include_recipe 'scale_misc::rds_cert'
+
 # postfix
 node.default['fb_postfix']['aliases']['listmaster'] =
   'listmaster@linuxfests.org'
