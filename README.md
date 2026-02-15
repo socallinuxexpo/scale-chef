@@ -1,5 +1,7 @@
 # scale-chef
 
+This main README documents Chef, but you probably also want to read our [Infrastructure](docs/Infrastructure.md) doc.
+
 ## Getting started
 
 You can also manually bootstrap a node by cloning the repo into
