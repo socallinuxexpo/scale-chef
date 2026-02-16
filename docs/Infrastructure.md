@@ -75,7 +75,7 @@ We have several DKIM keys in use to sign email.
 | Domain | Selector | Where | Info |
 |--------|----------|-------|------|
 | socallinuxexpo.org | gmail | Google | Used for all email sent via Google Domains. |
-| socallinuxexpo.org | krs | Mailgun | Used by mailgun to sign all email sent via mailgun that uses the socallinuxexpo.org domain. This was used for phplist, but probably isn't used by much now. |
+| socallinuxexpo.org | krs | Mailgun | Used by mailgun to sign all email sent via mailgun that uses the socallinuxexpo.org domain. Primarily used by Listmonk. |
 | lists.socallinuxexpo.org | smtp | Mailgun | Used by mailgun to sign all email sent via mailgun that uses the lists.socallinuxexpo.org domain. This is specifically for mailman. |
 
 Mail can flow through several different paths:
