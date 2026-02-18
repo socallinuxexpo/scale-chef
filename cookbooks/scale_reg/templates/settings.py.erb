@@ -56,9 +56,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'scalereg',
-        'USER': '<%= node['fb_init']['secrets']['reg_db_user'] %>',
+        'USER': '<%= node['scale_reg']['db']['username'] %>',
         'PASSWORD': '<%= node['fb_init']['secrets']['reg_db_password'] %>',
-        'HOST': 'scalereg.cluster-c19nohpiwnoo.us-east-1.rds.amazonaws.com',
+        'HOST': '<%= node['scale_reg']['db']['hostname'] %>',
         'PORT': '3306',
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",

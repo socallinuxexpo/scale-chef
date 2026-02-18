@@ -1,0 +1,19 @@
+<%
+  d = {
+    'listmonk' => {
+      'api_url' => 'https://listmonk.linuxfests.org/api',
+      'api_key' => node['fb_init']['secrets']['listmonk_api_key'],
+    },
+    'datadog' => {
+      'api_key' => node['fb_init']['secrets']['datadog_api_key'],
+    },
+    'db' => {
+      'host' => node['scale_reg']['db']['hostname'],
+      'user' => node['scale_reg']['db']['user'],
+      'database' => node['scale_reg']['db']['database'],
+      'password' => node['fb_init']['secrets']['scale_reg_db_password'],
+    },
+  }
+%>
+# This file is managed by Chef. Do not edit it manually.
+<%= YAML.dump(d) %>
