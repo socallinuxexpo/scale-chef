@@ -7,11 +7,11 @@
     'datadog' => {
       'api_key' => node['fb_init']['secrets']['datadog_api_key'],
     },
-    'db' => {
+    'regdb' => {
       'host' => node['scale_reg']['db']['hostname'],
-      'user' => node['scale_reg']['db']['user'],
+      'user' => node['scale_reg']['db']['username'],
       'database' => node['scale_reg']['db']['database'],
-      'password' => node['fb_init']['secrets']['scale_reg_db_password'],
+      'password' => node['fb_init']['secrets']['reg_db_password'],
     },
   }
 %>

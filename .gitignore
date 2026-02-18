@@ -7,3 +7,4 @@ Gemfile.lock
 .ruby-version
 .sync_fb_cookbooks.conf
 .vscode
+__pycache__
