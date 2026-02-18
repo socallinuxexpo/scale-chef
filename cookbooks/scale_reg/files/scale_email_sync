@@ -1,0 +1,503 @@
+#!/usr/bin/python3
+
+import click
+import csv
+import json
+import logging
+import MySQLdb
+import os
+import requests
+import sys
+import time
+import yaml
+from datadog_api_client import ApiClient, Configuration
+from datadog_api_client.v2.api.metrics_api import MetricsApi
+from datadog_api_client.v2.model.metric_intake_type import MetricIntakeType
+from datadog_api_client.v2.model.metric_payload import MetricPayload
+from datadog_api_client.v2.model.metric_point import MetricPoint
+from datadog_api_client.v2.model.metric_resource import MetricResource
+from datadog_api_client.v2.model.metric_series import MetricSeries
+
+
+def load_config(config_file):
+    """Load configuration from YAML file."""
+    with open(config_file, "r") as f:
+        return yaml.safe_load(f)
+
+
+class RegData:
+    def __init__(self, config):
+        self.config = config
+
+    def _fetch_file_data(self, csv_url):
+        """Fetch CSV data from a URL."""
+        if csv_url.startswith("http"):
+            response = requests.get(csv_url)
+            response.raise_for_status()  # Raise exception for 4xx/5xx errors
+            return response.text
+        else:
+            with open(csv_url, "r") as file:
+                return file.read()
+
+    def get_csv_data(self, csv_url):
+        """Parse CSV data into a list of dictionaries with 'id' and 'email'."""
+        data = self._fetch_file_data(csv_url)
+        reader = csv.DictReader(data.splitlines())
+        subscribers = {}
+        for row in reader:
+            subscribers[row["email"]] = {
+                "id": row["id"],
+                "email": row["email"],
+                "can_email": int(row["can_email"]),
+            }
+        return subscribers
+
+    def get_db_data(self):
+        db_config = self.config.get("regdb", {})
+        db = MySQLdb.connect(
+            host=db_config.get("host", "localhost"),
+            user=db_config.get("user", "admin"),
+            password=db_config.get("password", ""),
+            database=db_config.get("database", "scalereg"),
+        )
+        cursor = db.cursor()
+        cursor.execute(
+            """
+            SELECT email,
+                concat(
+                    reg23_attendee.first_name,' ', reg23_attendee.last_name
+                ) as name,
+                can_email
+            FROM reg23_attendee
+        """
+        )
+        subscribers = {
+            row[0]: {"email": row[0], "name": row[1], "can_email": row[2]}
+            for row in cursor.fetchall()
+        }
+        return subscribers
+
+
+class ListMonk:
+    """
+    Handles all interactions with the Listmonk API, including fetching subscribers,
+    adding/removing subscribers from lists, and reporting statistics to Datadog.
+
+    A note on unsubscriptions. When a user unsubscribes from a list, Listmonk
+    shows them as still associated with that list. Since we don't check the
+    "status" field on that list, we'll never re-add them to that list, which
+    good, we don't want to add people back to lists they've unsubscribed from.
+    """
+
+    TEST_LIST_IDS = {
+        "announce": 14,
+        "logistics": 18,
+        "sponsors": 19,
+    }
+    PROD_LIST_IDS = {
+        "announce": 3,
+        "logistics": 15,
+        "sponsors": 16,
+    }
+
+    def __init__(self, config, dry_run, remove, prod):
+        listmonk_config = config.get("listmonk", {})
+        self.api_url = listmonk_config.get(
+            "api_url", "https://listmonk.linuxfests.org/api/subscribers"
+        )
+        api_key = listmonk_config.get("api_key", "")
+        self.headers = {
+            "Authorization": f"token scalereg:{api_key}",
+            "Content-Type": "application/json",
+        }
+        self.config = config
+        self.dry_run = dry_run
+        self.remove = remove
+        if prod:
+            self.list_ids = self.PROD_LIST_IDS
+        else:
+            self.list_ids = self.TEST_LIST_IDS
+        self.list_names = {v: k for k, v in self.list_ids.items()}
+        # Initialize stats tracking
+        self.stats = {
+            "adds": {list_name: 0 for list_name in self.list_ids.keys()},
+            "removes": {list_name: 0 for list_name in self.list_ids.keys()},
+        }
+
+    def _get(self, uri, params):
+        """Get data from API with automatic pagination support."""
+        # Make initial request
+        page = 1
+        per_page = 100  # Request 100 items per page
+        all_results = []
+
+        while True:
+            paginated_params = params.copy()
+            paginated_params.update({"page": page, "per_page": per_page})
+
+            response = requests.get(
+                uri,
+                headers=self.headers,
+                params=paginated_params,
+            )
+            data = json.loads(response.text)
+
+            # Extract results if present
+            if "data" in data and "results" in data["data"]:
+                results = data["data"]["results"]
+                all_results.extend(results)
+
+                # Check if there are more pages
+                total = data["data"].get("total", 0)
+                if len(all_results) >= total or len(results) == 0:
+                    break
+
+                page += 1
+            else:
+                # No pagination structure, return as-is
+                return data
+
+        # Return data with accumulated results
+        data["data"]["results"] = all_results
+        return data
+
+    def _post(self, uri, data):
+        logging.debug(f"POST {uri} with data: {data}")
+        response = requests.post(
+            uri, headers=self.headers, data=json.dumps(data)
+        )
+        return response
+
+    def _put(self, uri, data):
+        logging.debug(f"PUT {uri} with data: {data}")
+        response = requests.put(
+            uri, headers=self.headers, data=json.dumps(data)
+        )
+        return response
+
+    def get_all_subscribers(self):
+        params = {"list_id": list(self.list_ids.values())}
+        data = self._get(self.api_url + "/subscribers", params)
+        subscribers = data["data"]["results"]
+        return subscribers
+
+    def list_ids_to_names(self, list_ids):
+        return ", ".join([self.list_ids.get(lid, str(lid)) for lid in list_ids])
+
+    def add_subscriber(self, email, lists):
+        logging.debug(
+            f"Adding subscriber {email} to lists: {self.list_ids_to_names(lists)}"
+        )
+        # check to see if this user already exists.
+        params = {
+            "query": f"subscribers.email = '{email}'",
+        }
+        logging.debug(
+            f"Checking if subscriber {email} already exists with params: {params}"
+        )
+        data = self._get(self.api_url + "/subscribers", params)
+        results = data["data"]["results"]
+
+        if len(results) > 0:
+            subscriber = results[0]
+            return self.add_subscriber_to_lists(subscriber, lists)
+
+        data = {
+            "email": email,
+            "status": "enabled",
+            "list_ids": lists,
+            "preconfirm_subscriptions": True,
+        }
+        if self.dry_run:
+            logging.info(
+                "Would create subscriber %s and add to lists %s",
+                email,
+                self.list_ids_to_names(lists),
+            )
+            # Track stats even in dry-run mode
+            for list_id in lists:
+                list_name = self.list_names.get(list_id, str(list_id))
+                if list_name in self.stats["adds"]:
+                    self.stats["adds"][list_name] += 1
+            return
+
+        response = self._post(self.api_url + "/subscribers", data)
+
+        if response.status_code == 201:
+            logging.info(
+                "Successfully created subscriber %s and added to lists: %s",
+                email,
+                self.list_ids_to_names(lists),
+            )
+            # Track successful adds
+            for list_id in lists:
+                list_name = self.list_names.get(list_id, str(list_id))
+                if list_name in self.stats["adds"]:
+                    self.stats["adds"][list_name] += 1
+        else:
+            logging.error(f"Failed to add subscriber {email}: {response.text}")
+
+    def remove_subscriber_from_lists(self, subscriber, lists):
+        params = {
+            "ids": [subscriber["id"]],
+            "action": "remove",
+            "target_list_ids": lists,
+        }
+        if self.dry_run:
+            logging.info(
+                "Would remove subscriber %s from lists: %s",
+                subscriber["email"],
+                self.list_ids_to_names(lists),
+            )
+            # Track stats even in dry-run mode
+            for list_id in lists:
+                list_name = self.list_names.get(list_id, str(list_id))
+                if list_name in self.stats["removes"]:
+                    self.stats["removes"][list_name] += 1
+            return
+        response = self._put(self.api_url + "/subscribers/lists", params)
+
+        if response.status_code == 200:
+            logging.info(
+                "Successfully removed subscriber %s from %s",
+                subscriber["email"],
+                self.list_ids_to_names(lists),
+            )
+            # Track successful removes
+            for list_id in lists:
+                list_name = self.list_names.get(list_id, str(list_id))
+                if list_name in self.stats["removes"]:
+                    self.stats["removes"][list_name] += 1
+        else:
+            logging.error(
+                "Failed to remove subscriber %s from %s: %s",
+                subscriber["email"],
+                self.list_ids_to_names(lists),
+                response.text,
+            )
+
+    def add_subscriber_to_lists(self, subscriber, lists):
+        params = {
+            "ids": [subscriber["id"]],
+            "action": "add",
+            "target_list_ids": lists,
+            "status": "confirmed",
+        }
+        if self.dry_run:
+            logging.info(
+                "Would add subscriber %s to lists: %s",
+                subscriber["email"],
+                self.list_ids_to_names(lists),
+            )
+            # Track stats even in dry-run mode
+            for list_id in lists:
+                list_name = self.list_names.get(list_id, str(list_id))
+                if list_name in self.stats["adds"]:
+                    self.stats["adds"][list_name] += 1
+            return
+        response = self._put(self.api_url + "/subscribers/lists", params)
+
+        if response.status_code == 200:
+            logging.info(
+                "Successfully added subscriber %s to %s",
+                subscriber["email"],
+                self.list_ids_to_names(lists),
+            )
+            # Track successful adds
+            for list_id in lists:
+                list_name = self.list_names.get(list_id, str(list_id))
+                if list_name in self.stats["adds"]:
+                    self.stats["adds"][list_name] += 1
+        else:
+            logging.error(
+                "Failed to add subscriber %s to %s: %s",
+                subscriber["email"],
+                lists,
+                response.text,
+            )
+
+    def get_expected_lists(self, subscriber_info):
+        expected_lists = []
+        level = subscriber_info["can_email"]
+        if level >= 1:
+            expected_lists.append(self.list_ids["logistics"])
+        if level >= 2:
+            expected_lists.append(self.list_ids["announce"])
+        if level >= 3:
+            expected_lists.append(self.list_ids["sponsors"])
+        return expected_lists
+
+    def get_missing_lists(self, subscriber, expected_lists):
+        current_lists = set([l["id"] for l in subscriber["lists"]])
+        return list(set(expected_lists) - current_lists)
+
+    def get_extra_lists(self, subscriber, expected_lists):
+        current_lists = set([l["id"] for l in subscriber["lists"]])
+        # we only consider lists we care about, so take the XOR of
+        # the two
+        current_lists = current_lists.intersection(set(self.list_ids.values()))
+        return list(current_lists - set(expected_lists))
+
+    def sync_list(self, updated_subscribers):
+        """Sync the subscriber list with Listmonk API."""
+
+        current_subscribers = self.get_all_subscribers()
+
+        for subscriber in current_subscribers:
+            logging.debug(
+                f"Processing subscriber {subscriber['email']} with lists {[l['id'] for l in subscriber['lists']]}"
+            )
+            info = updated_subscribers.get(subscriber["email"])
+            if info:
+                logging.debug(
+                    "Subscriber %s found in CSV, checking lists",
+                    subscriber["email"],
+                )
+                lists = self.get_expected_lists(info)
+                missing = self.get_missing_lists(subscriber, lists)
+                to_remove = self.get_extra_lists(subscriber, lists)
+                if len(missing) > 0:
+                    self.add_subscriber_to_lists(subscriber, missing)
+
+                del updated_subscribers[subscriber["email"]]
+            else:
+                to_remove = list(self.list_ids.values())
+
+            if len(to_remove) > 0:
+                if self.remove:
+                    self.remove_subscriber_from_lists(subscriber, to_remove)
+                else:
+                    logging.debug(
+                        "Subscriber %s not found in reg list",
+                        subscriber["email"],
+                    )
+
+        for email, info in updated_subscribers.items():
+            lists = self.get_expected_lists(info)
+            self.add_subscriber(email, lists)
+
+    def report_stats_to_datadog(self):
+        """Report statistics to Datadog."""
+        datadog_config = self.config.get("datadog", {})
+        datadog_api_key = datadog_config.get("api_key")
+
+        if self.dry_run:
+            logging.info("Sync statistics (dry-run mode):")
+        else:
+            logging.info("Reporting statistics to Datadog...")
+
+        for list_name in self.list_ids.keys():
+            adds = self.stats["adds"][list_name]
+            removes = self.stats["removes"][list_name]
+
+            logging.info(f"List '{list_name}': {adds} adds, {removes} removes")
+
+            # Only send metrics to Datadog if not in dry-run mode
+            if not self.dry_run and datadog_api_key:
+                try:
+                    configuration = Configuration()
+                    configuration.api_key["apiKeyAuth"] = datadog_api_key
+
+                    with ApiClient(configuration) as api_client:
+                        api_instance = MetricsApi(api_client)
+                        timestamp = int(time.time())
+
+                        # Submit adds metric
+                        adds_series = MetricSeries(
+                            metric="scale.email_sync.adds",
+                            type=MetricIntakeType.GAUGE,
+                            points=[
+                                MetricPoint(
+                                    timestamp=timestamp,
+                                    value=float(adds),
+                                )
+                            ],
+                            tags=[f"list:{list_name}"],
+                        )
+
+                        # Submit removes metric
+                        removes_series = MetricSeries(
+                            metric="scale.email_sync.removes",
+                            type=MetricIntakeType.GAUGE,
+                            points=[
+                                MetricPoint(
+                                    timestamp=timestamp,
+                                    value=float(removes),
+                                )
+                            ],
+                            tags=[f"list:{list_name}"],
+                        )
+
+                        payload = MetricPayload(
+                            series=[
+                                MetricResource(actual_instance=adds_series),
+                                MetricResource(actual_instance=removes_series),
+                            ]
+                        )
+
+                        api_instance.submit_metrics(body=payload)
+
+                except Exception as e:
+                    logging.error(f"Failed to send metrics to Datadog: {e}")
+            elif not self.dry_run and not datadog_api_key:
+                logging.warning(
+                    "DATADOG_API_KEY not provided, skipping metric submission"
+                )
+
+
+@click.command()
+@click.option("--dry-run", "-n", is_flag=True, help="Run in dry-run mode")
+@click.option(
+    "--log-level",
+    "-l",
+    default="INFO",
+    help="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
+)
+@click.option(
+    "--reg-file", "-r", default=None, help="URL or file path to the CSV data"
+)
+@click.option(
+    "--remove",
+    is_flag=True,
+    help="Remove subscribers not in CSV, or on additional lists",
+)
+@click.option(
+    "--prod-lists",
+    is_flag=True,
+    help="Use production Listmonk list IDs instead of test ones",
+)
+@click.option(
+    "--config",
+    "-c",
+    default="/etc/scale_email_sync.yaml",
+    help="Path to YAML configuration file",
+)
+def main(dry_run, log_level, reg_file, remove, prod_lists, config):
+    logging.basicConfig(
+        level=getattr(logging, log_level.upper(), logging.INFO),
+        format="[%(asctime)s] %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+    # Load configuration
+    logging.info(f"Loading configuration from {config}...")
+    cfg = load_config(config)
+
+    logging.info("Fetching Reg data...")
+    r = RegData(cfg)
+    if reg_file is None:
+        subscribers = r.get_db_data()
+    else:
+        subscribers = r.get_csv_data(reg_file)
+
+    logging.info("Syncing with Listmonk...")
+
+    lm = ListMonk(cfg, dry_run, remove, prod_lists)
+    lm.sync_list(subscribers)
+
+    # Report stats to Datadog
+    lm.report_stats_to_datadog()
+
+
+if __name__ == "__main__":
+    main()

@@ -8,3 +8,4 @@
 #
 
 include_recipe '::native_reg'
+include_recipe '::email_sync'
