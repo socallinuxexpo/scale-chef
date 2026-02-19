@@ -1,0 +1,41 @@
+name: Daily Upstream Sync
+
+on:
+  workflow_dispatch:  # allow manual trigger from UI
+  #schedule:
+  #  - cron: '0 6 * * *'  # daily at 06:00 UTC, adjust as needed
+
+jobs:
+  sync:
+    name: Run daily sync
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Add upstream remote
+        run: |
+          git remote add fb-upstream https://github.com/facebook/scale-chef.git
+          git fetch fb-upstream
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+
+      - name: Run sync bot
+        env:
+          UPSTREAM_REMOTE: fb-upstream
+          TARGET_REMOTE: origin
+          BASE_BRANCH: main
+          TARGET_BRANCH: main
+          PR_BRANCH_PREFIX: sync
+        run: |
+          ./scripts/fbchef_sync_bot.py
