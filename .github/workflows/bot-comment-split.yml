@@ -11,11 +11,11 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0  # needed to have full git history
 
-      - name: Add upstream remote
+      - name: Add upstream remote, checkout target branch
         run: |
           git remote add fb-upstream https://github.com/facebook/chef-cookbooks.git
           git fetch fb-upstream
@@ -39,4 +39,5 @@ jobs:
           TARGET_BRANCH: main
           PR_BRANCH_PREFIX: sync
         run: |
+          git checkout ${{ env.TARGET_BRNACH }}
           ./scripts/fbchef_sync_bot.py
