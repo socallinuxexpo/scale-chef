@@ -39,5 +39,6 @@ jobs:
           TARGET_BRANCH: main
           PR_BRANCH_PREFIX: sync
         run: |
-          git checkout ${{ env.TARGET_BRNACH }}
+          git checkout ${{ env.TARGET_BRANCH }}
+          find .
           ./scripts/fbchef_sync_bot.py
