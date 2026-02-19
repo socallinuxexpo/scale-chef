@@ -1,0 +1,19 @@
+
+name: Unit
+
+jobs:
+  rspec:
+    runs-on: ubuntu-latest
+    matrix:
+      ruby: [3.1, 3.3]
+
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+      - name: Install dependencies
+        run: bundle install
+      #- name: Run rspec
+      #  run: bundle exec rspec --format=d 'cookbooks/*/spec/*_spec.rb'

@@ -1,0 +1,32 @@
+name: Lint
+
+jobs:
+  cookstyle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.0
+      - name: Install dependencies
+        run: bundle install
+      #- name: Run RuboCop
+      #  run: bundle exec cookstyle -c .cookstyle.yml
+
+  mdl:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      #- name: Run MDL
+      #  uses: actionshub/markdownlint@main
+
+
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current repository
+        uses: actions/checkout@v4
+
+      #- name: Run Shellcheck
+      #  uses: ludeeus/action-shellcheck@2.0.0
