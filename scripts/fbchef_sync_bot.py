@@ -193,7 +193,7 @@ def update_pr_body(pr_number, commits):
     lines = [f"- {c[:8]} {shortlog(c)}" for c in commits]
     body = "Syncing upstream commits:\n\n"
     body += "\n".join(lines)
-    body += "\n\nTo split:\n  #bot split <shaA>-<shaB>\n"
+    body += "\n\nTo split:\n```\n#bot split <shaA>-<shaB>\n```\n"
     if not DRY_RUN:
         logger.info(f"Updating PR #{pr_number} body")
         run(["gh", "pr", "edit", str(pr_number), "--body", body])
@@ -342,7 +342,7 @@ def create_pr(branch, commits):
     logger.debug(f"Creating PR for branch {branch} with {len(commits)} commits")
     lines = [f"- {c[:8]} {shortlog(c)}" for c in commits]
     body = "Syncing upstream commits:\n\n" + "\n".join(lines)
-    body += "\n\nTo split:\n  #bot split <shaA>-<shaB>\n"
+    body += "\n\nTo split:\n```\n#bot split <shaA>-<shaB>\n```\n"
     if not DRY_RUN:
         logger.info(f"Creating PR: Sync upstream ({len(commits)} commits)")
         run(
@@ -398,12 +398,15 @@ Upstream-Commit: {baseline}
 def cherry_pick_with_trailer(commit):
     logger.debug(f"Cherry-picking commit: {commit}")
     print(f"🍒 Applying {commit}")
-    success, _, stderr = try_git("cherry-pick", commit)
+
+    # Use --no-commit so we can filter what gets applied
+    success, _, stderr = try_git("cherry-pick", "--no-commit", commit)
+
     if not success:
         logger.warning(f"Conflict during cherry-pick of {commit}")
         print("⚠️ Conflict detected during cherry-pick")
 
-        # Check if conflicts are only in non-existent cookbooks
+        # Check if conflicts are only in non-existent cookbooks or non-fb_* files
         # Get list of conflicting files
         status_output = git("status", "--porcelain")
         conflicting_files = []
@@ -447,7 +450,7 @@ def cherry_pick_with_trailer(commit):
                     # Malformed path - auto-resolve to be safe
                     auto_resolve_conflicts.append(file_path)
             else:
-                # Not an fb_* cookbook file - auto-resolve (we only care about fb_* cookbooks)
+                # Not an fb_* cookbook file - ignore it
                 auto_resolve_conflicts.append(file_path)
 
         if auto_resolve_conflicts and not real_conflicts:
@@ -477,11 +480,12 @@ def cherry_pick_with_trailer(commit):
                     logger.debug(f"Keeping our version of: {file_path}")
                     git("add", file_path)
 
-            # Continue the cherry-pick with --no-edit to keep the original commit message
-            logger.debug(
-                "Continuing cherry-pick after auto-resolving conflicts"
-            )
-            git("cherry-pick", "--continue", "--no-edit")
+            # Filter to only fb_* changes before committing
+            success = filter_and_commit_fb_changes(commit)
+            if not success:
+                raise RuntimeError(
+                    f"No fb_* cookbook changes to apply from {commit}"
+                )
         else:
             # Real conflicts exist in local fb_* cookbooks, abort
             if real_conflicts:
@@ -490,15 +494,77 @@ def cherry_pick_with_trailer(commit):
                 )
             git("cherry-pick", "--abort")
             raise RuntimeError(f"Conflict while applying {commit}")
-
-    logger.debug("Cherry-pick successful, adding trailer if needed")
-    message = git("log", "-1", "--pretty=%B")
-    if "Upstream-Commit:" not in message:
-        logger.debug(f"Adding Upstream-Commit trailer: {commit}")
-        new_msg = message.strip() + f"\n\nUpstream-Commit: {commit}\n"
-        git("commit", "--amend", "-m", new_msg)
     else:
-        logger.debug("Upstream-Commit trailer already present")
+        # No conflicts, but we still need to filter to only fb_* changes
+        logger.debug(
+            "Cherry-pick successful (no conflicts), filtering to fb_* changes only"
+        )
+        success = filter_and_commit_fb_changes(commit)
+        if not success:
+            raise RuntimeError(
+                f"No fb_* cookbook changes to apply from {commit}"
+            )
+
+
+def filter_and_commit_fb_changes(commit):
+    """
+    After a cherry-pick --no-commit, filter to only keep changes in cookbooks/fb_*
+    that exist locally, then commit with the original message plus trailer.
+    Returns True if changes were committed, False if no relevant changes.
+    """
+    local_cookbooks = set(list_local_cookbooks())
+
+    # Reset the staging area
+    git("reset", "HEAD")
+
+    # Get all modified files from the cherry-pick
+    status_output = git("status", "--porcelain")
+    fb_files_to_add = []
+
+    for line in status_output.splitlines():
+        if line.strip():
+            # Parse status line (format: "XY filename")
+            status_code = line[:2]
+            file_path = line[3:].strip()
+
+            # Only process files in cookbooks/fb_* that exist locally
+            if file_path.startswith("cookbooks/fb_"):
+                parts = file_path.split("/")
+                if len(parts) >= 2:
+                    cookbook = parts[1]
+                    if (
+                        cookbook.startswith("fb_")
+                        and cookbook in local_cookbooks
+                    ):
+                        fb_files_to_add.append(file_path)
+                        logger.debug(f"Including fb_* file: {file_path}")
+            else:
+                logger.debug(f"Ignoring non-fb_* file: {file_path}")
+
+    if not fb_files_to_add:
+        logger.warning("No fb_* cookbook files to commit after filtering")
+        # Clean up - reset to abort the cherry-pick
+        git("reset", "--hard", "HEAD")
+        git("clean", "-fd")
+        return False
+
+    # Stage only the fb_* cookbook files
+    logger.info(f"Staging {len(fb_files_to_add)} fb_* cookbook files")
+    for file_path in fb_files_to_add:
+        git("add", file_path)
+
+    # Get the original commit message
+    message = git("show", "-s", "--format=%B", commit)
+
+    # Add the upstream commit trailer
+    if "Upstream-Commit:" not in message:
+        message = message.strip() + f"\n\nUpstream-Commit: {commit}\n"
+
+    # Commit the filtered changes
+    logger.debug(f"Committing filtered changes with trailer")
+    git("commit", "-m", message)
+
+    return True
 
 
 # ============================================================
