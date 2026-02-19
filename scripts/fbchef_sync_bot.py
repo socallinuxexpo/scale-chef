@@ -402,8 +402,94 @@ def cherry_pick_with_trailer(commit):
     if not success:
         logger.warning(f"Conflict during cherry-pick of {commit}")
         print("⚠️ Conflict detected during cherry-pick")
-        git("cherry-pick", "--abort")
-        raise RuntimeError(f"Conflict while applying {commit}")
+
+        # Check if conflicts are only in non-existent cookbooks
+        # Get list of conflicting files
+        status_output = git("status", "--porcelain")
+        conflicting_files = []
+        for line in status_output.splitlines():
+            if (
+                line.startswith("DU ")
+                or line.startswith("UD ")
+                or line.startswith("DD ")
+                or line.startswith("AA ")
+                or line.startswith("UU ")
+            ):
+                # Conflict markers: DU=deleted by us, UD=deleted by them, etc.
+                file_path = line[3:].strip()
+                conflicting_files.append(file_path)
+
+        logger.debug(f"Conflicting files: {conflicting_files}")
+
+        # Categorize conflicts:
+        # - Real conflicts: files in cookbooks/fb_* that exist locally
+        # - Auto-resolve: everything else (non-existent fb_* cookbooks OR non-fb_* files)
+        local_cookbooks = set(list_local_cookbooks())
+        auto_resolve_conflicts = []
+        real_conflicts = []
+
+        for file_path in conflicting_files:
+            if file_path.startswith("cookbooks/fb_"):
+                # This is an fb_* cookbook file
+                parts = file_path.split("/")
+                if len(parts) >= 2:
+                    cookbook = parts[1]
+                    if (
+                        cookbook.startswith("fb_")
+                        and cookbook in local_cookbooks
+                    ):
+                        # This is a real conflict in a local fb_* cookbook
+                        real_conflicts.append(file_path)
+                    else:
+                        # Non-existent fb_* cookbook - auto-resolve
+                        auto_resolve_conflicts.append(file_path)
+                else:
+                    # Malformed path - auto-resolve to be safe
+                    auto_resolve_conflicts.append(file_path)
+            else:
+                # Not an fb_* cookbook file - auto-resolve (we only care about fb_* cookbooks)
+                auto_resolve_conflicts.append(file_path)
+
+        if auto_resolve_conflicts and not real_conflicts:
+            # All conflicts can be auto-resolved
+            logger.info(
+                f"Auto-resolving {len(auto_resolve_conflicts)} conflicts in non-fb_* or non-imported files: {auto_resolve_conflicts}"
+            )
+            print(
+                f"📦 Auto-resolving {len(auto_resolve_conflicts)} conflicts in non-fb_* or non-imported cookbooks"
+            )
+
+            for file_path in auto_resolve_conflicts:
+                # Check the status code to determine how to resolve
+                status_line = [
+                    line
+                    for line in status_output.splitlines()
+                    if file_path in line
+                ][0]
+                status_code = status_line[:2]
+
+                if status_code in ["DU", "UD", "DD"]:
+                    # Deleted by us, them, or both - remove it
+                    logger.debug(f"Removing conflicting file: {file_path}")
+                    try_git("rm", file_path)
+                elif status_code in ["AA", "UU", "AU", "UA"]:
+                    # Added by both or modified by both - keep ours (current state)
+                    logger.debug(f"Keeping our version of: {file_path}")
+                    git("add", file_path)
+
+            # Continue the cherry-pick with --no-edit to keep the original commit message
+            logger.debug(
+                "Continuing cherry-pick after auto-resolving conflicts"
+            )
+            git("cherry-pick", "--continue", "--no-edit")
+        else:
+            # Real conflicts exist in local fb_* cookbooks, abort
+            if real_conflicts:
+                logger.warning(
+                    f"Real conflicts in local fb_* cookbooks: {real_conflicts}"
+                )
+            git("cherry-pick", "--abort")
+            raise RuntimeError(f"Conflict while applying {commit}")
 
     logger.debug("Cherry-pick successful, adding trailer if needed")
     message = git("log", "-1", "--pretty=%B")
@@ -484,20 +570,41 @@ def get_current_pointer():
 
 
 def list_local_cookbooks():
-    logger.debug("Listing local cookbooks")
-    path = Path("cookbooks")
-    if not path.exists():
-        logger.debug("cookbooks directory does not exist")
-        return []
-    cookbooks = [
-        p.name
-        for p in path.iterdir()
-        if p.is_dir() and p.name.startswith("fb_")
-    ]
-    logger.debug(
-        f"Found {len(cookbooks)} local cookbooks: {', '.join(cookbooks)}"
-    )
-    return cookbooks
+    """
+    List cookbooks that exist in the current HEAD/branch.
+    Uses git to check what's actually committed, not filesystem (which may have conflict files).
+    """
+    logger.debug("Listing local cookbooks from git")
+
+    # Use git ls-tree to see what's actually in the current branch
+    # This avoids being confused by temporary conflict files
+    try:
+        output = git("ls-tree", "--name-only", "HEAD", "cookbooks/")
+        cookbooks = [
+            name.replace("cookbooks/", "")
+            for name in output.splitlines()
+            if name.startswith("cookbooks/fb_")
+        ]
+        logger.debug(
+            f"Found {len(cookbooks)} local cookbooks: {', '.join(cookbooks)}"
+        )
+        return cookbooks
+    except RuntimeError:
+        # If git command fails (e.g., empty repo), fall back to filesystem check
+        logger.debug("Git ls-tree failed, falling back to filesystem check")
+        path = Path("cookbooks")
+        if not path.exists():
+            logger.debug("cookbooks directory does not exist")
+            return []
+        cookbooks = [
+            p.name
+            for p in path.iterdir()
+            if p.is_dir() and p.name.startswith("fb_")
+        ]
+        logger.debug(
+            f"Found {len(cookbooks)} local cookbooks: {', '.join(cookbooks)}"
+        )
+        return cookbooks
 
 
 def detect_global_baseline():
