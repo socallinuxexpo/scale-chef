@@ -422,6 +422,8 @@ def cherry_pick_with_trailer(commit):
 
 def get_current_pointer():
     logger.debug(f"Getting current pointer from {TARGET_BRANCH}")
+    # Get the most recent commit with Upstream-Commit trailers
+    # In case of squash-merge, this one commit will have multiple trailers
     log = git(
         "log",
         TARGET_BRANCH,
@@ -430,13 +432,55 @@ def get_current_pointer():
         "1",
         "--pretty=format:%B",
     )
+
+    # Find all Upstream-Commit trailers in this commit
+    trailers = []
     for line in log.splitlines():
         if line.startswith("Upstream-Commit:"):
-            pointer = line.split(":", 1)[1].strip()
-            logger.debug(f"Current pointer: {pointer}")
-            return pointer
-    logger.debug("No current pointer found")
-    return None
+            commit = line.split(":", 1)[1].strip()
+            trailers.append(commit)
+
+    if not trailers:
+        logger.debug("No current pointer found")
+        return None
+
+    if len(trailers) == 1:
+        logger.debug(f"Current pointer: {trailers[0]}")
+        return trailers[0]
+
+    # Multiple trailers found (squash-merge case)
+    logger.debug(
+        f"Found {len(trailers)} upstream commit trailers in most recent commit: {[t[:8] for t in trailers]}"
+    )
+
+    # Find which trailer is furthest along in upstream history
+    most_recent = trailers[0]
+    for trailer in trailers[1:]:
+        # Check if most_recent is an ancestor of trailer (i.e., trailer is newer)
+        is_ancestor, _, _ = try_git(
+            "merge-base", "--is-ancestor", most_recent, trailer
+        )
+        if is_ancestor:
+            # trailer is newer/further along, use it instead
+            most_recent = trailer
+            logger.debug(
+                f"Updated pointer to {trailer[:8]} (further along than {most_recent[:8]})"
+            )
+        else:
+            # Check if trailer is an ancestor of most_recent
+            is_ancestor, _, _ = try_git(
+                "merge-base", "--is-ancestor", trailer, most_recent
+            )
+            if not is_ancestor:
+                # They're not related - this might be a problem, but use the first one
+                logger.warning(
+                    f"Commits {most_recent[:8]} and {trailer[:8]} are not related"
+                )
+
+    logger.debug(
+        f"Current pointer (most recent in squash-merge): {most_recent}"
+    )
+    return most_recent
 
 
 def list_local_cookbooks():
