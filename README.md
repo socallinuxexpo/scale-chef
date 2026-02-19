@@ -1,6 +1,8 @@
 scale-chef
 ==========
 
+[![Lint](https://github.com/socallinuxexpo/scale-chef/actions/workflows/lint.yml/badge.svg)](https://github.com/socallinuxexpo/scale-chef/actions/workflows/lint.yml)
+
 This main README documents Chef, but you probably also want to read our [Infrastructure](docs/Infrastructure.md) doc.
 
 Getting started
