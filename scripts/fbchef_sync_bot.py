@@ -188,19 +188,46 @@ def shortlog(commit):
     return git("log", "-1", "--pretty=%s", commit)
 
 
+def pr_title_and_description_from_commits(commits):
+    commit_entries = []
+    for c in commits:
+        commit_entries.append(f"* {shortlog(c)}\n  * Upstream-Commit: {c}\n")
+
+    body = "Syncing upstream commits. The PRs are listed below. You can"
+    body += " comment in this PR with commands see below. Also, this"
+    body += " description is build for squash-merge, make sure you keep"
+    body += " all the Upstream-Commit trailers in tact.\n\n"
+    body += "\n".join(commit_entries)
+    body += "\nTo split:\n```\n#bot split <shaA>-<shaB>\n```\n"
+
+    title = f"Sync upstream ({len(commits)} commits)"
+
+    return (title, body)
+
+
 def update_pr_body(pr_number, commits):
     logger.debug(f"Updating PR #{pr_number} with {len(commits)} commits")
-    lines = [f"- {c[:8]} {shortlog(c)}" for c in commits]
-    body = "Syncing upstream commits:\n\n"
-    body += "\n".join(lines)
-    body += "\n\nTo split:\n```\n#bot split <shaA>-<shaB>\n```\n"
+    (title, body) = pr_title_and_description_from_commits(commits)
     if not DRY_RUN:
-        logger.info(f"Updating PR #{pr_number} body")
-        run(["gh", "pr", "edit", str(pr_number), "--body", body])
+        logger.info(f"Updating PR #{pr_number} title and body")
+        run(
+            [
+                "gh",
+                "pr",
+                "edit",
+                str(pr_number),
+                "--title",
+                title,
+                "--add-label",
+                "fbchef_sync_bot",
+                "--body",
+                body,
+            ]
+        )
     else:
         logger.debug(f"[dry-run] Would update PR #{pr_number}")
         print(
-            f"[dry-run] Would update PR #{pr_number} body with commits:\n{lines}"
+            f"[dry-run] Would update PR #{pr_number} title and body with {len(commits)} commits"
         )
 
 
@@ -358,29 +385,30 @@ def create_or_update_issue_for_local_changes(
 
 def create_pr(branch, commits):
     logger.debug(f"Creating PR for branch {branch} with {len(commits)} commits")
-    lines = [f"- {c[:8]} {shortlog(c)}" for c in commits]
-    body = "Syncing upstream commits:\n\n" + "\n".join(lines)
-    body += "\n\nTo split:\n```\n#bot split <shaA>-<shaB>\n```\n"
+    # Format: * <shortlog>\n  * Upstream-Commit: <full-sha>\n
+    (title, body) = pr_title_and_description_from_commits(commits)
     if not DRY_RUN:
         logger.info(f"Creating PR: Sync upstream ({len(commits)} commits)")
-        run(
+        pr_url = run(
             [
                 "gh",
                 "pr",
                 "create",
                 "--title",
-                f"Sync upstream ({len(commits)} commits)",
+                title,
                 "--body",
                 body,
                 "--head",
                 branch,
                 "--base",
                 BASE_BRANCH,
+                "--label",
+                "fbchef_sync_bot",
             ]
         )
     else:
         logger.debug(f"[dry-run] Would create PR {branch}")
-        print(f"[dry-run] Would create PR {branch} with commits:\n{lines}")
+        print(f"[dry-run] Would create PR {branch} with {len(commits)} commits")
 
 
 def create_onboarding_pr(baseline):
@@ -545,6 +573,11 @@ def capture_conflict_details(conflicting_files):
 
 
 def cherry_pick_with_trailer(commit):
+    """
+    Cherry-pick a commit with an Upstream-Commit trailer.
+    Returns True if the commit was applied, False if it was skipped.
+    Raises RuntimeError on conflicts.
+    """
     logger.debug(f"=== cherry_pick_with_trailer() ENTRY for commit: {commit}")
 
     # Check if this commit has already been applied (optimization)
@@ -552,7 +585,7 @@ def cherry_pick_with_trailer(commit):
     if is_commit_already_applied(commit):
         logger.info(f"Commit {commit[:8]} already applied, skipping")
         print(f"✓ Commit {commit[:8]} already applied, skipping")
-        return
+        return False
 
     logger.debug(
         f"Commit {commit[:8]} not already applied, proceeding with cherry-pick"
@@ -697,7 +730,7 @@ def cherry_pick_with_trailer(commit):
                     git("reset", "--hard", "HEAD")
                     git("clean", "-fd")
                     logger.debug("Manual cleanup completed")
-                return
+                return False
             else:
                 # Real conflicts exist in local fb_* cookbooks, abort
                 logger.debug(
@@ -804,7 +837,8 @@ def cherry_pick_with_trailer(commit):
         if not success:
             logger.info(f"No fb_* cookbook changes to apply from {commit[:8]}")
             print(f"⏭ No relevant changes in {commit[:8]}")
-            return  # Successfully skipped - repo already cleaned up
+            return False  # Successfully skipped - repo already cleaned up
+        return True  # Successfully applied
 
 
 def filter_and_commit_fb_changes(commit):
@@ -895,17 +929,21 @@ def get_current_pointer():
     log = git(
         "log",
         TARGET_BRANCH,
-        "--grep=^Upstream-Commit:",
+        "--grep=Upstream-Commit:",
         "-n",
         "1",
         "--pretty=format:%B",
     )
 
     # Find all Upstream-Commit trailers in this commit
+    # Strip leading whitespace and bullets to handle nested format like:
+    #   * <shortlog>
+    #     * Upstream-Commit: <sha>
     trailers = []
     for line in log.splitlines():
-        if line.startswith("Upstream-Commit:"):
-            commit = line.split(":", 1)[1].strip()
+        stripped = line.lstrip().lstrip("*").lstrip()
+        if stripped.startswith("Upstream-Commit:"):
+            commit = stripped.split(":", 1)[1].strip()
             trailers.append(commit)
 
     if not trailers:
@@ -1121,9 +1159,14 @@ def run_sync():
         try:
             # Attempt cherry-pick
             logger.info(f"Applying commit {c[:8]}")
-            cherry_pick_with_trailer(c)
-            applied.append(c)
-            logger.debug(f"Successfully applied {c[:8]}")
+            was_applied = cherry_pick_with_trailer(c)
+            if was_applied:
+                applied.append(c)
+                logger.debug(f"Successfully applied {c[:8]}")
+            else:
+                logger.debug(
+                    f"Skipped {c[:8]} (already applied or no relevant changes)"
+                )
             # Don't create issues on successful applies - only on conflicts
 
         except RuntimeError as e:
