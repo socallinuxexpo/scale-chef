@@ -262,7 +262,11 @@ def find_existing_issue_for_cookbook(cookbook):
 
 
 def create_or_update_issue_for_local_changes(
-    cookbooks: list, commit: str, blocking: bool = False, dry_run: bool = False
+    cookbooks: list,
+    commit: str,
+    blocking: bool = False,
+    dry_run: bool = False,
+    conflict_details: str = None,
 ):
     """
     Create or update GitHub issues noting that local changes exist in cookbooks.
@@ -271,10 +275,18 @@ def create_or_update_issue_for_local_changes(
     - commit: upstream commit SHA being applied
     - blocking: True if the local changes prevent the upstream commit from applying
     - dry_run: if True, just print what would happen
+    - conflict_details: optional string with conflict details to include in the issue
     """
     logger.debug(
         f"Processing {len(cookbooks)} cookbooks with local changes (blocking={blocking})"
     )
+    if conflict_details:
+        logger.debug(
+            f"Conflict details provided: {len(conflict_details)} chars"
+        )
+    else:
+        logger.debug("No conflict details provided")
+
     for cookbook in cookbooks:
         logger.debug(f"Creating/updating issue for cookbook: {cookbook}")
         title = f"Local changes detected in {cookbook}"
@@ -289,6 +301,12 @@ def create_or_update_issue_for_local_changes(
             body_lines.append(
                 "\nThe changes are blocking the sync and must be resolved before continuing."
             )
+            if conflict_details:
+                body_lines.append(
+                    "\n## Conflict Details\n\n```\n"
+                    + conflict_details
+                    + "\n```"
+                )
         else:
             body_lines.append(
                 f"\n**ℹ️ These changes have not caused conflicts** (last sync: {commit[:8]})."
@@ -395,105 +413,388 @@ Upstream-Commit: {baseline}
 # ============================================================
 
 
-def cherry_pick_with_trailer(commit):
-    logger.debug(f"Cherry-picking commit: {commit}")
-    print(f"🍒 Applying {commit}")
+def is_commit_already_applied(commit):
+    """
+    Check if the changes from a commit are already present in the current branch.
+    This checks the actual content, not just the Upstream-Commit trailer.
+    Returns True if all fb_* cookbook changes from the commit are already present.
+    """
+    logger.debug(f">>> is_commit_already_applied() ENTRY for {commit[:8]}")
 
-    # Use --no-commit so we can filter what gets applied
-    success, _, stderr = try_git("cherry-pick", "--no-commit", commit)
-
-    if not success:
-        logger.warning(f"Conflict during cherry-pick of {commit}")
-        print("⚠️ Conflict detected during cherry-pick")
-
-        # Check if conflicts are only in non-existent cookbooks or non-fb_* files
-        # Get list of conflicting files
-        status_output = git("status", "--porcelain")
-        conflicting_files = []
-        for line in status_output.splitlines():
-            if (
-                line.startswith("DU ")
-                or line.startswith("UD ")
-                or line.startswith("DD ")
-                or line.startswith("AA ")
-                or line.startswith("UU ")
-            ):
-                # Conflict markers: DU=deleted by us, UD=deleted by them, etc.
-                file_path = line[3:].strip()
-                conflicting_files.append(file_path)
-
-        logger.debug(f"Conflicting files: {conflicting_files}")
-
-        # Categorize conflicts:
-        # - Real conflicts: files in cookbooks/fb_* that exist locally
-        # - Auto-resolve: everything else (non-existent fb_* cookbooks OR non-fb_* files)
+    try:
         local_cookbooks = set(list_local_cookbooks())
-        auto_resolve_conflicts = []
-        real_conflicts = []
+        logger.debug(f"Got {len(local_cookbooks)} local cookbooks")
+    except Exception as e:
+        logger.error(f"Failed to get local cookbooks: {e}")
+        return False
 
-        for file_path in conflicting_files:
+    # Get the diff for this commit, filtered to fb_* cookbooks we have locally
+    try:
+        # Get list of files changed in the commit that are in our local fb_* cookbooks
+        files_in_commit = git(
+            "show", "--name-only", "--pretty=format:", commit
+        ).splitlines()
+        relevant_files = []
+        for file_path in files_in_commit:
             if file_path.startswith("cookbooks/fb_"):
-                # This is an fb_* cookbook file
                 parts = file_path.split("/")
                 if len(parts) >= 2:
                     cookbook = parts[1]
-                    if (
-                        cookbook.startswith("fb_")
-                        and cookbook in local_cookbooks
-                    ):
-                        # This is a real conflict in a local fb_* cookbook
-                        real_conflicts.append(file_path)
+                    if cookbook in local_cookbooks:
+                        relevant_files.append(file_path)
+
+        if not relevant_files:
+            logger.debug(f"No relevant fb_* files in commit {commit[:8]}")
+            return True  # No relevant changes, consider it "applied"
+
+        logger.debug(
+            f"Checking {len(relevant_files)} relevant files from {commit[:8]}"
+        )
+
+        # For each relevant file, check if the content matches
+        # by comparing the file at commit with the file at HEAD
+        all_match = True
+        for file_path in relevant_files:
+            # Get the file content at the commit
+            success_commit, content_at_commit, _ = try_git(
+                "show", f"{commit}:{file_path}"
+            )
+            # Get the file content at HEAD
+            success_head, content_at_head, _ = try_git(
+                "show", f"HEAD:{file_path}"
+            )
+
+            if success_commit and success_head:
+                if content_at_commit != content_at_head:
+                    logger.debug(
+                        f"File {file_path} differs between HEAD and {commit[:8]}"
+                    )
+                    all_match = False
+                    break
+            elif success_commit and not success_head:
+                # File exists in commit but not in HEAD - changes not applied
+                logger.debug(
+                    f"File {file_path} exists in {commit[:8]} but not in HEAD"
+                )
+                all_match = False
+                break
+            elif not success_commit and success_head:
+                # File deleted in commit but exists in HEAD - changes not applied
+                logger.debug(
+                    f"File {file_path} should be deleted per {commit[:8]} but exists in HEAD"
+                )
+                all_match = False
+                break
+            # If both don't exist, that's fine - continue checking
+
+        if all_match:
+            logger.info(f"All changes from {commit[:8]} are already present")
+            return True
+        else:
+            logger.debug(f"Changes from {commit[:8]} are not fully present")
+            return False
+
+    except RuntimeError as e:
+        logger.warning(f"Error checking if commit already applied: {e}")
+        return False
+
+
+def capture_conflict_details(conflicting_files):
+    """
+    Capture the conflict details for files that have conflicts.
+    Returns a formatted string showing the conflicts.
+    """
+    logger.debug(
+        f"capture_conflict_details() called with {len(conflicting_files)} files: {conflicting_files}"
+    )
+    details_lines = []
+
+    for file_path in conflicting_files[
+        :10
+    ]:  # Limit to first 10 files to avoid huge issues
+        logger.debug(f"Processing conflict file: {file_path}")
+        details_lines.append(f"### {file_path}")
+        details_lines.append("")
+
+        # Try to read the conflicting file to show conflict markers
+        try:
+            with open(file_path, "r") as f:
+                content = f.read()
+                logger.debug(f"Read {len(content)} chars from {file_path}")
+                # Only include up to first 100 lines or 5000 chars to keep issue manageable
+                lines = content.splitlines()
+                if len(lines) > 100:
+                    content = "\n".join(lines[:100]) + "\n... (truncated)"
+                elif len(content) > 5000:
+                    content = content[:5000] + "\n... (truncated)"
+                details_lines.append(content)
+        except Exception as e:
+            logger.warning(f"Could not read {file_path}: {e}")
+            details_lines.append(f"(Could not read file: {e})")
+
+        details_lines.append("")
+
+    if len(conflicting_files) > 10:
+        details_lines.append(
+            f"... and {len(conflicting_files) - 10} more conflicting files"
+        )
+
+    result = "\n".join(details_lines)
+    logger.debug(f"capture_conflict_details() returning {len(result)} chars")
+    return result
+
+
+def cherry_pick_with_trailer(commit):
+    logger.debug(f"=== cherry_pick_with_trailer() ENTRY for commit: {commit}")
+
+    # Check if this commit has already been applied (optimization)
+    logger.debug("Checking if commit already applied (pre-cherry-pick)")
+    if is_commit_already_applied(commit):
+        logger.info(f"Commit {commit[:8]} already applied, skipping")
+        print(f"✓ Commit {commit[:8]} already applied, skipping")
+        return
+
+    logger.debug(
+        f"Commit {commit[:8]} not already applied, proceeding with cherry-pick"
+    )
+    print(f"🍒 Applying {commit}")
+
+    # Use --no-commit so we can filter what gets applied
+    logger.debug("About to call try_git for cherry-pick --no-commit")
+    success, _, stderr = try_git("cherry-pick", "--no-commit", commit)
+    logger.debug(f"try_git returned: success={success}")
+
+    if not success:
+        logger.warning(f"Conflict during cherry-pick of {commit}")
+        logger.debug(f"Cherry-pick stderr: {stderr[:200]}")
+        print("⚠️ Conflict detected during cherry-pick")
+
+        # Check if this commit has already been applied
+        # (e.g., from a previous run or manual application)
+        try:
+            if is_commit_already_applied(commit):
+                logger.info(f"Commit {commit[:8]} already applied, skipping")
+                print(f"✓ Commit {commit[:8]} already applied, skipping")
+                git("cherry-pick", "--abort")
+                return  # Successfully skip this commit
+        except Exception as e:
+            logger.warning(f"Error checking if commit already applied: {e}")
+            # Continue with normal conflict handling
+
+        # Capture basic conflict info before doing detailed processing
+        # This ensures we have something to show even if later steps fail
+        try:
+            logger.debug("Capturing basic conflict info...")
+            status_for_capture = git("status", "--porcelain")
+            basic_conflict_files = []
+            for line in status_for_capture.splitlines():
+                if (
+                    line.startswith(("DU ", "UD ", "DD ", "AA ", "UU "))
+                    and len(line) > 2
+                ):
+                    basic_conflict_files.append(line[2:].lstrip())
+            logger.debug(f"Basic conflict files found: {basic_conflict_files}")
+            basic_conflict_info = (
+                capture_conflict_details(basic_conflict_files)
+                if basic_conflict_files
+                else "No conflict details available"
+            )
+            logger.debug(
+                f"Basic conflict info captured: {len(basic_conflict_info)} chars"
+            )
+        except Exception as e:
+            logger.warning(f"Error capturing basic conflict info: {e}")
+            basic_conflict_info = "Could not capture conflict details"
+
+        logger.debug("Starting detailed conflict handling in try block...")
+        try:
+            # Check if conflicts are only in non-existent cookbooks or non-fb_* files
+            # Get list of conflicting files
+            status_output = git("status", "--porcelain")
+            logger.debug(
+                f"Status output has {len(status_output)} chars, {len(status_output.splitlines())} lines"
+            )
+            conflicting_files = []
+            for line in status_output.splitlines():
+                if len(line) > 2 and (
+                    line.startswith("DU ")
+                    or line.startswith("UD ")
+                    or line.startswith("DD ")
+                    or line.startswith("AA ")
+                    or line.startswith("UU ")
+                ):
+                    # Conflict markers: DU=deleted by us, UD=deleted by them, etc.
+                    file_path = line[2:].lstrip()
+                    conflicting_files.append(file_path)
+                    logger.debug(
+                        f"Found conflict marker: {line[:2]} for file: {file_path}"
+                    )
+
+            logger.debug(f"Conflicting files: {conflicting_files}")
+
+            # Categorize conflicts:
+            # - Real conflicts: files in cookbooks/fb_* that exist locally
+            # - Auto-resolve: everything else (non-existent fb_* cookbooks OR non-fb_* files)
+            local_cookbooks = set(list_local_cookbooks())
+            logger.debug(
+                f"Local cookbooks for conflict check: {local_cookbooks}"
+            )
+            auto_resolve_conflicts = []
+            real_conflicts = []
+
+            for file_path in conflicting_files:
+                if file_path.startswith("cookbooks/fb_"):
+                    # This is an fb_* cookbook file
+                    parts = file_path.split("/")
+                    if len(parts) >= 2:
+                        cookbook = parts[1]
+                        if (
+                            cookbook.startswith("fb_")
+                            and cookbook in local_cookbooks
+                        ):
+                            # This is a real conflict in a local fb_* cookbook
+                            logger.debug(
+                                f"Real conflict: {file_path} (cookbook {cookbook} is local)"
+                            )
+                            real_conflicts.append(file_path)
+                        else:
+                            # Non-existent fb_* cookbook - auto-resolve
+                            logger.debug(
+                                f"Auto-resolve: {file_path} (cookbook {cookbook} not local)"
+                            )
+                            auto_resolve_conflicts.append(file_path)
                     else:
-                        # Non-existent fb_* cookbook - auto-resolve
+                        # Malformed path - auto-resolve to be safe
                         auto_resolve_conflicts.append(file_path)
                 else:
-                    # Malformed path - auto-resolve to be safe
+                    # Not an fb_* cookbook file - ignore it
                     auto_resolve_conflicts.append(file_path)
+
+            logger.debug(
+                f"Conflict categorization complete: {len(real_conflicts)} real, {len(auto_resolve_conflicts)} auto-resolve"
+            )
+
+            if auto_resolve_conflicts and not real_conflicts:
+                # All conflicts are in non-fb_* or non-imported cookbooks
+                # Since we only care about fb_* cookbooks we have locally, abort and skip this commit
+                logger.info(
+                    f"All {len(auto_resolve_conflicts)} conflicts are in non-fb_* or non-imported files - skipping commit"
+                )
+                print(
+                    f"📦 Skipping {commit[:8]} - conflicts only in non-fb_* or non-imported cookbooks"
+                )
+
+                # Abort the cherry-pick to clean up
+                logger.debug("Aborting cherry-pick for non-relevant conflicts")
+                try:
+                    git("cherry-pick", "--abort")
+                    logger.debug("Cherry-pick aborted successfully")
+                except RuntimeError as e:
+                    logger.warning(
+                        f"Cherry-pick abort failed ({e}), doing manual cleanup"
+                    )
+                    # Manual cleanup: reset to HEAD and clean working directory
+                    git("reset", "--hard", "HEAD")
+                    git("clean", "-fd")
+                    logger.debug("Manual cleanup completed")
+                return
             else:
-                # Not an fb_* cookbook file - ignore it
-                auto_resolve_conflicts.append(file_path)
-
-        if auto_resolve_conflicts and not real_conflicts:
-            # All conflicts can be auto-resolved
-            logger.info(
-                f"Auto-resolving {len(auto_resolve_conflicts)} conflicts in non-fb_* or non-imported files: {auto_resolve_conflicts}"
-            )
-            print(
-                f"📦 Auto-resolving {len(auto_resolve_conflicts)} conflicts in non-fb_* or non-imported cookbooks"
-            )
-
-            for file_path in auto_resolve_conflicts:
-                # Check the status code to determine how to resolve
-                status_line = [
-                    line
-                    for line in status_output.splitlines()
-                    if file_path in line
-                ][0]
-                status_code = status_line[:2]
-
-                if status_code in ["DU", "UD", "DD"]:
-                    # Deleted by us, them, or both - remove it
-                    logger.debug(f"Removing conflicting file: {file_path}")
-                    try_git("rm", file_path)
-                elif status_code in ["AA", "UU", "AU", "UA"]:
-                    # Added by both or modified by both - keep ours (current state)
-                    logger.debug(f"Keeping our version of: {file_path}")
-                    git("add", file_path)
-
-            # Filter to only fb_* changes before committing
-            success = filter_and_commit_fb_changes(commit)
-            if not success:
-                raise RuntimeError(
-                    f"No fb_* cookbook changes to apply from {commit}"
+                # Real conflicts exist in local fb_* cookbooks, abort
+                logger.debug(
+                    f"Real conflicts found: {len(real_conflicts)}, auto-resolve: {len(auto_resolve_conflicts)}"
                 )
-        else:
-            # Real conflicts exist in local fb_* cookbooks, abort
-            if real_conflicts:
+                if real_conflicts:
+                    logger.warning(
+                        f"Real conflicts in local fb_* cookbooks: {real_conflicts}"
+                    )
+
+                # Capture conflict details before aborting
+                # Include all conflicting files in the details
+                all_conflicts = (
+                    real_conflicts if real_conflicts else conflicting_files
+                )
+                logger.debug(
+                    f"About to capture conflict details for {len(all_conflicts)} files: {all_conflicts}"
+                )
+
+                try:
+                    conflict_info = capture_conflict_details(all_conflicts)
+                    logger.debug(
+                        f"Captured conflict info ({len(conflict_info)} chars)"
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to capture conflict details: {e}")
+                    conflict_info = f"Could not capture conflict details: {e}"
+
+                # Abort the cherry-pick and ensure clean state
+                logger.debug("Aborting cherry-pick due to real conflicts")
+                try:
+                    git("cherry-pick", "--abort")
+                    logger.debug("Cherry-pick aborted successfully")
+                except RuntimeError as e:
+                    logger.warning(
+                        f"Cherry-pick abort failed: {e}, forcing cleanup"
+                    )
+                    # If abort fails, force cleanup
+                    git("reset", "--hard", "HEAD")
+                    git("clean", "-fd")
+                    logger.debug("Forced cleanup completed")
+
+                # Raise error with conflict details attached
+                error = RuntimeError(f"Conflict while applying {commit}")
+                error.conflict_details = conflict_info
+                logger.debug(
+                    f"Raising RuntimeError with conflict_details attached ({len(conflict_info)} chars)"
+                )
+                raise error
+        except RuntimeError as error:
+            logger.debug(
+                f"Caught RuntimeError, checking for conflict_details attribute..."
+            )
+            # If a RuntimeError was raised but doesn't have conflict_details, add the basic info
+            if not hasattr(error, "conflict_details"):
                 logger.warning(
-                    f"Real conflicts in local fb_* cookbooks: {real_conflicts}"
+                    "RuntimeError raised without conflict_details, attaching basic info"
                 )
-            git("cherry-pick", "--abort")
-            raise RuntimeError(f"Conflict while applying {commit}")
+                error.conflict_details = basic_conflict_info
+                logger.debug(
+                    f"Attached basic conflict info: {len(basic_conflict_info)} chars"
+                )
+            else:
+                logger.debug(
+                    f"RuntimeError already has conflict_details: {len(error.conflict_details)} chars"
+                )
+            raise
+        except Exception as e:
+            # For any other exception, wrap it with conflict details
+            logger.error(
+                f"Unexpected error during conflict handling: {type(e).__name__}: {e}"
+            )
+
+            # Clean up git state before raising
+            logger.debug("Cleaning up git state after unexpected exception")
+            try:
+                git("cherry-pick", "--abort")
+                logger.debug("Cherry-pick aborted successfully")
+            except RuntimeError as abort_err:
+                logger.warning(
+                    f"Cherry-pick abort failed: {abort_err}, forcing cleanup"
+                )
+                try:
+                    git("reset", "--hard", "HEAD")
+                    git("clean", "-fd")
+                    logger.debug("Forced cleanup completed")
+                except Exception as cleanup_err:
+                    logger.error(f"Even forced cleanup failed: {cleanup_err}")
+
+            error = RuntimeError(
+                f"Error while handling conflict in {commit}: {e}"
+            )
+            error.conflict_details = basic_conflict_info
+            logger.debug(
+                f"Wrapped unexpected exception with basic_conflict_info ({len(basic_conflict_info)} chars)"
+            )
+            raise error
     else:
         # No conflicts, but we still need to filter to only fb_* changes
         logger.debug(
@@ -501,9 +802,9 @@ def cherry_pick_with_trailer(commit):
         )
         success = filter_and_commit_fb_changes(commit)
         if not success:
-            raise RuntimeError(
-                f"No fb_* cookbook changes to apply from {commit}"
-            )
+            logger.info(f"No fb_* cookbook changes to apply from {commit[:8]}")
+            print(f"⏭ No relevant changes in {commit[:8]}")
+            return  # Successfully skipped - repo already cleaned up
 
 
 def filter_and_commit_fb_changes(commit):
@@ -524,8 +825,16 @@ def filter_and_commit_fb_changes(commit):
     for line in status_output.splitlines():
         if line.strip():
             # Parse status line (format: "XY filename")
-            status_code = line[:2]
-            file_path = line[3:].strip()
+            # The status is 2 chars, followed immediately by the filename
+            if len(line) > 2:
+                status_code = line[:2]
+                file_path = line[2:].lstrip()  # Remove any leading spaces
+            else:
+                continue  # Malformed line, skip
+
+            logger.debug(
+                f"Status line: '{line}' -> status='{status_code}' path='{file_path}'"
+            )
 
             # Only process files in cookbooks/fb_* that exist locally
             if file_path.startswith("cookbooks/fb_"):
@@ -543,9 +852,16 @@ def filter_and_commit_fb_changes(commit):
 
     if not fb_files_to_add:
         logger.warning("No fb_* cookbook files to commit after filtering")
-        # Clean up - reset to abort the cherry-pick
-        git("reset", "--hard", "HEAD")
-        git("clean", "-fd")
+        # Clean up - abort the cherry-pick to clear git state
+        logger.debug("Aborting cherry-pick and cleaning working directory")
+        try:
+            # Try to abort cherry-pick if one is in progress
+            git("cherry-pick", "--abort")
+        except RuntimeError:
+            # If no cherry-pick in progress, just clean up manually
+            logger.debug("No cherry-pick to abort, doing manual cleanup")
+            git("reset", "--hard", "HEAD")
+            git("clean", "-fd")
         return False
 
     # Stage only the fb_* cookbook files
@@ -781,6 +1097,7 @@ def run_sync():
     git("checkout", "-B", branch, TARGET_BRANCH)
 
     applied = []
+    conflict_occurred = False
 
     for c in commits:
         logger.debug(f"Processing commit: {c[:8]}")
@@ -809,8 +1126,9 @@ def run_sync():
             logger.debug(f"Successfully applied {c[:8]}")
             # Don't create issues on successful applies - only on conflicts
 
-        except RuntimeError:
+        except RuntimeError as e:
             # Conflict occurred - check for local changes now
+            conflict_occurred = True
             logger.error(f"Conflict while applying {c[:8]}")
             print(f"🚨 Conflict detected while applying {c[:8]}")
 
@@ -833,8 +1151,21 @@ def run_sync():
                     f"Conflict in {', '.join(relevant_cookbooks)} (no specific local changes detected)"
                 )
 
+            # Extract conflict details if available from the exception
+            logger.debug(
+                f"Exception type: {type(e).__name__}, has conflict_details attribute: {hasattr(e, 'conflict_details')}"
+            )
+            conflict_details = getattr(e, "conflict_details", None)
+            logger.debug(
+                f"Extracted conflict_details: {conflict_details[:200] if conflict_details else 'None'}"
+            )
+
             create_or_update_issue_for_local_changes(
-                cookbooks_to_report, commit=c, blocking=True, dry_run=DRY_RUN
+                cookbooks_to_report,
+                commit=c,
+                blocking=True,
+                dry_run=DRY_RUN,
+                conflict_details=conflict_details,
             )
             create_conflict_pr(branch, c)
             break  # Stop immediately after first conflict
@@ -842,7 +1173,9 @@ def run_sync():
     # ---------------------------
     # Check for remaining local changes after successful sync
     # ---------------------------
-    if applied:
+    # Only check for local changes if we didn't encounter a conflict
+    # (conflicts mean we're not fully synced, so local change detection is unreliable)
+    if applied and not conflict_occurred:
         logger.info(
             "Checking for remaining local changes after successful sync"
         )
