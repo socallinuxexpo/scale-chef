@@ -1,4 +1,4 @@
-name "db"
+name 'db'
 run_list [
-  "recipe[scale_mariadb]",
+  'recipe[scale_mariadb]',
 ]

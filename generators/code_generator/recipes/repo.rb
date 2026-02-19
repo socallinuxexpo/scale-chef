@@ -30,12 +30,12 @@ cookbook_file "#{repo_dir}/chefignore" do
   action :create_if_missing
 end
 
-directories_to_create = %w( cookbooks data_bags )
+directories_to_create = %w{cookbooks data_bags}
 
 directories_to_create += if context.use_policy
-                           %w( policyfiles )
+                           %w{policyfiles}
                          else
-                           %w( roles environments )
+                           %w{roles environments}
                          end
 
 directories_to_create.each do |tlo|

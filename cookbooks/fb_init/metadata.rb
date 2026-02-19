@@ -2,10 +2,9 @@
 name 'fb_init'
 maintainer 'SCALE'
 maintainer_email 'noreply@socallinuxexpo.org'
-license 'Apache 2.0'
+license 'Apache-2.0'
 description 'SCALE version of fb_init'
 source_url 'https://github.com/socallinuxexpo/scale-chef'
-long_description IO.read(File.join(File.dirname(__FILE__), 'README.md'))
 version '0.0.1'
 %w{
   fb_chrony

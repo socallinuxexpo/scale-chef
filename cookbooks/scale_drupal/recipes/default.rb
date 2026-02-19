@@ -2,7 +2,7 @@
 # Cookbook Name:: scale_drupal
 # Recipe:: default
 #
-# Copyright 2016, YOUR_COMPANY_NAME
+# Copyright 2016, Southern California Linux Expo
 #
 # All rights reserved - Do Not Redistribute
 #
@@ -51,10 +51,10 @@ end
 
 # Ensure existance of drupal directories
 %W{
- /home/drupal/scale-drupal/#{base_dir}
- /home/drupal/scale-drupal/#{base_dir}/sites
- /home/drupal/scale-drupal/#{base_dir}/sites/default
- /home/webroot/
+  /home/drupal/scale-drupal/#{base_dir}
+  /home/drupal/scale-drupal/#{base_dir}/sites
+  /home/drupal/scale-drupal/#{base_dir}/sites/default
+  /home/webroot/
 }.each do |tmpdir|
   directory tmpdir do
     owner 'root'
@@ -65,9 +65,9 @@ end
 
 # Ensure existance of tmp directories required by drupal
 %W{
- /home/drupal/scale-drupal/#{base_dir}/sites/default/files
- /home/drupal/scale-drupal/#{base_dir}/sites/default/files/css
- /home/drupal/scale-drupal/db
+  /home/drupal/scale-drupal/#{base_dir}/sites/default/files
+  /home/drupal/scale-drupal/#{base_dir}/sites/default/files/css
+  /home/drupal/scale-drupal/db
 }.each do |tmpdir|
   directory tmpdir do
     owner 'root'
@@ -106,8 +106,8 @@ execute '/usr/local/bin/restore-drupal-static.py' do
 end
 
 if node['env'] == 'prod'
-    node.default['fb_cron']['jobs']['drupal_backup'] = {
-      'time' => '30 0,12 * * *',
-      'command' => '/usr/local/bin/backup-drupal-static.sh >/dev/null'
-    }
+  node.default['fb_cron']['jobs']['drupal_backup'] = {
+    'time' => '30 0,12 * * *',
+    'command' => '/usr/local/bin/backup-drupal-static.sh >/dev/null',
+  }
 end

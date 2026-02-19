@@ -1,7 +1,13 @@
 name: Lint
 
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
 jobs:
-  cookstyle:
+  ruby-linters:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -11,16 +17,10 @@ jobs:
           ruby-version: 3.0
       - name: Install dependencies
         run: bundle install
-      #- name: Run RuboCop
-      #  run: bundle exec cookstyle -c .cookstyle.yml
-
-  mdl:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      #- name: Run MDL
-      #  uses: actionshub/markdownlint@main
-
+      - name: Run cookstyle
+        run: ./scripts/run_cookstyle
+      - name: Run mdl
+        run: ./scripts/run_mdl
 
   shellcheck:
     runs-on: ubuntu-latest
@@ -28,5 +28,18 @@ jobs:
       - name: Checkout current repository
         uses: actions/checkout@v4
 
-      #- name: Run Shellcheck
-      #  uses: ludeeus/action-shellcheck@2.0.0
+      - name: Run Shellcheck
+        uses: ludeeus/action-shellcheck@2.0.0
+
+  python-linters:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - name: Install black
+        run: pip install -r requirements.txt
+      - name: Run black
+        run: black --check -l 80 .

@@ -40,8 +40,8 @@ end
 
 unless ::File.exist?('/etc/nginx/apache.key')
   Chef::Log.info(
-    "Skipping nginx setup due to ordering issue. This run will set up " +
-    "key links, if available, and next run will setup nginx"
+    'Skipping nginx setup due to ordering issue. This run will set up ' +
+    'key links, if available, and next run will setup nginx',
   )
   node.default['fb_nginx']['enable'] = false
   return

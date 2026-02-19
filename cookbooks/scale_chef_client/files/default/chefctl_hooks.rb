@@ -59,7 +59,7 @@ module ScaleHook
   # Parameters:
   # - output is the path to the log file for the chef run
   # The return value is ignored.
-  def pre_run(output)
+  def pre_run(_output)
     unless ::File.exist?('/var/chef/repo')
       Chefctl.logger.info('Initializing repo in /var/chef/repo')
       Dir.chdir '/var/chef' do
@@ -70,19 +70,19 @@ module ScaleHook
     end
     Dir.chdir '/var/chef/repo' do
       Chefctl.logger.info('Updating repo in /var/chef/repo')
-      s = Mixlib::ShellOut.new("git fetch origin").run_command
+      s = Mixlib::ShellOut.new('git fetch origin').run_command
       if s.error?
-        Chefctl.logger.error("Failed to fetch git changes")
+        Chefctl.logger.error('Failed to fetch git changes')
         Chefctl.logger.debug(" - STDOUT: #{s.stdout}")
         Chefctl.logger.debug(" - STDERR: #{s.stdout}")
         return
       end
-      s = Mixlib::ShellOut.new("git reset --hard origin/main").run_command
+      s = Mixlib::ShellOut.new('git reset --hard origin/main').run_command
       if s.error?
-        Chefctl.logger.error("Failed to update git repo")
+        Chefctl.logger.error('Failed to update git repo')
         return
       end
-      Chefctl.logger.info("Updated repo!")
+      Chefctl.logger.info('Updated repo!')
     end
   end
 

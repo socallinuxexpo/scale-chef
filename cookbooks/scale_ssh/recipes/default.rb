@@ -2,7 +2,7 @@
 # Cookbook Name:: scale_ssh
 # Recipe:: default
 #
-# Copyright 2016, YOUR_COMPANY_NAME
+# Copyright 2016, Southern California Linux Expo
 #
 # All rights reserved - Do Not Redistribute
 #
@@ -22,7 +22,7 @@ scale_ssh_keys 'setup keys'
 
 # If we're on vagrant, we need to copy the key to the new location
 file '/etc/ssh/authorized_keys/vagrant' do
-  only_if { File.exists?('/home/vagrant/.ssh/authorized_keys') }
+  only_if { ::File.exist?('/home/vagrant/.ssh/authorized_keys') }
   content lazy { File.read('/home/vagrant/.ssh/authorized_keys') }
   owner 'root'
   group 'root'

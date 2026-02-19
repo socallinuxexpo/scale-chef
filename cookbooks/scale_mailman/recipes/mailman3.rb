@@ -90,13 +90,13 @@ directory staticdir do
   mode '0755'
 end
 
-Dir.glob(
-  "/usr/lib/python3.9/site-packages/postorius/static/*"
-) + %w{
+dirs = Dir.glob('/usr/lib/python3.9/site-packages/postorius/static/*') + %w{
   /usr/lib/python3.9/site-packages/django_mailman3/static/django-mailman3
   /usr/lib/python3.9/site-packages/hyperkitty/static/hyperkitty
   /usr/lib/python3.9/site-packages/django/contrib/admin/static/admin
-}.each do |dir|
+}
+
+dirs.each do |dir|
   base = File.basename(dir)
   link "#{staticdir}/#{base}" do
     to dir
@@ -125,8 +125,8 @@ template '/etc/mailman3/settings.py' do
   group 'root'
   mode '0644'
   variables({
-    :staticdir => staticdir,
-  })
+              :staticdir => staticdir,
+            })
   notifies :restart, 'service[mailman3]'
   notifies :restart, 'service[mailmanweb]'
 end
@@ -150,9 +150,11 @@ service 'mailmanweb' do
   action [:enable, :start]
 end
 
+# rubocop:disable Chef/Modernize/CronDFileOrTemplate
 file '/etc/cron.d/mailman3' do
   action :delete
 end
+# rubocop:enable Chef/Modernize/CronDFileOrTemplate
 
 node.default['fb_cron']['jobs']['mailman3-minutely'] = {
   'time' => '* * * * *',

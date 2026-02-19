@@ -15,7 +15,7 @@ include_recipe 'fb_letsencrypt'
   link "/etc/httpd/apache.#{type}" do
     to lazy {
       FB::LetsEncrypt.send(
-        type.to_sym, node, node['scale_apache']['ssl_hostname'],
+        type.to_sym, node, node['scale_apache']['ssl_hostname']
       )
     }
   end

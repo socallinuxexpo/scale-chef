@@ -25,7 +25,7 @@ unless node['fb_init']['secrets']['datadog_api_key']
   return
 end
 
-chef_gem 'chef-handler-datadog' do # ~FC009
+chef_gem 'chef-handler-datadog' do
   action :install
   compile_time true
 end
@@ -34,13 +34,13 @@ require 'chef/handler/datadog'
 handler_config = {
   :api_key => node['fb_init']['secrets']['datadog_api_key'],
   :application_key => node['fb_init']['secrets']['datadog_application_key'],
-  :tag_prefix => 'tag:'
+  :tag_prefix => 'tag:',
 }
 
 # Create the handler to run at the end of the Chef execution
 chef_handler 'Chef::Handler::Datadog' do
   source 'chef/handler/datadog'
   arguments [handler_config]
-  supports :report => true, :exception => true
+  type :report => true, :exception => true
   action :nothing
 end.run_action(:enable)

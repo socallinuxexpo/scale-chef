@@ -1,5 +1,5 @@
 #!/bin/bash
 
-ME=$(realpath $0)
-MYDIR=$(dirname $ME)
-taste-tester $@ -c "$MYDIR/../taste-tester.conf"
+ME=$(realpath "$0")
+MYDIR=$(dirname "$ME")
+taste-tester "$@" -c "$MYDIR/../taste-tester.conf"

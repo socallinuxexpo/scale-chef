@@ -2,7 +2,7 @@
 # Cookbook Name:: scale_apache
 # Recipe:: default
 #
-# Copyright 2016, YOUR_COMPANY_NAME
+# Copyright 2016, Southern California Linux Expo
 #
 # All rights reserved - Do Not Redistribute
 #

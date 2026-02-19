@@ -1,9 +1,3 @@
-use_inline_resources
-
-def whyrun_supported?
-  true
-end
-
 action :run do
   node['scale_ssh']['keys'].to_hash.each do |user, keys|
     file "/etc/ssh/authorized_keys/#{user}" do

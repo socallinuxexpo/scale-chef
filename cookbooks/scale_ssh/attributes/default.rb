@@ -24,11 +24,11 @@ default['scale_ssh'] = {
     'ChallengeResponseAuthentication' => false,
     'GSSAPIAuthentication' => false,
     'GSSAPICleanupCredentials' => false,
-    'HostKey' => %w{ 
+    'HostKey' => %w{
       /etc/ssh/ssh_host_ecdsa_key
       /etc/ssh/ssh_host_ed25519_key
       /etc/ssh/ssh_host_rsa_key
-     },
+    },
      'PasswordAuthentication' => false,
      'Subsystem' => 'sftp /usr/libexec/openssh/sftp-server',
      'SyslogFacility' => 'AUTHPRIV',
