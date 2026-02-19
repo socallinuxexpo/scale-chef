@@ -18,7 +18,7 @@ jobs:
 
       - name: Add upstream remote
         run: |
-          git remote add fb-upstream https://github.com/facebook/scale-chef.git
+          git remote add fb-upstream https://github.com/facebook/chef-cookbooks.git
           git fetch fb-upstream
 
       - name: Set up Python
