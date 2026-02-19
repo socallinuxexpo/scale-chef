@@ -2,6 +2,7 @@ name: Daily Upstream Sync
 
 on:
   workflow_dispatch:  # allow manual trigger from UI
+  pull_request:
   #schedule:
   #  - cron: '0 6 * * *'  # daily at 06:00 UTC, adjust as needed
 
@@ -38,6 +39,6 @@ jobs:
           TARGET_BRANCH: main
           PR_BRANCH_PREFIX: sync
         run: |
-          git checkout ${{ env.TARGET_BRANCH }}
-          find .
+          git checkout -B main origin/main
+          git status
           ./scripts/fbchef_sync_bot.py
