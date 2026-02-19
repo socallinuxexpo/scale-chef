@@ -1,4 +1,4 @@
-name "web"
+name 'web'
 run_list [
-  "recipe[scale_web]",
+  'recipe[scale_web]',
 ]

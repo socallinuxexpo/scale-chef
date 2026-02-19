@@ -12,7 +12,7 @@ default['tier'] = tier
 default['env'] = env
 
 d = {}
-if File.exists?('/etc/chef_secrets')
+if File.exist?('/etc/chef_secrets')
   File.read('/etc/chef_secrets').each_line do |line|
     k, v = line.strip.split(/\s*=\s*/)
     d[k.downcase] = v

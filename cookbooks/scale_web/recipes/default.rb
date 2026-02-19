@@ -64,10 +64,12 @@ common_config = {
   },
 }
 
-node.default['fb_apache']['sites']['*:80'] = common_config.merge({
-  'RedirectMatch permanent ^/(?!server-status|.well-known)' =>
-    "https://#{server_name}/",
-})
+node.default['fb_apache']['sites']['*:80'] = common_config.merge(
+  {
+    'RedirectMatch permanent ^/(?!server-status|.well-known)' =>
+      "https://#{server_name}/",
+  },
+)
 
 node.default['fb_apache']['extra_configs']['MaxConnectionsPerChild'] = 50
 node.default['fb_apache']['extra_configs']['MaxRequestWorkers'] = 50
@@ -86,33 +88,33 @@ node.default['fb_apache']['extra_configs']['ServerLimit'] = 80
 node.default['fb_apache']['extra_configs']['KeepAlive'] = 'off'
 
 base_config = common_config.merge({
-  'Alias' => [
-    '/past /home/webroot/past',
-    '/scale5x /home/webroot/scale5x',
-    '/scale6x /home/webroot/scale6x',
-    '/scale7x /home/webroot/scale7x',
-    '/scale7x-audio /home/webroot/scale7x-audio',
-    '/scale8x /home/webroot/scale8x',
-    '/scale9x /hoce/webroot/scale9x',
-    '/scale9x-media /home/webroot/scale9x-media',
-    '/scale10x /home/webroot/scale10x',
-    '/scale10x-supporting /home/webroot/scale10x-supporting',
-    '/scale11x /home/webroot/scale11x',
-    '/scale11x-supporting /home/webroot/scale11x-supporting',
-    '/scale12x /home/webroot/scale12x',
-    '/scale12x-supporting /home/webroot/scale12x-supporting',
-    '/scale/13x /home/webroot/scale/13x',
-    '/scale/14x /home/webroot/scale/14x',
-    '/scale/15x /home/webroot/scale/15x',
-    '/scale/16x /home/webroot/scale/16x',
-    '/scale/17x /home/webroot/scale/17x',
-    '/scale/18x /home/webroot/scale/18x',
-    '/scale/19x /home/webroot/scale/19x',
-    '/scale/20x /home/webroot/scale/20x',
-    '/scale/21x /home/webroot/scale/21x',
-    '/scale/22x /home/webroot/scale/22x',
-    '/doc /usr/share/doc',
-  ],
+                                    'Alias' => [
+                                      '/past /home/webroot/past',
+                                      '/scale5x /home/webroot/scale5x',
+                                      '/scale6x /home/webroot/scale6x',
+                                      '/scale7x /home/webroot/scale7x',
+                                      '/scale7x-audio /home/webroot/scale7x-audio',
+                                      '/scale8x /home/webroot/scale8x',
+                                      '/scale9x /hoce/webroot/scale9x',
+                                      '/scale9x-media /home/webroot/scale9x-media',
+                                      '/scale10x /home/webroot/scale10x',
+                                      '/scale10x-supporting /home/webroot/scale10x-supporting',
+                                      '/scale11x /home/webroot/scale11x',
+                                      '/scale11x-supporting /home/webroot/scale11x-supporting',
+                                      '/scale12x /home/webroot/scale12x',
+                                      '/scale12x-supporting /home/webroot/scale12x-supporting',
+                                      '/scale/13x /home/webroot/scale/13x',
+                                      '/scale/14x /home/webroot/scale/14x',
+                                      '/scale/15x /home/webroot/scale/15x',
+                                      '/scale/16x /home/webroot/scale/16x',
+                                      '/scale/17x /home/webroot/scale/17x',
+                                      '/scale/18x /home/webroot/scale/18x',
+                                      '/scale/19x /home/webroot/scale/19x',
+                                      '/scale/20x /home/webroot/scale/20x',
+                                      '/scale/21x /home/webroot/scale/21x',
+                                      '/scale/22x /home/webroot/scale/22x',
+                                      '/doc /usr/share/doc',
+                                    ],
   'RewriteEngine' => 'On',
   'DocumentRoot' => docroot,
   'Directory /' => {
@@ -150,97 +152,104 @@ base_config = common_config.merge({
     'Deny' => 'from all',
     'Allow' => 'from 127.0.0.0/255.0.0.0 ::1/128',
   },
-})
+                                  })
 
 rewrites = {
-  "CFPs" => {
-    "rule" => "^/(.*) https://#{server_name}/cfp/ [L,R,NE]",
-    "conditions" => [
-      "%{HTTP_HOST} ^cfp.socallinuxexpo.org [NC]"
+  'CFPs' => {
+    'rule' => "^/(.*) https://#{server_name}/cfp/ [L,R,NE]",
+    'conditions' => [
+      '%{HTTP_HOST} ^cfp.socallinuxexpo.org [NC]',
     ],
   },
-  "not our host" => {
-     "rule" => "^/(.*) https://#{server_name}/$1 [L,R,NE]",
-     "conditions" => [
-       "%{REQUEST_URI} !^/server-status",
+  'not our host' => {
+    'rule' => "^/(.*) https://#{server_name}/$1 [L,R,NE]",
+     'conditions' => [
+       '%{REQUEST_URI} !^/server-status',
        "%{HTTP_HOST} !^#{server_name} [NC]",
-       "%{HTTP_HOST} !^$",
+       '%{HTTP_HOST} !^$',
      ],
   },
-  "always ensure www" => {
-    "rule" => "^ https://#{server_name}%{REQUEST_URI} [L,R=301]",
-    "conditions" => [
-      "%{HTTP_HOST} .",
-      "%{REQUEST_URI} !^/server-status",
+  'always ensure www' => {
+    'rule' => "^ https://#{server_name}%{REQUEST_URI} [L,R=301]",
+    'conditions' => [
+      '%{HTTP_HOST} .',
+      '%{REQUEST_URI} !^/server-status',
       "%{HTTP_HOST} !^#{server_name} [NC]",
     ],
   },
-  "redirect / to current site" => {
-    "rule" => "^/(.*) https://#{server_name}/scale/23x [L,R,NE]",
-    "conditions" => [
-      "%{REQUEST_URI} ^/$",
+  'redirect / to current site' => {
+    'rule' => "^/(.*) https://#{server_name}/scale/23x [L,R,NE]",
+    'conditions' => [
+      '%{REQUEST_URI} ^/$',
     ],
   },
-  "year short url" => {
-    "rule" => "^/scale(1[3-9]|[2-9][0-9])x$ https://#{server_name}/scale/$1x [L,R,NE]",
-      "conditions" => [
-      "%{REQUEST_URI} ^/scale(1[3-9]|[2-9][0-9])x$",
+  'year short url' => {
+    'rule' =>
+      "^/scale(1[3-9]|[2-9][0-9])x$ https://#{server_name}/scale/$1x [L,R,NE]",
+    'conditions' => [
+      '%{REQUEST_URI} ^/scale(1[3-9]|[2-9][0-9])x$',
     ],
   },
-  "year deep path" => {
-    "rule" => "^/scale(1[3-9]|[2-9][0-9])x/(.*)$ https://#{server_name}/scale/$1x/$2 [L,R=301,NE]",
-    "conditions" => [
-      "%{REQUEST_URI} ^/scale(1[3-9]|[2-9][0-9])x/",
+  'year deep path' => {
+    'rule' => '^/scale(1[3-9]|[2-9][0-9])x/(.*)$ ' +
+      "https://#{server_name}/scale/$1x/$2 [L,R=301,NE]",
+    'conditions' => [
+      '%{REQUEST_URI} ^/scale(1[3-9]|[2-9][0-9])x/',
     ],
   },
-  "scale4x short url" => {
-    "rule" => "^/scale4x$ https://#{server_name}/past/2006/ [L,R,NE]",
-    "conditions" => [
-      "%{REQUEST_URI} ^/scale4x$",
+  'scale4x short url' => {
+    'rule' => "^/scale4x$ https://#{server_name}/past/2006/ [L,R,NE]",
+    'conditions' => [
+      '%{REQUEST_URI} ^/scale4x$',
     ],
   },
-  "scale4x deep path" => {
-    "rule" => "^/scale4x/(.*)$ https://#{server_name}/past/2006/$1 [L,R=301,NE]",
-    "conditions" => [
-      "%{REQUEST_URI} ^/scale4x/",
+  'scale4x deep path' => {
+    'rule' =>
+      "^/scale4x/(.*)$ https://#{server_name}/past/2006/$1 [L,R=301,NE]",
+    'conditions' => [
+      '%{REQUEST_URI} ^/scale4x/',
     ],
   },
-  "scale3x short url" => {
-    "rule" => "^/scale3x$ https://#{server_name}/past/2005/ [L,R,NE]",
-    "conditions" => [
-      "%{REQUEST_URI} ^/scale3x$",
+  'scale3x short url' => {
+    'rule' => "^/scale3x$ https://#{server_name}/past/2005/ [L,R,NE]",
+    'conditions' => [
+      '%{REQUEST_URI} ^/scale3x$',
     ],
   },
-  "scale3x deep path" => {
-    "rule" => "^/scale3x/(.*)$ https://#{server_name}/past/2005/$1 [L,R=301,NE]",
-    "conditions" => [
-      "%{REQUEST_URI} ^/scale3x/",
+  'scale3x deep path' => {
+    'rule' =>
+      "^/scale3x/(.*)$ https://#{server_name}/past/2005/$1 [L,R=301,NE]",
+    'conditions' => [
+      '%{REQUEST_URI} ^/scale3x/',
     ],
   },
-  
-  "scale2x short url" => {
-    "rule" => "^/scale2x$ https://#{server_name}/past/2003/ [L,R,NE]",
-    "conditions" => [
-      "%{REQUEST_URI} ^/scale2x$",
+
+  'scale2x short url' => {
+    'rule' => "^/scale2x$ https://#{server_name}/past/2003/ [L,R,NE]",
+    'conditions' => [
+      '%{REQUEST_URI} ^/scale2x$',
     ],
   },
-  "redirect scale2x deep path to past" => {
-    "rule" => "^/scale2x/(.*)$ https://#{server_name}/past/2003/$1 [L,R=301,NE]",
-    "conditions" => [
-      "%{REQUEST_URI} ^/scale2x/",
+  'redirect scale2x deep path to past' => {
+    'rule' =>
+      "^/scale2x/(.*)$ https://#{server_name}/past/2003/$1 [L,R=301,NE]",
+    'conditions' => [
+      '%{REQUEST_URI} ^/scale2x/',
     ],
   },
-  
-  "redirect scale1x short url to past" => {
-    "rule" => "^/scale1x$ https://#{server_name}/past/2002/ [L,R,NE]",
-    "conditions" => [
-      "%{REQUEST_URI} ^/scale1x$",
+
+  'redirect scale1x short url to past' => {
+    'rule' =>
+      "^/scale1x$ https://#{server_name}/past/2002/ [L,R,NE]",
+    'conditions' => [
+      '%{REQUEST_URI} ^/scale1x$',
     ],
   },
-  "redirect scale1x deep path to past" => {
-    "rule" => "^/scale1x/(.*)$ https://#{server_name}/past/2002/$1 [L,R=301,NE]",
-    "conditions" => [
-      "%{REQUEST_URI} ^/scale1x/",
+  'redirect scale1x deep path to past' => {
+    'rule' =>
+      "^/scale1x/(.*)$ https://#{server_name}/past/2002/$1 [L,R=301,NE]",
+    'conditions' => [
+      '%{REQUEST_URI} ^/scale1x/',
     ],
   },
 }
@@ -261,14 +270,17 @@ node.default['fb_apache']['sites']['_default_:443']['_rewrites'] = rewrites
   'CustomLog' => '/var/log/httpd/ssl_access.log combined',
   'SSLEngine' => 'on',
   'SSLProtocol' => 'all -SSLv2 -SSLv3',
-  'SSLCipherSuite' => '"EECDH+ECDSA+AESGCM EECDH+aRSA+AESGCM EECDH+ECDSA+SHA384 EECDH+ECDSA+SHA256 EECDH+aRSA+SHA384 EECDH+aRSA+SHA256 EECDH EDH+aRSA !aNULL !eNULL !LOW !3DES !MD5 !EXP !PSK !SRP !DSS !RC4"',
+  'SSLCipherSuite' => '"EECDH+ECDSA+AESGCM EECDH+aRSA+AESGCM ' +
+    'EECDH+ECDSA+SHA384 EECDH+ECDSA+SHA256 EECDH+aRSA+SHA384 ' +
+    'EECDH+aRSA+SHA256 EECDH EDH+aRSA !aNULL !eNULL !LOW !3DES ' +
+    '!MD5 !EXP !PSK !SRP !DSS !RC4"',
   'SSLCertificateKeyFile' => '/etc/httpd/apache.key',
   'SSLCertificateFile' => '/etc/httpd/apache.crt',
   'FilesMatch \.(cgi|shtml|phtml|php)$' => {
     'SSLOptions' => '+StdEnvVars',
   },
   'Directory /usr/lib/cgi-bin' => {
-    'SSLOptions' => '+StdEnvVars'
+    'SSLOptions' => '+StdEnvVars',
   },
   'BrowserMatch' => [
     '"MSIE [2-6]" nokeepalive ssl-unclean-shutdown downgrade-1.0' +
@@ -317,90 +329,90 @@ node.default['fb_systemd']['tmpfiles']['/tmp'] = {
 }
 
 node.default['scale_datadog']['monitors']['apache'] = {
-  "init_config" => nil,
-  "instances" => [
+  'init_config' => nil,
+  'instances' => [
     {
-      "apache_status_url" => "http://localhost/server-status?auto"
+      'apache_status_url' => 'http://localhost/server-status?auto',
     },
   ],
-  "logs" => [
+  'logs' => [
     {
-      "type" => "file",
-      "path" => "/var/log/httpd/access.log",
-      "source" => "apache",
-      "sourcecategory" => "http_web_access",
-      "service" => "apache"
+      'type' => 'file',
+      'path' => '/var/log/httpd/access.log',
+      'source' => 'apache',
+      'sourcecategory' => 'http_web_access',
+      'service' => 'apache',
     },
     {
-      "type" => "file",
-      "path" => "/var/log/httpd/ssl_access.log",
-      "source" => "apache",
-      "sourcecategory" => "http_web_access",
-      "service" => "apache"
+      'type' => 'file',
+      'path' => '/var/log/httpd/ssl_access.log',
+      'source' => 'apache',
+      'sourcecategory' => 'http_web_access',
+      'service' => 'apache',
     },
     {
-      "type" => "file",
-      "path" => "/var/log/httpd/error.log",
-      "source" => "apache",
-      "sourcecategory" => "http_web_error",
-      "service" => "apache"
+      'type' => 'file',
+      'path' => '/var/log/httpd/error.log',
+      'source' => 'apache',
+      'sourcecategory' => 'http_web_error',
+      'service' => 'apache',
     },
     {
-      "type" => "file",
-      "path" => "/var/log/httpd/error_log",
-      "source" => "apache",
-      "sourcecategory" => "http_web_error",
-      "service" => "apache"
+      'type' => 'file',
+      'path' => '/var/log/httpd/error_log',
+      'source' => 'apache',
+      'sourcecategory' => 'http_web_error',
+      'service' => 'apache',
     },
     {
-      "type" => "file",
-      "path" => "/var/log/httpd/access_log",
-      "source" => "apache",
-      "sourcecategory" => "http_web_access",
-      "service" => "apache"
+      'type' => 'file',
+      'path' => '/var/log/httpd/access_log',
+      'source' => 'apache',
+      'sourcecategory' => 'http_web_access',
+      'service' => 'apache',
     },
     {
-      "type" => "file",
-      "path" => "/var/log/httpd/ssl_access_log",
-      "source" => "apache",
-      "sourcecategory" => "http_web_access",
-      "service" => "apache"
+      'type' => 'file',
+      'path' => '/var/log/httpd/ssl_access_log',
+      'source' => 'apache',
+      'sourcecategory' => 'http_web_access',
+      'service' => 'apache',
     },
     {
-      "type" => "file",
-      "path" => "/var/log/httpd/ssl_error_log",
-      "source" => "apache",
-      "sourcecategory" => "http_web_error",
-      "service" => "apache"
+      'type' => 'file',
+      'path' => '/var/log/httpd/ssl_error_log',
+      'source' => 'apache',
+      'sourcecategory' => 'http_web_error',
+      'service' => 'apache',
     },
     {
-      "type" => "file",
-      "path" => "/var/log/httpd/ssl_error.log",
-      "source" => "apache",
-      "sourcecategory" => "http_web_error",
-      "service" => "apache"
+      'type' => 'file',
+      'path' => '/var/log/httpd/ssl_error.log',
+      'source' => 'apache',
+      'sourcecategory' => 'http_web_error',
+      'service' => 'apache',
     },
-  ]
+  ],
 }
 
 node.default['scale_datadog']['monitors']['dns_check'] = {
-   "init_config" => {
-     "default_timeout" => 4
-   },
-   "instances" => [
+  'init_config' => {
+    'default_timeout' => 4,
+  },
+   'instances' => [
      {
-       "hostname" => "www.socallinuxexpo.org",
-       "nameserver" => "8.8.8.8",
-       "timeout" => 8
+       'hostname' => 'www.socallinuxexpo.org',
+       'nameserver' => '8.8.8.8',
+       'timeout' => 8,
      },
    ],
 }
 
 node.default['scale_datadog']['monitors']['linux_proc_extras'] = {
-  "init_config" => nil,
-  "instances" => [
+  'init_config' => nil,
+  'instances' => [
     {
-      "tags" => []
+      'tags' => [],
     },
   ],
 }

@@ -6,7 +6,7 @@ end
 
 {
   'no_invalid_state' => '-m conntrack --ctstate INVALID -j DROP',
-  'allow_related_states' => 
+  'allow_related_states' =>
     '-m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT',
 }.each do |key, val|
   %w{INPUT OUTPUT}.each do |chain|

@@ -2,7 +2,7 @@ context = ChefCLI::Generator.context
 cookbook_dir = File.join(context.cookbook_root, context.cookbook_name)
 new_file_basename = File.basename(context.new_file_basename)
 relative_path = File.dirname(context.new_file_basename)
-relative_path.slice! "."
+relative_path.slice! '.'
 files_dir = File.join(cookbook_dir, 'files', relative_path)
 cookbook_file_path = File.join(files_dir, new_file_basename)
 

@@ -14,7 +14,7 @@ include_recipe 'scale_misc::rds_cert'
 node.default['fb_postfix']['aliases']['listmaster'] =
   'listmaster@linuxfests.org'
 
-node.default['fb_postfix']['main.cf']['inet_interfaces'] = "all"
+node.default['fb_postfix']['main.cf']['inet_interfaces'] = 'all'
 
 {
   'mydestination' =>
@@ -24,7 +24,7 @@ node.default['fb_postfix']['main.cf']['inet_interfaces'] = "all"
   node.default['fb_postfix']['main.cf'][conf] = val
 end
 
-hname = "lists.socallinuxexpo.org"
+hname = 'lists.socallinuxexpo.org'
 {
   'smtpd_tls_cert_file' => FB::LetsEncrypt.cert(node, hname),
   'smtpd_tls_key_file' => FB::LetsEncrypt.key(node, hname),

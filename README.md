@@ -1,8 +1,10 @@
-# scale-chef
+scale-chef
+==========
 
 This main README documents Chef, but you probably also want to read our [Infrastructure](docs/Infrastructure.md) doc.
 
-## Getting started
+Getting started
+---------------
 
 You can also manually bootstrap a node by cloning the repo into
 /var/chef/repo and running:
@@ -38,9 +40,14 @@ then setup a grant for the drupal user with (inside of `mysql -U mysql`):
 GRANT ALL PRIVILEGES ON drupal.* TO 'drupal'@'scale-www1' IDENTIFIED BY 'thisisadevpassword' WITH GRANT OPTION;
 ```
 
-To not get redirects you should edit `/home/drupal/scale-drupal/httpdocs/.htaccess` and remove the www rewrite rules. The cookbooks assume you are in dev mode if there are no prod secrets, but if you are testing with prod secrets you can force no redirects by touching `/etc/no_prod_redirects`
+To not get redirects you should edit
+`/home/drupal/scale-drupal/httpdocs/.htaccess` and remove the www rewrite
+rules. The cookbooks assume you are in dev mode if there are no prod secrets,
+but if you are testing with prod secrets you can force no redirects by touching
+`/etc/no_prod_redirects`
 
-## Testing Changes
+Testing Changes
+---------------
 
 You'll need to setup your environment. Run `./scripts/setup_dev.sh` to do so.
 
@@ -67,7 +74,8 @@ untest with:
 ./scripts/tt untest -ys <hsot>
 ```
 
-## Production secrets
+Production secrets
+------------------
 
 Secrets are currently stored in the `scale-secrets` repo, but being migrated
 to 1Password.
@@ -83,7 +91,8 @@ Will be available in `node['fb_init']['secrets']['foo']`.
 For the webserver, if you touch `/etc/httpd/need_dev_keys`, Chef will create
 self-signed certs for you.
 
-## Making a new cookbook
+Making a new cookbook
+---------------------
 
 In the cookbooks directory:
 

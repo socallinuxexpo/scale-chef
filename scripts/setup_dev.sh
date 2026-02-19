@@ -14,8 +14,9 @@ if ! [ -d /opt/cinc-workstation ]; then
 fi
 
 echo "Checking for path setup"
-if ! echo $PATH | grep -q chefdk; then
+if ! echo "$PATH" | grep -q chefdk; then
     echo "You need to setup your shell to use Chef Workstation" >&2
+    # shellcheck disable=SC2016
     echo 'Try `eval "$(cinc shell-init SHELL_NAME)"`' >&2
     exit 1
 fi

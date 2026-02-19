@@ -46,11 +46,11 @@ stop() {
   # We remove the override when it is 1 hour old so actually touch the file
   # one less hour than requested. Also, macs don't use coreutils touch so
   # make it work.
-  if [ $hours -eq 1 ]; then
+  if [ "$hours" -eq 1 ]; then
     # Nice and easy
     touch $OVERRIDE_FILE
   else
-    realhours=$(($hours-1))
+    realhours=$((hours - 1))
     touch -d "now + $realhours hours" $OVERRIDE_FILE
   fi
   chefctl -w
@@ -80,7 +80,7 @@ while getopts 'hr:t:' opt; do
   esac
 done
 
-if [ $thours -lt 1 ]; then
+if [ "$thours" -lt 1 ]; then
   echo "Invalid value: \"$thours\" hours is nonsensical, cowardly refusing"
   help
   exit 1

@@ -2,7 +2,7 @@
 # Cookbook Name:: scale_chef_client
 # Recipe:: default
 #
-# Copyright 2016, YOUR_COMPANY_NAME
+# Copyright 2016, Southern California Linux Expo
 #
 # All rights reserved - Do Not Redistribute
 #
@@ -29,7 +29,7 @@ end
 
 package 'cinc' do
   # We need the gate otherwise whyrun breaks
-  only_if { File.exists?(rpmpath) }
+  only_if { ::File.exist?(rpmpath) }
   source rpmpath
   action :upgrade
   notifies :run, 'ruby_block[reexec chef]', :immediately
@@ -128,7 +128,7 @@ end
   'chef' => {
     'time' => '*/15 * * * *',
     'command' => '/usr/bin/test -f /var/chef/cron.default.override -o ' +
-      "-f #{confdir}/test_timestamp || /usr/local/sbin/chefctl -q &>/dev/null"
+      "-f #{confdir}/test_timestamp || /usr/local/sbin/chefctl -q &>/dev/null",
   },
   'taste-untester' => {
     'time' => '*/5 * * * *',
@@ -137,13 +137,13 @@ end
   'remove override files' => {
     'time' => '*/5 * * * *',
     'command' => '/usr/bin/find /var/chef/ -maxdepth 1 ' +
-      '-name cron.default.override -mmin +60 -exec /bin/rm -f {} \; &>/dev/null'
+      '-name cron.default.override -mmin +60 -exec /bin/rm -f {} \; &>/dev/null',
   },
   # keep two weeks of chef run logs
   'cleanup chef logs' => {
     'time' => '1 1 * * *',
     'command' => '/usr/bin/find /var/log/chef -maxdepth 1 ' +
-      '-name chef.2* -mtime +14 -exec /bin/rm -f {} \; &>/dev/null'
+      '-name chef.2* -mtime +14 -exec /bin/rm -f {} \; &>/dev/null',
   },
 }.each do |name, job|
   node.default['fb_cron']['jobs'][name] = job

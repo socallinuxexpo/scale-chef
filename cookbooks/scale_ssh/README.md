@@ -12,4 +12,7 @@ Attributes
 
 Usage
 -----
-Include `fb_ssh` to install ssh. Customize the daemon config with `node['scale_ssh']['sshd_config']`. Add public keys for a given user with `node['scale_ssh']['keys']`.
+
+Include `fb_ssh` to install ssh. Customize the daemon config with
+`node['scale_ssh']['sshd_config']`. Add public keys for a given user with
+`node['scale_ssh']['keys']`.

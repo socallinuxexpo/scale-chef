@@ -1,4 +1,5 @@
 cookbook_file '/usr/local/bin/scale_email_sync' do
+  source 'scale_email_sync.py'
   owner 'root'
   group 'root'
   mode '0755'

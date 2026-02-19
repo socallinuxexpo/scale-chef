@@ -11,7 +11,7 @@ current_state = File.read('/sys/fs/selinux/enforce').to_i
 
 execute 'disable selinux' do
   only_if do
-    %w{disabled permissive}.include?(node['scale_selinux']['state']) && 
+    %w{disabled permissive}.include?(node['scale_selinux']['state']) &&
       current_state == 1
   end
   command 'setenforce 0'

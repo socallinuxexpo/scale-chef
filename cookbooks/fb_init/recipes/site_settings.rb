@@ -20,7 +20,7 @@ if node.vagrant?
 end
 
 d = {}
-if File.exists?('/etc/datadog_secrets')
+if File.exist?('/etc/datadog_secrets')
   File.read('/etc/datadog_secrets').each_line do |line|
     k, v = line.strip.split(/\s*=\s*/)
     d[k.downcase] = v
@@ -47,7 +47,7 @@ end
 end
 
 if File.exist?('/etc/postfix/skip_mailgun')
-  Chef::Log.warn("fb_init: Skipping mailgun postfix setup!")
+  Chef::Log.warn('fb_init: Skipping mailgun postfix setup!')
 elsif File.exist?('/etc/sasl_passwd')
   if node.el_min_version?(10) || node.eln?
     map_type = 'lmdb'

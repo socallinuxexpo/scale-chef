@@ -151,7 +151,7 @@ node.default['fb_apache']['sites']['_default_:443'] = vhost_config
   'Directory /var/www/cgi-bin' => {
     'SSLOptions' => '+StdEnvVars',
   },
-  'BrowserMatch "MSIE [2-6]"' => 
+  'BrowserMatch "MSIE [2-6]"' =>
     'nokeepalive ssl-unclean-shutdown downgrade-1.0 force-response-1.0',
   # MSIE 7 and newer should be able to use keepalive
   'BrowserMatch "MSIE [17-9]"' => 'ssl-unclean-shutdown',

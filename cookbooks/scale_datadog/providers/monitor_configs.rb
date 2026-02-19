@@ -1,9 +1,3 @@
-def whyrun_supported?
-  true
-end
-
-use_inline_resources
-
 action :update do
   Dir.glob('/etc/datadog-agent/conf.d/*.yaml').each do |f|
     basename = ::File.basename(f, '.yaml')
@@ -20,8 +14,8 @@ action :update do
       group 'root'
       mode '0644'
       variables({
-        :config => config
-      })
+                  :config => config,
+                })
     end
   end
 end
