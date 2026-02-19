@@ -170,45 +170,98 @@ Please resolve manually.
     )
 
 
-def create_issue_for_local_changes(
+def find_existing_issue_for_cookbook(cookbook):
+    """
+    Find an existing open issue for a cookbook's local changes.
+    Returns the issue number if found, None otherwise.
+    """
+    try:
+        output = run(
+            [
+                "gh",
+                "issue",
+                "list",
+                "--state",
+                "open",
+                "--json",
+                "number,title",
+                "--search",
+                f"Local changes detected in {cookbook} in:title",
+            ]
+        )
+        issues = json.loads(output)
+        for issue in issues:
+            # Check if the issue title contains this specific cookbook
+            if cookbook in issue["title"]:
+                return issue["number"]
+    except RuntimeError:
+        pass
+    return None
+
+
+def create_or_update_issue_for_local_changes(
     cookbooks: list, commit: str, blocking: bool = False, dry_run: bool = False
 ):
     """
-    Create a GitHub issue noting that local changes exist in one or more cookbooks.
+    Create or update GitHub issues noting that local changes exist in cookbooks.
+    Creates/updates one issue per cookbook.
     - cookbooks: list of cookbook names
     - commit: upstream commit SHA being applied
     - blocking: True if the local changes prevent the upstream commit from applying
     - dry_run: if True, just print what would happen
     """
-    title = f"Local changes detected in {', '.join(cookbooks)}"
-    body_lines = [
-        f"The cookbook(s) `{', '.join(cookbooks)}` have local changes.",
-    ]
+    for cookbook in cookbooks:
+        title = f"Local changes detected in {cookbook}"
+        body_lines = [
+            f"The cookbook `{cookbook}` has local changes.",
+        ]
 
-    if blocking:
+        if blocking:
+            body_lines.append(
+                f"These changes are preventing upstream commit {commit[:8]} from applying cleanly."
+            )
+        else:
+            body_lines.append(
+                f"These changes exist while applying upstream commit {commit[:8]}, "
+                "but did not block the cherry-pick."
+            )
+
         body_lines.append(
-            f"These changes are preventing upstream commit {commit[:8]} from applying cleanly."
+            "\nPlease push these changes upstream before syncing."
         )
-    else:
-        body_lines.append(
-            f"These changes exist while applying upstream commit {commit[:8]}, "
-            "but did not block the cherry-pick."
-        )
+        body = "\n".join(body_lines)
 
-    body_lines.append("\nPlease push these changes upstream before syncing.")
+        # Check for existing issue
+        existing_issue = find_existing_issue_for_cookbook(cookbook)
 
-    body = "\n".join(body_lines)
+        if dry_run:
+            if existing_issue:
+                print(
+                    f"[dry-run] Would update issue #{existing_issue}:\n{title}\n{body}\n"
+                )
+            else:
+                print(f"[dry-run] Would create issue:\n{title}\n{body}\n")
+            continue
 
-    if dry_run:
-        print(f"[dry-run] Would create issue:\n{title}\n{body}\n")
-        return
-
-    # Create the issue via GitHub CLI
-    try:
-        run(["gh", "issue", "create", "--title", title, "--body", body])
-        print(f"✅ Issue created for local changes in {', '.join(cookbooks)}")
-    except RuntimeError as e:
-        print(f"❌ Failed to create issue for {', '.join(cookbooks)}:\n{e}")
+        # Update or create the issue via GitHub CLI
+        try:
+            if existing_issue:
+                run(
+                    [
+                        "gh",
+                        "issue",
+                        "edit",
+                        str(existing_issue),
+                        "--body",
+                        body,
+                    ]
+                )
+                print(f"✅ Issue #{existing_issue} updated for {cookbook}")
+            else:
+                run(["gh", "issue", "create", "--title", title, "--body", body])
+                print(f"✅ Issue created for local changes in {cookbook}")
+        except RuntimeError as e:
+            print(f"❌ Failed to create/update issue for {cookbook}:\n{e}")
 
 
 def create_pr(branch, commits):
@@ -403,14 +456,14 @@ def run_sync():
 
             if local_changes:
                 print(f"⚠️ Local changes detected in {', '.join(local_changes)}")
-                create_issue_for_local_changes(
+                create_or_update_issue_for_local_changes(
                     local_changes, commit=c, blocking=False, dry_run=DRY_RUN
                 )
 
         except RuntimeError:
             print(f"🚨 Conflict detected while applying {c[:8]}")
             if local_changes:
-                create_issue_for_local_changes(
+                create_or_update_issue_for_local_changes(
                     local_changes, commit=c, blocking=True, dry_run=DRY_RUN
                 )
             create_conflict_pr(branch, c)

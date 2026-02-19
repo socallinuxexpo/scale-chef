@@ -65,4 +65,8 @@ jobs:
           git stash push -k -m "temp normalization"
 
           git diff --check
-          ./scripts/fbchef_sync_bot.py
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            ./scripts/fbchef_sync_bot.py --dry-run
+          else
+            ./scripts/fbchef_sync_bot.py
+          fi
