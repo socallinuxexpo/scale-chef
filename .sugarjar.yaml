@@ -2,3 +2,4 @@ on_push: [lint]
 lint:
   - scripts/run_cookstyle
   - scripts/run_mdl
+  - scripts/run_black
