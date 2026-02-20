@@ -86,7 +86,7 @@ def load_config():
         "ignore_cookbooks": ["fb_init", "fb_init_sample"],
         "pr_labels": ["fbchef_sync_bot"],
         "issue_labels": ["fbchef_sync_bot"],
-        "split_label": "split",
+        "split_label": "fbchef_sync_bot_pr_split",
     }
 
     if not config_path.exists():

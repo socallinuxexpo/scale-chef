@@ -1,4 +1,4 @@
-name: PR Comment Split
+name: Chef Sync Bot - Command handler
 
 on:
   issue_comment:
