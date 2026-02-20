@@ -9,6 +9,7 @@ import logging
 from typing import List
 from pathlib import Path
 import argparse
+import yaml
 
 # ============================================================
 # Environment / Defaults
@@ -60,6 +61,47 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
+
+# ============================================================
+# Config File Loading
+# ============================================================
+
+
+def load_config():
+    """
+    Load configuration from fbchef_sync_bot.yaml if it exists.
+    Returns a dict with config values (with defaults if file doesn't exist).
+    """
+    config_path = Path("fbchef_sync_bot.yaml")
+    default_config = {
+        "ignore_cookbooks": ["fb_init", "fb_init_sample"],
+        "pr_labels": ["fbchef_sync_bot"],
+        "issue_labels": ["fbchef_sync_bot"],
+    }
+
+    if not config_path.exists():
+        logger.debug(f"Config file {config_path} not found, using defaults")
+        return default_config
+
+    try:
+        with open(config_path, "r") as f:
+            user_config = yaml.safe_load(f) or {}
+        logger.info(f"Loading config from {config_path}")
+        # Merge with defaults
+        config = {**default_config, **user_config}
+        logger.debug(
+            f"Config loaded: ignore_cookbooks={config.get('ignore_cookbooks', [])}, pr_labels={config.get('pr_labels', [])}, issue_labels={config.get('issue_labels', [])}"
+        )
+        return config
+    except Exception as e:
+        logger.warning(
+            f"Error loading config file {config_path}: {e}, using defaults"
+        )
+        return default_config
+
+
+# Load config after logging is set up
+CONFIG = load_config()
 
 # ============================================================
 # Utilities
@@ -210,20 +252,19 @@ def update_pr_body(pr_number, commits):
     (title, body) = pr_title_and_description_from_commits(commits)
     if not DRY_RUN:
         logger.info(f"Updating PR #{pr_number} title and body")
-        run(
-            [
-                "gh",
-                "pr",
-                "edit",
-                str(pr_number),
-                "--title",
-                title,
-                "--add-label",
-                "fbchef_sync_bot",
-                "--body",
-                body,
-            ]
-        )
+        cmd = [
+            "gh",
+            "pr",
+            "edit",
+            str(pr_number),
+            "--title",
+            title,
+        ]
+        # Add labels from config
+        for label in CONFIG.get("pr_labels", []):
+            cmd.extend(["--add-label", label])
+        cmd.extend(["--body", body])
+        run(cmd)
     else:
         logger.debug(f"[dry-run] Would update PR #{pr_number}")
         logger.info(
@@ -393,7 +434,11 @@ def create_conflict_issue(
             )
         else:
             logger.info(f"Creating conflict issue for commit {commit[:8]}")
-            run(["gh", "issue", "create", "--title", title, "--body", body])
+            cmd = ["gh", "issue", "create", "--title", title, "--body", body]
+            # Add labels from config
+            for label in CONFIG.get("issue_labels", []):
+                cmd.extend(["--label", label])
+            run(cmd)
             logger.info(f"✅ Conflict issue created for commit {commit[:8]}")
     except RuntimeError as e:
         logger.error(f"Failed to create/update conflict issue: {e}")
@@ -457,7 +502,19 @@ def create_or_update_issue_for_local_changes(
                 )
             else:
                 logger.info(f"Creating new issue for {cookbook}")
-                run(["gh", "issue", "create", "--title", title, "--body", body])
+                cmd = [
+                    "gh",
+                    "issue",
+                    "create",
+                    "--title",
+                    title,
+                    "--body",
+                    body,
+                ]
+                # Add labels from config
+                for label in CONFIG.get("issue_labels", []):
+                    cmd.extend(["--label", label])
+                run(cmd)
                 logger.info(f"✅ Issue created for local changes in {cookbook}")
         except RuntimeError as e:
             logger.error(f"Failed to create/update issue for {cookbook}: {e}")
@@ -472,23 +529,23 @@ def create_pr(branch, commits):
     (title, body) = pr_title_and_description_from_commits(commits)
     if not DRY_RUN:
         logger.info(f"Creating PR: Sync upstream ({len(commits)} commits)")
-        pr_url = run(
-            [
-                "gh",
-                "pr",
-                "create",
-                "--title",
-                title,
-                "--body",
-                body,
-                "--head",
-                branch,
-                "--base",
-                BASE_BRANCH,
-                "--label",
-                "fbchef_sync_bot",
-            ]
-        )
+        cmd = [
+            "gh",
+            "pr",
+            "create",
+            "--title",
+            title,
+            "--body",
+            body,
+            "--head",
+            branch,
+            "--base",
+            BASE_BRANCH,
+        ]
+        # Add labels from config
+        for label in CONFIG.get("pr_labels", []):
+            cmd.extend(["--label", label])
+        pr_url = run(cmd)
     else:
         logger.debug(f"[dry-run] Would create PR {branch}")
         logger.info(
@@ -1080,6 +1137,7 @@ def list_local_cookbooks():
     """
     List cookbooks that exist in the current HEAD/branch.
     Uses git to check what's actually committed, not filesystem (which may have conflict files).
+    Filters out cookbooks in the ignore_cookbooks config.
     """
     logger.debug("Listing local cookbooks from git")
 
@@ -1092,6 +1150,18 @@ def list_local_cookbooks():
             for name in output.splitlines()
             if name.startswith("cookbooks/fb_")
         ]
+
+        # Filter out ignored cookbooks
+        ignore_list = CONFIG.get("ignore_cookbooks", [])
+        if ignore_list:
+            original_count = len(cookbooks)
+            cookbooks = [cb for cb in cookbooks if cb not in ignore_list]
+            filtered_count = original_count - len(cookbooks)
+            if filtered_count > 0:
+                logger.debug(
+                    f"Filtered out {filtered_count} ignored cookbooks: {[cb for cb in ignore_list if cb in output]}"
+                )
+
         logger.debug(
             f"Found {len(cookbooks)} local cookbooks: {', '.join(cookbooks)}"
         )
