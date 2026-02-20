@@ -2,8 +2,12 @@ name: Chef Sync Bot - Daily Upstream Sync
 
 on:
   workflow_dispatch:  # allow manual trigger from UI
-  pull_request:
-    types: [opened, synchronize, closed]
+  pull_request:  # Test PR changes in PR context - REQUIRES branch-bsed PRs
+    types: [opened, synchronize]
+    branches:
+      - main
+  pull_request_target:  # Run on main when PR closes (has secrets)
+    types: [closed]
     branches:
       - main
   issues:
@@ -18,63 +22,15 @@ concurrency:
 
 jobs:
   sync:
-    # Skip this job is a PR and comes from a fork (since it work work anyway)
-    if: github.event.pull_request == null || github.event.pull_request.head.repo.full_name == github.repository
     name: Run daily sync
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-          ref: refs/heads/main
-          persist-credentials: true
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r scripts/requirements.txt
-
-      - name: Configure git
-        run: |
-          git config --global core.autocrlf false
-          git config --global apply.whitespace nowarn
-          git config --global merge.renormalize true
-          git config --global user.name "GitHub Actions Bot"
-          git config --global user.email "noreply@github.com"
-          git remote add fb-upstream https://github.com/facebook/chef-cookbooks.git
-          git fetch fb-upstream
-
-      - name: Ensure branch setup is correct (for PRs only)
-        if: github.event_name == 'pull_request'
-        run: |
-          git fetch origin main
-          git checkout -B main origin/main || true
-          git reset --hard origin/main
-          git clean -fdx
-
-      - name: Run sync bot
-        env:
-          UPSTREAM_REMOTE: fb-upstream
-          TARGET_REMOTE: origin
-          BASE_BRANCH: main
-          TARGET_BRANCH: main
-          PR_BRANCH_PREFIX: sync
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          # normalize line-endings or cherry-picking fails
-          git add --renormalize .
-          git stash push -k -m "temp normalization"
-
-          git diff --check
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            ./scripts/fbchef_sync_bot.py --dry-run
-          else
-            ./scripts/fbchef_sync_bot.py
-          fi
+    uses: ./.github/workflows/reusable-chef-sync-bot.yml
+    with:
+      upstream_repo_url: 'https://github.com/facebook/chef-cookbooks.git'
+      upstream_remote_name: 'fb-upstream'
+      # For pull_request: use PR head branch, otherwise use main
+      base_branch: ${{ github.event_name == 'pull_request' && github.head_ref || 'main' }}
+      python_version: '3.11'
+      # Dry-run only for pull_request (testing PR changes)
+      dry_run: ${{ github.event_name == 'pull_request' }}
+    secrets:
+      gh_token: ${{ secrets.GITHUB_TOKEN }}
