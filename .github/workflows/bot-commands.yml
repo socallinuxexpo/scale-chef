@@ -1,27 +1,19 @@
-name: Chef Sync Bot - Daily Upstream Sync
+name: Chef Sync Bot - Command handler
 
 on:
-  workflow_dispatch:  # allow manual trigger from UI
-  pull_request:
-    branches:
-      - main
-  #schedule:
-  #  - cron: '0 6 * * *'  # daily at 06:00 UTC, adjust as needed
+  issue_comment:
+    types: [created]
 
 jobs:
-  sync:
-    # Skip this job is a PR and comes from a fork (since it work work anyway)
-    if: github.event.pull_request == null || github.event.pull_request.head.repo.full_name == github.repository
-    name: Run daily sync
+  split:
+    name: Handle '#bot' commands
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0
-          ref: refs/heads/main
-          persist-credentials: true
+          fetch-depth: 0  # needed to have full git history
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -43,16 +35,10 @@ jobs:
           git remote add fb-upstream https://github.com/facebook/chef-cookbooks.git
           git fetch fb-upstream
 
-      - name: Ensure branch setup is correct (for PRs only)
-        if: github.event_name == 'pull_request'
-        run: |
-          git fetch origin main
-          git checkout -B main origin/main || true
-          git reset --hard origin/main
-          git clean -fdx
-
-      - name: Run sync bot
+      - name: Run sync bot in split mode
         env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
           UPSTREAM_REMOTE: fb-upstream
           TARGET_REMOTE: origin
           BASE_BRANCH: main
@@ -63,10 +49,4 @@ jobs:
           # normalize line-endings or cherry-picking fails
           git add --renormalize .
           git stash push -k -m "temp normalization"
-
-          git diff --check
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            ./scripts/fbchef_sync_bot.py --dry-run
-          else
-            ./scripts/fbchef_sync_bot.py
-          fi
+          ./scripts/fbchef_sync_bot.py
