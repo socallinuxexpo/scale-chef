@@ -70,6 +70,12 @@ class Chef
       end
     end
 
+    # Is this a RHEL-compatible OS with a version number of
+    # `version`
+    def el_version?(v)
+      self.rhel_family? && self._platform_version_helper?(v)
+    end
+
     # Is this a RHEL-compatible OS with a minimum major version number of
     # `version`
     def el_min_version?(version, full = false)
@@ -82,28 +88,21 @@ class Chef
       self.rhel_family? && self.os_max_version?(version, full)
     end
 
-    def rhel?
+    def rhel_family?
       self['platform_family'] == 'rhel'
     end
 
-    # DEPRECATED: use rhel?
-    def rhel_family?
-      self.rhel?
-    end
-
-    def rhel_version?(v)
-      self.rhel? && self._platform_version_helper?(v)
-    end
+    # DEPRECATED: use rhel_family?
+    alias rhel? rhel_family?
 
     # alias for the el_ variant
-    def rhel_min_version?(version, full = false)
-      self.el_min_version?(version, full)
-    end
+    alias rhel_version? el_version?
 
     # alias for the el_ variant
-    def rhel_max_version?(version, full = false)
-      self.el_max_version?(version, full)
-    end
+    alias rhel_min_version? el_min_version?
+
+    # alias for the el_ variant
+    alias rhel_max_version? el_max_version?
 
     # DEPRECATED: use rhel_version?
     def rhel_family7?
@@ -1249,9 +1248,8 @@ class Chef
 
     # returns the version-release of an rpm installed, or nil if not present
     def rpm_version(name)
-      if (self.centos? && !self.centos7?) || self.fedora? || self.redhat8? ||
-          self.oracle8? || self.redhat9? || self.oracle9? || self.redhat10? ||
-          self.aristaeos_4_30_or_newer?
+      if (self.centos? && !self.centos7?) || self.fedora? || self.redhat_min_version?(8) ||
+          self.oracle_min_version?(8) || self.aristaeos_4_30_or_newer?
         # returns epoch.version
         v = Chef::Provider::Package::Dnf::PythonHelper.instance.
             package_query(:whatinstalled, name).version
