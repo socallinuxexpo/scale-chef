@@ -6,7 +6,7 @@ on:
 
 jobs:
   split:
-    name: Handle '#bot split' comment
+    name: Handle '#bot' commands
     runs-on: ubuntu-latest
 
     steps:
@@ -38,7 +38,9 @@ jobs:
           BASE_BRANCH: main
           TARGET_BRANCH: main
           PR_BRANCH_PREFIX: sync
+          GH_TOKEN: ${{ github.token }}
         run: |
-          git checkout ${{ env.TARGET_BRANCH }}
-          find .
+          # normalize line-endings or cherry-picking fails
+          git add --renormalize .
+          git stash push -k -m "temp normalization"
           ./scripts/fbchef_sync_bot.py
