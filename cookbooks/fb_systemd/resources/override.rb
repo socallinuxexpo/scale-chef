@@ -23,6 +23,10 @@ property :content, [String, Hash], :required => false
 property :source, String, :required => false
 property :triggers_reload, [true, false], :default => true
 property :instance, :kind_of => String, :default => 'system'
+property :reap_empty_override_dir, [true, false], :default => true
+
+# This directory must already exist
+property :custom_install_dir, [String, nil], :default => nil
 
 default_action :create
 
@@ -55,6 +59,7 @@ action :create do
   end
 
   override_dir = get_override_dir
+  install_dir = new_resource.custom_install_dir || override_dir
   override_file = "#{FB::Systemd.sanitize(new_resource.override_name)}.conf"
 
   directory override_dir do
@@ -63,7 +68,7 @@ action :create do
     mode '0755'
   end
 
-  template ::File.join(override_dir, override_file) do # rubocop:disable Chef/Meta/AvoidCookbookProperty
+  template ::File.join(install_dir, override_file) do # rubocop:disable Chef/Meta/AvoidCookbookProperty
     # If source is specified, use it, otherwise use our template...
     if new_resource.source
       source new_resource.source
@@ -90,10 +95,11 @@ end
 
 action :delete do
   override_dir = get_override_dir
+  install_dir = new_resource.custom_install_dir || override_dir
   override_file = "#{FB::Systemd.sanitize(new_resource.override_name)}.conf"
 
   if ::Dir.exist?(override_dir)
-    file ::File.join(override_dir, override_file) do
+    file ::File.join(install_dir, override_file) do
       action :delete
       if new_resource.triggers_reload
         notifies :run,
@@ -102,15 +108,16 @@ action :delete do
       end
     end
 
-    # if the override directory is empty, there's no reason to keep it around so
-    # we reap it as well; this is done here to ensure multiple overrides can be
-    # defined against the same unit
+    # if the override directory is empty, there's no reason to keep it around
+    # if and only if this resource exclusively manages the directory.
     #
     # NOTE: we're not using Dir.empty? here as that was added in ruby 2.4, and
     # Chef 12 is still on 2.3
-    if (::Dir.entries(override_dir) - %w{. ..}).empty?
-      directory override_dir do
-        action :delete
+    if new_resource.reap_empty_override_dir
+      if (::Dir.entries(override_dir) - %w{. ..}).empty?
+        directory override_dir do
+          action :delete
+        end
       end
     end
   end

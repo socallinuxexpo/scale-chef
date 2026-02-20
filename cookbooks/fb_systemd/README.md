@@ -187,6 +187,45 @@ fb_systemd_override 'disable-controllers' do
 end
 ```
 
+  The `custom_install_dir` allows for creation of a drop-in file that is
+  intended to be applied to a service manually by a human, typically in the
+  context of a SEV. `fb_systemd_override` will manage the unit's drop-in
+  directory for you, but does not manage `custom_install_dir` directly.
+
+```ruby
+directory '/root/recovery_tools' do
+  owner node.root_user
+  group node.root_group
+end
+
+fb_systemd_override 'enable-recovery-mode' do
+  unit_name 'foo.service'
+  # This drop-in is intended for a human to put in place during a SEV.
+  # Managing it this way prevents chef from running and erasing any
+  # human-applied kill-switches.
+  custom_install_dir '/root/recovery_tools'
+  content <<-EOU.gsub(/^\s+/, '')
+  [Service]
+  Environment=RECOVERY_MODE=1
+  EOU
+end
+```
+
+```ruby
+fb_systemd_override 'disable-controllers' do
+  unit_name 'foo.slice'
+  source 'disable-controllers.conf.erb'
+  action :delete
+  reap_empty_override_dir false
+end
+```
+
+  `reap_empty_override_dir` defaults to `true`, which allows the provider to
+  clean up override directory for `:delete` action if it's empty. If the
+  override directory is not exclusively managed by `fb_systemd_override`, the
+  deletion could interfere with later setup. Set `reap_empty_override_dir` to
+  `false` leaves the override directory behind even when it's empty.
+
 * a `fb_systemd_reload` LWRP to safetly trigger a daemon reload for a systemd
   instance (at the system or user level)
 

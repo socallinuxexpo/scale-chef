@@ -100,6 +100,7 @@ default['fb_syslog'] = {
   ],
   'rsyslog_d_preserve' => false,
   'rsyslog_late_lines' => [],
+  'include_rsyslog_d_config' => false,
   'rsyslog_additional_sockets' => [],
   'rsyslog_facilities_sent_to_remote' => [],
   'rsyslog_port' => '514',
