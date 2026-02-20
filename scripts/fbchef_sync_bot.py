@@ -226,14 +226,14 @@ def update_pr_body(pr_number, commits):
         )
     else:
         logger.debug(f"[dry-run] Would update PR #{pr_number}")
-        print(
+        logger.info(
             f"[dry-run] Would update PR #{pr_number} title and body with {len(commits)} commits"
         )
 
 
 def create_conflict_pr(branch, commit):
     logger.warning(f"Conflict detected while applying commit {commit[:8]}")
-    print("🚨 Conflict detected while applying commits")
+    logger.info("🚨 Conflict detected while applying commits")
 
     if not DRY_RUN:
         logger.info(f"Pushing conflict branch: {branch}")
@@ -241,7 +241,7 @@ def create_conflict_pr(branch, commit):
     else:
         logger.debug(f"[dry-run] Would push conflict branch: {branch}")
 
-    print(
+    logger.info(
         f"""
 Conflict encountered while applying {commit}.
 
@@ -288,63 +288,142 @@ def find_existing_issue_for_cookbook(cookbook):
     return None
 
 
-def create_or_update_issue_for_local_changes(
-    cookbooks: list,
+def create_conflict_issue(
     commit: str,
-    blocking: bool = False,
-    dry_run: bool = False,
+    cookbooks: list = None,
     conflict_details: str = None,
+    dry_run: bool = False,
 ):
     """
-    Create or update GitHub issues noting that local changes exist in cookbooks.
-    Creates/updates one issue per cookbook.
-    - cookbooks: list of cookbook names
-    - commit: upstream commit SHA being applied
-    - blocking: True if the local changes prevent the upstream commit from applying
-    - dry_run: if True, just print what would happen
+    Create or update a GitHub issue for a sync conflict (single issue regardless of cookbooks involved).
+    - commit: upstream commit SHA that caused the conflict
+    - cookbooks: list of cookbook names involved (optional, for context)
     - conflict_details: optional string with conflict details to include in the issue
+    - dry_run: if True, just log what would happen
     """
     logger.debug(
-        f"Processing {len(cookbooks)} cookbooks with local changes (blocking={blocking})"
+        f"Creating/updating conflict issue for commit {commit[:8]}, cookbooks: {cookbooks}"
     )
     if conflict_details:
         logger.debug(
             f"Conflict details provided: {len(conflict_details)} chars"
         )
-    else:
-        logger.debug("No conflict details provided")
+
+    title = f"Sync conflict applying upstream commit {commit[:8]}"
+
+    body_lines = [
+        f"**⚠️ A conflict occurred** while applying upstream commit `{commit}`.",
+        "\nThe changes are blocking the sync and must be resolved before continuing.",
+    ]
+
+    if cookbooks:
+        body_lines.append(f"\n**Cookbooks involved:** {', '.join(cookbooks)}")
+
+    if conflict_details:
+        body_lines.append(
+            "\n## Conflict Details\n\n```\n" + conflict_details + "\n```"
+        )
+
+    body_lines.append(
+        "\n**Action required:** Please resolve the conflicts and push the changes."
+    )
+
+    body = "\n".join(body_lines)
+
+    # Check for existing conflict issue for this commit
+    existing_issue = None
+    try:
+        logger.debug(
+            f"Searching for existing conflict issue for commit {commit[:8]}"
+        )
+        output = run(
+            [
+                "gh",
+                "issue",
+                "list",
+                "--state",
+                "open",
+                "--json",
+                "number,title",
+                "--search",
+                f"Sync conflict applying upstream commit {commit[:8]} in:title",
+            ]
+        )
+        issues = json.loads(output)
+        logger.debug(f"Found {len(issues)} potential matching issues")
+        for issue in issues:
+            # Check if the issue title matches this specific commit
+            if commit[:8] in issue["title"]:
+                logger.debug(
+                    f"Found existing conflict issue #{issue['number']} for commit {commit[:8]}"
+                )
+                existing_issue = issue["number"]
+                break
+    except RuntimeError as e:
+        logger.warning(f"Error searching for existing conflict issue: {e}")
+
+    if dry_run:
+        if existing_issue:
+            logger.info(
+                f"[dry-run] Would update conflict issue #{existing_issue}:\n{title}\n{body}\n"
+            )
+        else:
+            logger.info(
+                f"[dry-run] Would create conflict issue:\n{title}\n{body}\n"
+            )
+        return
+
+    try:
+        if existing_issue:
+            logger.info(
+                f"Updating existing conflict issue #{existing_issue} for commit {commit[:8]}"
+            )
+            run(
+                [
+                    "gh",
+                    "issue",
+                    "edit",
+                    str(existing_issue),
+                    "--body",
+                    body,
+                ]
+            )
+            logger.info(
+                f"✅ Conflict issue #{existing_issue} updated for commit {commit[:8]}"
+            )
+        else:
+            logger.info(f"Creating conflict issue for commit {commit[:8]}")
+            run(["gh", "issue", "create", "--title", title, "--body", body])
+            logger.info(f"✅ Conflict issue created for commit {commit[:8]}")
+    except RuntimeError as e:
+        logger.error(f"Failed to create/update conflict issue: {e}")
+        logger.info(f"❌ Failed to create/update conflict issue:\n{e}")
+
+
+def create_or_update_issue_for_local_changes(
+    cookbooks: list,
+    commit: str,
+    dry_run: bool = False,
+):
+    """
+    Create or update GitHub issues noting that local changes exist in cookbooks.
+    Creates/updates one issue per cookbook (for non-blocking local changes after successful sync).
+    - cookbooks: list of cookbook names
+    - commit: upstream commit SHA of last successful sync
+    - dry_run: if True, just log what would happen
+    """
+    logger.debug(f"Processing {len(cookbooks)} cookbooks with local changes")
 
     for cookbook in cookbooks:
         logger.debug(f"Creating/updating issue for cookbook: {cookbook}")
         title = f"Local changes detected in {cookbook}"
         body_lines = [
             f"The cookbook `{cookbook}` has local changes.",
+            f"\n**ℹ️ These changes have not caused conflicts** (last sync: {commit[:8]}).",
+            "\nHowever, they should be pushed upstream to avoid future conflicts.",
+            "\n**Action required:** Please push these changes upstream.",
         ]
 
-        if blocking:
-            body_lines.append(
-                f"\n**⚠️ These changes caused a conflict** while applying upstream commit {commit[:8]}."
-            )
-            body_lines.append(
-                "\nThe changes are blocking the sync and must be resolved before continuing."
-            )
-            if conflict_details:
-                body_lines.append(
-                    "\n## Conflict Details\n\n```\n"
-                    + conflict_details
-                    + "\n```"
-                )
-        else:
-            body_lines.append(
-                f"\n**ℹ️ These changes have not caused conflicts** (last sync: {commit[:8]})."
-            )
-            body_lines.append(
-                "\nHowever, they should be pushed upstream to avoid future conflicts."
-            )
-
-        body_lines.append(
-            "\n**Action required:** Please push these changes upstream."
-        )
         body = "\n".join(body_lines)
 
         # Check for existing issue
@@ -352,11 +431,11 @@ def create_or_update_issue_for_local_changes(
 
         if dry_run:
             if existing_issue:
-                print(
+                logger.info(
                     f"[dry-run] Would update issue #{existing_issue}:\n{title}\n{body}\n"
                 )
             else:
-                print(f"[dry-run] Would create issue:\n{title}\n{body}\n")
+                logger.info(f"[dry-run] Would create issue:\n{title}\n{body}\n")
             continue
 
         # Update or create the issue via GitHub CLI
@@ -373,14 +452,18 @@ def create_or_update_issue_for_local_changes(
                         body,
                     ]
                 )
-                print(f"✅ Issue #{existing_issue} updated for {cookbook}")
+                logger.info(
+                    f"✅ Issue #{existing_issue} updated for {cookbook}"
+                )
             else:
                 logger.info(f"Creating new issue for {cookbook}")
                 run(["gh", "issue", "create", "--title", title, "--body", body])
-                print(f"✅ Issue created for local changes in {cookbook}")
+                logger.info(f"✅ Issue created for local changes in {cookbook}")
         except RuntimeError as e:
             logger.error(f"Failed to create/update issue for {cookbook}: {e}")
-            print(f"❌ Failed to create/update issue for {cookbook}:\n{e}")
+            logger.info(
+                f"❌ Failed to create/update issue for {cookbook}:\n{e}"
+            )
 
 
 def create_pr(branch, commits):
@@ -408,7 +491,9 @@ def create_pr(branch, commits):
         )
     else:
         logger.debug(f"[dry-run] Would create PR {branch}")
-        print(f"[dry-run] Would create PR {branch} with {len(commits)} commits")
+        logger.info(
+            f"[dry-run] Would create PR {branch} with {len(commits)} commits"
+        )
 
 
 def create_onboarding_pr(baseline):
@@ -428,10 +513,12 @@ Upstream-Commit: {baseline}
     if not DRY_RUN:
         logger.info(f"Pushing onboarding branch to {TARGET_REMOTE}")
         git("push", "-f", TARGET_REMOTE, branch)
-        print("✅ Onboarding PR branch created. Open PR manually or via gh.")
+        logger.info(
+            "✅ Onboarding PR branch created. Open PR manually or via gh."
+        )
     else:
         logger.debug(f"[dry-run] Created onboarding branch {branch}")
-        print(
+        logger.info(
             f"[dry-run] Created onboarding branch {branch} with baseline {baseline}"
         )
 
@@ -584,13 +671,13 @@ def cherry_pick_with_trailer(commit):
     logger.debug("Checking if commit already applied (pre-cherry-pick)")
     if is_commit_already_applied(commit):
         logger.info(f"Commit {commit[:8]} already applied, skipping")
-        print(f"✓ Commit {commit[:8]} already applied, skipping")
+        logger.info(f"✓ Commit {commit[:8]} already applied, skipping")
         return False
 
     logger.debug(
         f"Commit {commit[:8]} not already applied, proceeding with cherry-pick"
     )
-    print(f"🍒 Applying {commit}")
+    logger.info(f"🍒 Applying {commit}")
 
     # Use --no-commit so we can filter what gets applied
     logger.debug("About to call try_git for cherry-pick --no-commit")
@@ -600,14 +687,14 @@ def cherry_pick_with_trailer(commit):
     if not success:
         logger.warning(f"Conflict during cherry-pick of {commit}")
         logger.debug(f"Cherry-pick stderr: {stderr[:200]}")
-        print("⚠️ Conflict detected during cherry-pick")
+        logger.info("⚠️ Conflict detected during cherry-pick")
 
         # Check if this commit has already been applied
         # (e.g., from a previous run or manual application)
         try:
             if is_commit_already_applied(commit):
                 logger.info(f"Commit {commit[:8]} already applied, skipping")
-                print(f"✓ Commit {commit[:8]} already applied, skipping")
+                logger.info(f"✓ Commit {commit[:8]} already applied, skipping")
                 git("cherry-pick", "--abort")
                 return  # Successfully skip this commit
         except Exception as e:
@@ -713,7 +800,7 @@ def cherry_pick_with_trailer(commit):
                 logger.info(
                     f"All {len(auto_resolve_conflicts)} conflicts are in non-fb_* or non-imported files - skipping commit"
                 )
-                print(
+                logger.info(
                     f"📦 Skipping {commit[:8]} - conflicts only in non-fb_* or non-imported cookbooks"
                 )
 
@@ -724,7 +811,7 @@ def cherry_pick_with_trailer(commit):
                     logger.debug("Cherry-pick aborted successfully")
                 except RuntimeError as e:
                     logger.warning(
-                        f"Cherry-pick abort failed ({e}), doing manual cleanup"
+                        f"Cherry-pick abort failed ({str(e).rstrip()}), doing manual cleanup"
                     )
                     # Manual cleanup: reset to HEAD and clean working directory
                     git("reset", "--hard", "HEAD")
@@ -766,7 +853,7 @@ def cherry_pick_with_trailer(commit):
                     logger.debug("Cherry-pick aborted successfully")
                 except RuntimeError as e:
                     logger.warning(
-                        f"Cherry-pick abort failed: {e}, forcing cleanup"
+                        f"Cherry-pick abort failed: {str(e).rstrip()}, forcing cleanup"
                     )
                     # If abort fails, force cleanup
                     git("reset", "--hard", "HEAD")
@@ -811,7 +898,7 @@ def cherry_pick_with_trailer(commit):
                 logger.debug("Cherry-pick aborted successfully")
             except RuntimeError as abort_err:
                 logger.warning(
-                    f"Cherry-pick abort failed: {abort_err}, forcing cleanup"
+                    f"Cherry-pick abort failed: {str(abort_err).rstrip()}, forcing cleanup"
                 )
                 try:
                     git("reset", "--hard", "HEAD")
@@ -836,7 +923,7 @@ def cherry_pick_with_trailer(commit):
         success = filter_and_commit_fb_changes(commit)
         if not success:
             logger.info(f"No fb_* cookbook changes to apply from {commit[:8]}")
-            print(f"⏭ No relevant changes in {commit[:8]}")
+            logger.info(f"⏭ No relevant changes in {commit[:8]}")
             return False  # Successfully skipped - repo already cleaned up
         return True  # Successfully applied
 
@@ -1052,13 +1139,13 @@ def detect_global_baseline():
         base = git("merge-base", base, m)
 
     logger.info(f"Global baseline detected at {base}")
-    print(f"📌 Global baseline detected at {base}")
+    logger.info(f"📌 Global baseline detected at {base}")
     return base
 
 
 def find_baseline_for_cookbook(cb):
     logger.debug(f"Finding baseline for cookbook: {cb}")
-    print(f"🔍 Detecting baseline for {cb}")
+    logger.info(f"🔍 Detecting baseline for {cb}")
     upstream_commits = git(
         "rev-list", "--reverse", f"{UPSTREAM_REMOTE}/{UPSTREAM_BRANCH}"
     ).splitlines()
@@ -1067,10 +1154,10 @@ def find_baseline_for_cookbook(cb):
         ok, _, _ = try_git("diff", "--quiet", commit, "--", f"cookbooks/{cb}")
         if ok:
             logger.debug(f"Baseline match for {cb} at {commit}")
-            print(f"  ✓ matched at {commit}")
+            logger.info(f"  ✓ matched at {commit}")
             return commit
     logger.debug(f"No baseline match found for {cb}")
-    print(f"  ✗ no match found")
+    logger.info(f"  ✗ no match found")
     return None
 
 
@@ -1108,12 +1195,12 @@ def run_sync():
     # ---------------------------
     if pointer is None:
         logger.info("No upstream pointer found, entering onboarding mode")
-        print("🆕 No upstream pointer found. Entering onboarding mode.")
+        logger.info("🆕 No upstream pointer found. Entering onboarding mode.")
 
         baseline = detect_global_baseline()
         if not baseline:
             logger.error("Unable to detect upstream baseline")
-            print("❌ Unable to detect upstream baseline automatically.")
+            logger.info("❌ Unable to detect upstream baseline automatically.")
             sys.exit(1)
 
         create_onboarding_pr(baseline)
@@ -1126,7 +1213,7 @@ def run_sync():
     commits = upstream_commits_since(pointer)
     if not commits:
         logger.info("No new commits to sync")
-        print("✅ Already up to date.")
+        logger.info("✅ Already up to date.")
         return
 
     logger.info(f"Found {len(commits)} commits to process")
@@ -1153,7 +1240,7 @@ def run_sync():
 
         if not relevant_cookbooks:
             logger.debug(f"Skipping {c[:8]} - no relevant cookbooks")
-            print(f"⏭ Skipping {c[:8]} (no relevant cookbooks)")
+            logger.info(f"⏭ Skipping {c[:8]} (no relevant cookbooks)")
             continue
 
         try:
@@ -1173,7 +1260,7 @@ def run_sync():
             # Conflict occurred - check for local changes now
             conflict_occurred = True
             logger.error(f"Conflict while applying {c[:8]}")
-            print(f"🚨 Conflict detected while applying {c[:8]}")
+            logger.info(f"🚨 Conflict detected while applying {c[:8]}")
 
             local_changes = [
                 cb for cb in relevant_cookbooks if detect_local_changes(cb)
@@ -1203,12 +1290,12 @@ def run_sync():
                 f"Extracted conflict_details: {conflict_details[:200] if conflict_details else 'None'}"
             )
 
-            create_or_update_issue_for_local_changes(
-                cookbooks_to_report,
+            # Create a single issue for the conflict
+            create_conflict_issue(
                 commit=c,
-                blocking=True,
-                dry_run=DRY_RUN,
+                cookbooks=cookbooks_to_report,
                 conflict_details=conflict_details,
+                dry_run=DRY_RUN,
             )
             create_conflict_pr(branch, c)
             break  # Stop immediately after first conflict
@@ -1231,19 +1318,18 @@ def run_sync():
             logger.warning(
                 f"Found {len(cookbooks_with_local_changes)} cookbooks with local changes: {', '.join(cookbooks_with_local_changes)}"
             )
-            print(
+            logger.info(
                 f"⚠️ Found local changes in {len(cookbooks_with_local_changes)} cookbooks: {', '.join(cookbooks_with_local_changes)}"
             )
 
             # Create issues for each cookbook with local changes
-            # Note: these didn't cause conflicts (blocking=False)
+            # Note: these didn't cause conflicts
             for cookbook in cookbooks_with_local_changes:
                 logger.info(f"Creating issue for local changes in {cookbook}")
                 # Use the last applied commit as reference
                 create_or_update_issue_for_local_changes(
                     [cookbook],
                     commit=applied[-1],
-                    blocking=False,
                     dry_run=DRY_RUN,
                 )
         else:
@@ -1263,7 +1349,7 @@ def run_sync():
         pr = existing_sync_pr()
         if pr:
             logger.info(f"Updating existing PR #{pr['number']}")
-            print(f"🔄 Updating existing PR #{pr['number']}")
+            logger.info(f"🔄 Updating existing PR #{pr['number']}")
             update_pr_body(pr["number"], applied)
         else:
             logger.info("Creating new PR")
@@ -1272,7 +1358,7 @@ def run_sync():
         logger.info("No commits were applied")
 
     logger.info(f"Sync complete: {len(applied)} commits applied")
-    print(
+    logger.info(
         f"\n✅ Sync complete. Branch: {branch}, commits applied: {len(applied)}"
     )
 
@@ -1362,7 +1448,7 @@ def run_split():
         update_pr_body(pr_number, first_range)
     else:
         logger.debug(f"[dry-run] Would rewrite {branch}")
-        print(
+        logger.info(
             f"[dry-run] Would rewrite original PR branch {branch} with commits {first_range}"
         )
 
@@ -1379,7 +1465,7 @@ def run_split():
             create_pr(new_branch, second_range)
         else:
             logger.debug(f"[dry-run] Would create new PR {new_branch}")
-            print(
+            logger.info(
                 f"[dry-run] Would create new PR {new_branch} with commits {second_range}"
             )
     else:
