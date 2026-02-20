@@ -737,8 +737,13 @@ def cherry_pick_with_trailer(commit):
     logger.info(f"🍒 Applying {commit}")
 
     # Use --no-commit so we can filter what gets applied
-    logger.debug("About to call try_git for cherry-pick --no-commit")
-    success, _, stderr = try_git("cherry-pick", "--no-commit", commit)
+    # Disable rename detection to avoid false conflicts between local-only and upstream-only cookbooks
+    logger.debug(
+        "About to call try_git for cherry-pick --no-commit -X no-renames"
+    )
+    success, _, stderr = try_git(
+        "cherry-pick", "--no-commit", "-X", "no-renames", commit
+    )
     logger.debug(f"try_git returned: success={success}")
 
     if not success:
