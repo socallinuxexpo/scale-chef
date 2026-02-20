@@ -1701,85 +1701,89 @@ Merge this PR to enable automated upstream syncing.
 
         self.logger.info(f"Sync complete: {len(applied)} commits applied")
 
-    def parse_split_command(self, body: str) -> Optional[Tuple[str, str]]:
+    def parse_command(self, body: str) -> Optional[Tuple[str, str]]:
+        """
+        Parse a bot command from a comment body.
 
-        self.logger.debug("Parsing split command from comment body")
-        match = re.search(
-            r"#bot\s+split\s+([0-9a-f]{7,40})-([0-9a-f]{7,40})", body
-        )
+        Args:
+            body: Comment body text
+
+        Returns:
+            Tuple of (command_name, command_args) or None if no command found
+
+        Example:
+            "#bot split abc123-def456" returns ("split", "abc123-def456")
+            "#bot rebase" returns ("rebase", "")
+        """
+        self.logger.debug("Parsing bot command from comment body")
+        match = re.search(r"#bot\s+(\w+)(?:\s+(.+))?", body, re.IGNORECASE)
         if not match:
-            self.logger.debug("No split command found")
+            self.logger.debug("No bot command found")
+            return None
+
+        command = match.group(1).lower()
+        args = match.group(2).strip() if match.group(2) else ""
+
+        self.logger.debug(f"Bot command found: {command} with args: {args!r}")
+        return (command, args)
+
+    def parse_split_args(self, args: str) -> Optional[Tuple[str, str]]:
+        """
+        Parse split command arguments to extract the two commit SHAs.
+
+        Args:
+            args: Command arguments (e.g., "abc123-def456")
+
+        Returns:
+            Tuple of (start_sha, end_sha) or None if invalid
+        """
+        self.logger.debug(f"Parsing split args: {args}")
+        match = re.search(r"([0-9a-f]{7,40})-([0-9a-f]{7,40})", args)
+        if not match:
+            self.logger.debug("Invalid split args format")
             return None
         split_range = (match.group(1), match.group(2))
-        self.logger.debug(
-            f"Split command found: {split_range[0]}-{split_range[1]}"
-        )
+        self.logger.debug(f"Split range: {split_range[0]}-{split_range[1]}")
         return split_range
 
-    def split(
+    def cmd_split(
         self,
-        comment_body: Optional[str] = None,
-        pr_number: Optional[int] = None,
+        args: str,
+        pr_number: int,
     ) -> None:
+        """
+        Handle the 'split' command.
 
+        Args:
+            args: Command arguments (e.g., "abc123-def456")
+            pr_number: PR number to operate on
+        """
         self.logger.info("Running split operation")
+        self.logger.debug(f"Processing split on PR #{pr_number}")
 
-        # If called from command line with explicit params, use those
-        if comment_body is None or pr_number is None:
-            self.logger.debug(
-                f"Reading GitHub event from: {self.github_event_path}"
-            )
-            with open(self.github_event_path) as f:
-                event = json.load(f)
-
-            if "issue" not in event or "pull_request" not in event["issue"]:
-                self.logger.debug("Not a PR comment event, skipping")
-                return
-
-            comment_body = event["comment"]["body"]
-            pr_number = event["issue"]["number"]
-        self.logger.debug(f"Processing comment on PR #{pr_number}")
-
-        parsed = self.parse_split_command(comment_body)
+        # Parse the split args to extract the two SHAs
+        parsed = self.parse_split_args(args)
         if not parsed:
-            self.logger.debug("No split command found in comment, skipping")
+            self.logger.error(f"Invalid split args format: {args}")
+            self.logger.error("Expected format: <sha1>-<sha2>")
             return
 
         start_sha, end_sha = parsed
         self.logger.info(f"Split command: {start_sha}-{end_sha}")
 
-        # If PR number was provided (command line mode), fetch that specific PR
-        if pr_number:
-            self.logger.debug(f"Fetching PR #{pr_number} details")
-            pr_info = run(
-                [
-                    "gh",
-                    "pr",
-                    "view",
-                    str(pr_number),
-                    "--json",
-                    "number,headRefName,body",
-                ]
-            )
-            pr = json.loads(pr_info)
-        else:
-            pr = self.existing_sync_pr()
-            if not pr:
-                self.logger.warning("No existing sync PR found")
-                return
-            pr_number = pr["number"]
-            # Fetch full PR details including body
-            pr_info = run(
-                [
-                    "gh",
-                    "pr",
-                    "view",
-                    str(pr_number),
-                    "--json",
-                    "number,headRefName,body",
-                ]
-            )
-            pr = json.loads(pr_info)
+        # Fetch PR details
+        self.logger.debug(f"Fetching PR #{pr_number} details")
+        pr_info = run(
+            [
+                "gh",
+                "pr",
+                "view",
+                str(pr_number),
+                "--json",
+                "number,headRefName,body",
+            ]
+        )
+        pr = json.loads(pr_info)
 
         branch = pr["headRefName"]
         self.logger.debug(f"Processing split on branch: {branch}")
@@ -1954,6 +1958,68 @@ Merge this PR to enable automated upstream syncing.
         else:
             self.logger.debug("No second range to process")
 
+    def cmd_rebase(self, args: str, pr_number: int) -> None:
+        """
+        Handle the 'rebase' command.
+
+        Args:
+            args: Command arguments (currently unused)
+            pr_number: PR number to rebase
+        """
+        self.logger.info(f"Executing rebase command on PR #{pr_number}")
+        self.logger.warning("Rebase command not yet implemented")
+        # TODO: Implement rebase logic
+        # This could rebase the PR branch onto the latest base branch
+
+    def handle_command(
+        self,
+        comment_body: Optional[str] = None,
+        pr_number: Optional[int] = None,
+    ) -> None:
+        """
+        Parse and dispatch bot commands from PR comments.
+
+        Args:
+            comment_body: Comment body text (if None, reads from event)
+            pr_number: PR number (if None, reads from event)
+        """
+        self.logger.info("Running command mode")
+
+        # If not called with explicit params, read from GitHub event
+        if comment_body is None or pr_number is None:
+            self.logger.debug(
+                f"Reading GitHub event from: {self.github_event_path}"
+            )
+            with open(self.github_event_path) as f:
+                event = json.load(f)
+
+            if "issue" not in event or "pull_request" not in event["issue"]:
+                self.logger.debug("Not a PR comment event, skipping")
+                return
+
+            comment_body = event["comment"]["body"]
+            pr_number = event["issue"]["number"]
+
+        self.logger.debug(f"Processing comment on PR #{pr_number}")
+
+        # Parse the command
+        parsed = self.parse_command(comment_body)
+        if not parsed:
+            self.logger.debug("No bot command found in comment, skipping")
+            return
+
+        command, args = parsed
+        self.logger.info(f"Dispatching command: {command} with args: {args!r}")
+
+        # Dispatch to appropriate handler
+        if command == "split":
+            self.cmd_split(args=args, pr_number=pr_number)
+        elif command == "rebase":
+            self.cmd_rebase(args, pr_number)
+        else:
+            self.logger.warning(f"Unknown command: {command}")
+            self.logger.info(f"Supported commands: split, rebase")
+
 
 # ===================================================
 # Main Entry Point
@@ -1981,10 +2047,13 @@ def main() -> None:
         help="Set the logging level (default: info)",
     )
     parser.add_argument(
-        "--comment", help="Test split command body (requires --pr)"
+        "--command",
+        help="Test bot command (e.g., 'split abc123-def456' or 'rebase'), requires --pr",
     )
     parser.add_argument(
-        "--pr", type=int, help="PR number to test split on (requires --comment)"
+        "--pr",
+        type=int,
+        help="PR number to test command on (requires --command)",
     )
     args = parser.parse_args()
 
@@ -2006,17 +2075,66 @@ def main() -> None:
     logger.info(f"Starting fbchef_sync_bot (log level: {args.log_level})")
 
     github_event_name = os.environ.get("GITHUB_EVENT_NAME")
+    github_event_path = os.environ.get("GITHUB_EVENT_PATH")
 
-    if args.comment and args.pr:
-        logger.info(f"Running split test (PR #{args.pr})")
-        bot.split(comment_body=args.comment, pr_number=args.pr)
-    elif args.comment or args.pr:
-        logger.error("Both --comment and --pr required")
+    # Determine which mode to run in
+    if args.command and args.pr:
+        # Command line test mode - construct a comment body with the command
+        logger.info(f"Running command test (PR #{args.pr}): {args.command}")
+        comment_body = f"#bot {args.command}"
+        bot.handle_command(comment_body=comment_body, pr_number=args.pr)
+    elif args.command or args.pr:
+        logger.error("Both --command and --pr required for test mode")
         sys.exit(1)
     elif github_event_name == "issue_comment":
-        logger.info("Running in split mode")
-        bot.split()
+        # PR comment with bot command
+        logger.info("Running in command mode (issue_comment event)")
+        bot.handle_command()
+    elif github_event_name in ("issues", "pull_request") and github_event_path:
+        # Check if this is a close event on a PR/issue with our labels
+        logger.debug(f"Checking {github_event_name} event")
+        try:
+            with open(github_event_path) as f:
+                event = json.load(f)
+
+            action = event.get("action")
+            if action == "closed":
+                # Check if the PR/issue has our labels
+                labels = []
+                if "pull_request" in event:
+                    labels = [
+                        label["name"]
+                        for label in event["pull_request"].get("labels", [])
+                    ]
+                elif "issue" in event:
+                    labels = [
+                        label["name"]
+                        for label in event["issue"].get("labels", [])
+                    ]
+
+                bot_labels = config.get("pr_labels", []) + config.get(
+                    "issue_labels", []
+                )
+                has_bot_label = any(label in bot_labels for label in labels)
+
+                if has_bot_label:
+                    logger.info(
+                        f"PR/Issue with bot label closed, running sync mode"
+                    )
+                    bot.sync()
+                else:
+                    logger.debug("PR/Issue closed but no bot labels, skipping")
+            else:
+                logger.debug(
+                    f"Ignoring {github_event_name} event with action: {action}"
+                )
+        except Exception as e:
+            logger.warning(f"Error processing {github_event_name} event: {e}")
+            # Fall through to sync mode
+            logger.info("Running in sync mode")
+            bot.sync()
     else:
+        # Default: sync mode (scheduled runs, workflow_dispatch, etc.)
         logger.info("Running in sync mode")
         bot.sync()
 

@@ -4,6 +4,11 @@ on:
   issue_comment:
     types: [created]
 
+# Ensure only one bot run executes at a time across all triggers
+concurrency:
+  group: chef-sync-bot
+  cancel-in-progress: false  # Queue runs instead of canceling
+
 jobs:
   split:
     name: Handle '#bot' commands
