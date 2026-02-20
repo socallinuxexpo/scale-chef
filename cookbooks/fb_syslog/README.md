@@ -11,6 +11,7 @@ Attributes
 * node['fb_syslog']['enable_imklog_permitnonkernelfacility']
 * node['fb_syslog']['syslog-entries']
 * node['fb_syslog']['rsyslog_server']
+* node['fb_syslog']['rsyslog_server_force_no_listen']
 * node['fb_syslog']['rsyslog_server_address']
 * node['fb_syslog']['rsyslog_upstream']
 * node['fb_syslog']['rsyslog_port']
@@ -165,6 +166,11 @@ These don't take effect unless `rsyslog_server` is set.
 By default, rsyslog listens on the wildcard address. If you want to listen on
 another address (e.g. localhost), you can set the
 `node['fb_syslog']['rsyslog_server_address']` attribute.
+
+There's a special setting `node['fb_syslog']['rsyslog_server_force_no_listen']`
+which is mostly for internal backwards compatibility within meta, which will
+load the tcp and udp modules without actually wiring up the listeners. You
+probably do not want this option.
 
 ### Escaping control characters in messages
 If messages entering the syslog system contain control characters and it's
