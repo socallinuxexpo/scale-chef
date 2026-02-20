@@ -38,11 +38,7 @@ def load_config() -> Dict:
         logger.info(f"Loading config from {config_path}")
         # Merge with defaults
         config = {**default_config, **user_config}
-        logger.debug(
-            f"Config loaded: ignore_cookbooks={config.get('ignore_cookbooks', [])}, "
-            f"pr_labels={config.get('pr_labels', [])}, issue_labels={config.get('issue_labels', [])}, "
-            f"split_label={config.get('split_label', 'split')}"
-        )
+        logger.debug(f"Config loaded: {config}")
         return config
     except Exception as e:
         logger.warning(
@@ -165,7 +161,7 @@ class FBChefSyncBot:
         return pointer
 
     def fetch_upstream(self) -> None:
-
+        """Fetch the latest commits from the upstream remote."""
         self.logger.info(
             f"Fetching upstream from remote: {self.upstream_remote}"
         )
@@ -173,7 +169,7 @@ class FBChefSyncBot:
         self.logger.debug("Upstream fetch completed")
 
     def upstream_commits_since(self, pointer: Optional[str]) -> List[str]:
-
+        """Get list of upstream commits since the given pointer (exclusive)."""
         if not pointer:
             self.logger.debug(
                 "No pointer provided, returning empty commit list"
@@ -190,7 +186,7 @@ class FBChefSyncBot:
         return commits
 
     def touches_cookbooks(self, commit: str) -> bool:
-
+        """Check if a commit touches any cookbooks (fb_*)"""
         self.logger.debug(f"Checking if commit {commit[:8]} touches cookbooks")
         files = git("show", "--name-only", "--pretty=format:", commit)
         touches = any(f.startswith("cookbooks/fb_") for f in files.splitlines())
@@ -198,7 +194,10 @@ class FBChefSyncBot:
         return touches
 
     def existing_sync_pr(self) -> Optional[Dict]:
-
+        """
+        Check for an existing open sync PR created by the bot (based on
+        branch name and labels).
+        """
         self.logger.debug(
             f"Searching for existing sync PR on base branch: {self.base_branch}"
         )
@@ -254,12 +253,14 @@ class FBChefSyncBot:
         self, branch: str
     ) -> List[Tuple[str, str]]:
         """
-        Get branch commits that have Upstream-Commit trailers, returned as list of
-        (branch_commit_hash, upstream_commit_hash) tuples in chronological order.
+        Get branch commits that have Upstream-Commit trailers, returned as list
+        of (branch_commit_hash, upstream_commit_hash) tuples in chronological
+        order.
         """
         self.logger.debug(f"Getting branch commits with trailers for: {branch}")
-        # Get all commits in branch with trailers (not just ones not in self.base_branch)
-        # This is important because user might be splitting a partially-merged PR
+        # Get all commits in branch with trailers (not just ones not in
+        # self.base_branch) This is important because user might be splitting a
+        # partially-merged PR
         log = git(
             "log",
             branch,
@@ -293,17 +294,14 @@ class FBChefSyncBot:
         self.logger.debug(f"Found {len(commits)} branch commits with trailers")
         return commits
 
-        self.logger.debug(f"Found {len(commits)} branch commits with trailers")
-        return commits
-
     def shortlog(self, commit: str) -> str:
-
+        """Get a one-line summary of a commit for PR description."""
         return git("log", "-1", "--pretty=%s", commit)
 
     def pr_title_and_description_from_commits(
         self, commits: List[str]
     ) -> Tuple[str, str]:
-
+        """Build a PR title and description from a list of upstream commits."""
         commit_entries = []
         for c in commits:
             commit_entries.append(
@@ -357,6 +355,50 @@ class FBChefSyncBot:
         cmd.extend(["--body", body])
         return cmd
 
+    def _build_gh_issue_command(self, action: str, **kwargs) -> List[str]:
+        """
+        Build a gh issue command with common options.
+
+        Args:
+            action: "create", "edit", "list", "close", or "comment"
+            **kwargs: Additional options depending on action:
+                - For "create": title, body
+                - For "edit": issue_number, body, title (optional)
+                - For "list": state, json_fields, search
+                - For "close": issue_number
+                - For "comment": issue_number, body
+
+        Returns:
+            Command list ready for run()
+        """
+        cmd = ["gh", "issue", action]
+
+        if action == "list":
+            if "state" in kwargs:
+                cmd.extend(["--state", kwargs["state"]])
+            if "json_fields" in kwargs:
+                cmd.extend(["--json", kwargs["json_fields"]])
+            if "search" in kwargs:
+                cmd.extend(["--search", kwargs["search"]])
+        elif action == "create":
+            cmd.extend(["--title", kwargs["title"]])
+            cmd.extend(["--body", kwargs["body"]])
+            # Add labels from config
+            for label in self.config.get("issue_labels", []):
+                cmd.extend(["--label", label])
+        elif action == "edit":
+            cmd.append(str(kwargs["issue_number"]))
+            if "title" in kwargs:
+                cmd.extend(["--title", kwargs["title"]])
+            cmd.extend(["--body", kwargs["body"]])
+        elif action == "close":
+            cmd.append(str(kwargs["issue_number"]))
+        elif action == "comment":
+            cmd.extend(["comment", str(kwargs["issue_number"])])
+            cmd.extend(["--body", kwargs["body"]])
+
+        return cmd
+
     def update_pr_body(self, pr_number: int, commits: List[str]) -> None:
         """
         Update an existing PR's title and body with new commit list.
@@ -376,27 +418,6 @@ class FBChefSyncBot:
                 f"[dry-run] Would update PR #{pr_number} title and body with {len(commits)} commits"
             )
 
-    def create_conflict_pr(self, branch: str, commit: str) -> None:
-        self.logger.warning(
-            f"Conflict detected while applying commit {commit[:8]}"
-        )
-
-        if not self.dry_run:
-            self.logger.info(f"Pushing conflict branch: {branch}")
-            git("push", "-f", self.target_remote, branch)
-        else:
-            self.logger.debug(f"[dry-run] Would push conflict branch: {branch}")
-
-        self.logger.debug(
-            f"""
-Conflict encountered while applying {commit}.
-
-Branch pushed: {branch}
-
-Please resolve manually.
-"""
-        )
-
     def find_existing_issue_for_cookbook(self, cookbook: str) -> Optional[int]:
         """
         Find an existing open issue for a cookbook's local changes.
@@ -406,19 +427,13 @@ Please resolve manually.
             f"Searching for existing issue for cookbook: {cookbook}"
         )
         try:
-            output = run(
-                [
-                    "gh",
-                    "issue",
-                    "list",
-                    "--state",
-                    "open",
-                    "--json",
-                    "number,title",
-                    "--search",
-                    f"Local changes detected in {cookbook} in:title",
-                ]
+            cmd = self._build_gh_issue_command(
+                "list",
+                state="open",
+                json_fields="number,title",
+                search=f"Local changes detected in {cookbook} in:title",
             )
+            output = run(cmd)
             issues = json.loads(output)
             self.logger.debug(f"Found {len(issues)} potential matching issues")
             for issue in issues:
@@ -442,10 +457,12 @@ Please resolve manually.
         dry_run: bool = False,
     ) -> None:
         """
-        Create or update a GitHub issue for a sync conflict (single issue regardless of cookbooks involved).
+        Create or update a GitHub issue for a sync conflict (single issue
+        regardless of cookbooks involved).
         - commit: upstream commit SHA that caused the conflict
         - cookbooks: list of cookbook names involved (optional, for context)
-        - conflict_details: optional string with conflict details to include in the issue
+        - conflict_details: optional string with conflict details to include in
+          the issue
         - dry_run: if True, just log what would happen
         """
         self.logger.debug(
@@ -459,7 +476,7 @@ Please resolve manually.
         title = f"Sync conflict applying upstream commit {commit[:8]}"
 
         body_lines = [
-            f"**⚠️ A conflict occurred** while applying upstream commit `{commit}`.",
+            f"**A conflict occurred** while applying upstream commit `{commit}`.",
             "\nThe changes are blocking the sync and must be resolved before continuing.",
         ]
 
@@ -485,19 +502,13 @@ Please resolve manually.
             self.logger.debug(
                 f"Searching for existing conflict issue for commit {commit[:8]}"
             )
-            output = run(
-                [
-                    "gh",
-                    "issue",
-                    "list",
-                    "--state",
-                    "open",
-                    "--json",
-                    "number,title",
-                    "--search",
-                    f"Sync conflict applying upstream commit {commit[:8]} in:title",
-                ]
+            cmd = self._build_gh_issue_command(
+                "list",
+                state="open",
+                json_fields="number,title",
+                search=f"Sync conflict applying upstream commit {commit[:8]} in:title",
             )
+            output = run(cmd)
             issues = json.loads(output)
             self.logger.debug(f"Found {len(issues)} potential matching issues")
             for issue in issues:
@@ -536,16 +547,10 @@ Please resolve manually.
                 self.logger.info(
                     f"Updating existing conflict issue #{existing_issue} for commit {commit[:8]}"
                 )
-                run(
-                    [
-                        "gh",
-                        "issue",
-                        "edit",
-                        str(existing_issue),
-                        "--body",
-                        body,
-                    ]
+                cmd = self._build_gh_issue_command(
+                    "edit", issue_number=existing_issue, body=body
                 )
+                run(cmd)
                 self.logger.info(
                     f"Conflict issue #{existing_issue} updated for commit {commit[:8]}"
                 )
@@ -553,18 +558,9 @@ Please resolve manually.
                 self.logger.info(
                     f"Creating conflict issue for commit {commit[:8]}"
                 )
-                cmd = [
-                    "gh",
-                    "issue",
-                    "create",
-                    "--title",
-                    title,
-                    "--body",
-                    body,
-                ]
-                # Add labels from config
-                for label in self.config.get("issue_labels", []):
-                    cmd.extend(["--label", label])
+                cmd = self._build_gh_issue_command(
+                    "create", title=title, body=body
+                )
                 run(cmd)
                 self.logger.info(
                     f"Conflict issue created for commit {commit[:8]}"
@@ -577,8 +573,10 @@ Please resolve manually.
         self, current_pointer: str, dry_run: bool = False
     ) -> None:
         """
-        Close any open conflict issues for commits that have been successfully synced past.
-        - current_pointer: the current upstream commit pointer (commits before this are resolved)
+        Close any open conflict issues for commits that have been successfully
+        synced past.
+        - current_pointer: the current upstream commit pointer (commits before
+          this are resolved)
         - dry_run: if True, just log what would happen
         """
         self.logger.debug(
@@ -587,19 +585,13 @@ Please resolve manually.
 
         try:
             # Search for all open conflict issues
-            output = run(
-                [
-                    "gh",
-                    "issue",
-                    "list",
-                    "--state",
-                    "open",
-                    "--json",
-                    "number,title",
-                    "--search",
-                    "Sync conflict applying upstream commit in:title",
-                ]
+            cmd = self._build_gh_issue_command(
+                "list",
+                state="open",
+                json_fields="number,title",
+                search="Sync conflict applying upstream commit in:title",
             )
+            output = run(cmd)
             issues = json.loads(output)
             self.logger.debug(f"Found {len(issues)} open conflict issues")
 
@@ -652,17 +644,16 @@ Please resolve manually.
                     else:
                         try:
                             comment = f"This conflict has been resolved. The sync has successfully moved past commit {issue_commit}."
-                            run(
-                                [
-                                    "gh",
-                                    "issue",
-                                    "comment",
-                                    str(issue["number"]),
-                                    "--body",
-                                    comment,
-                                ]
+                            cmd_comment = self._build_gh_issue_command(
+                                "comment",
+                                issue_number=issue["number"],
+                                body=comment,
                             )
-                            run(["gh", "issue", "close", str(issue["number"])])
+                            run(cmd_comment)
+                            cmd_close = self._build_gh_issue_command(
+                                "close", issue_number=issue["number"]
+                            )
+                            run(cmd_close)
                             self.logger.info(
                                 f"Closed resolved conflict issue #{issue['number']}"
                             )
@@ -687,8 +678,11 @@ Please resolve manually.
         dry_run: bool = False,
     ) -> None:
         """
-        Create or update GitHub issues noting that local changes exist in cookbooks.
-        Creates/updates one issue per cookbook (for non-blocking local changes after successful sync).
+        Create or update GitHub issues noting that local changes exist in
+        cookbooks.
+
+        Creates/updates one issue per cookbook (for non-blocking local changes
+        after successful sync).
         - cookbooks: list of cookbook names
         - commit: upstream commit SHA of last successful sync
         - dry_run: if True, just log what would happen
@@ -729,33 +723,18 @@ Please resolve manually.
                     self.logger.debug(
                         f"Updating issue #{existing_issue} for {cookbook}"
                     )
-                    run(
-                        [
-                            "gh",
-                            "issue",
-                            "edit",
-                            str(existing_issue),
-                            "--body",
-                            body,
-                        ]
+                    cmd = self._build_gh_issue_command(
+                        "edit", issue_number=existing_issue, body=body
                     )
+                    run(cmd)
                     self.logger.info(
                         f"Issue #{existing_issue} updated for {cookbook}"
                     )
                 else:
                     self.logger.debug(f"Creating new issue for {cookbook}")
-                    cmd = [
-                        "gh",
-                        "issue",
-                        "create",
-                        "--title",
-                        title,
-                        "--body",
-                        body,
-                    ]
-                    # Add labels from config
-                    for label in self.config.get("issue_labels", []):
-                        cmd.extend(["--label", label])
+                    cmd = self._build_gh_issue_command(
+                        "create", title=title, body=body
+                    )
                     run(cmd)
                     self.logger.info(
                         f"Issue created for local changes in {cookbook}"
@@ -830,9 +809,10 @@ Merge this PR to enable automated upstream syncing.
 
     def is_commit_already_applied(self, commit: str) -> bool:
         """
-        Check if the changes from a commit are already present in the current branch.
-        This checks the actual content, not just the Upstream-Commit trailer.
-        Returns True if all fb_* cookbook changes from the commit are already present.
+        Check if the changes from a commit are already present in the current
+        branch. This checks the actual content, not just the Upstream-Commit
+        trailer. Returns True if all fb_* cookbook changes from the commit are
+        already present.
         """
         self.logger.debug(
             f">>> self.is_commit_already_applied() ENTRY for {commit[:8]}"
@@ -1113,7 +1093,8 @@ Merge this PR to enable automated upstream syncing.
         self.logger.info(f"Applying {commit}")
 
         # Use --no-commit so we can filter what gets applied
-        # Disable rename detection to avoid false conflicts between local-only and upstream-only cookbooks
+        # Disable rename detection to avoid false conflicts between local-only
+        # and upstream-only cookbooks
         self.logger.debug(
             "About to call try_git for cherry-pick --no-commit -X no-renames"
         )
@@ -1217,9 +1198,10 @@ Merge this PR to enable automated upstream syncing.
 
     def filter_and_commit_fb_changes(self, commit: str) -> bool:
         """
-        After a cherry-pick --no-commit, filter to only keep changes in cookbooks/fb_*
-        that exist locally, then commit with the original message plus trailer.
-        Returns True if changes were committed, False if no relevant changes.
+        After a cherry-pick --no-commit, filter to only keep changes in
+        cookbooks/fb_* that exist locally, then commit with the original
+        message plus trailer. Returns True if changes were committed, False if
+        no relevant changes.
         """
         local_cookbooks = set(self.list_local_cookbooks())
 
@@ -1304,7 +1286,8 @@ Merge this PR to enable automated upstream syncing.
 
         Different from get_global_pointer():
         - get_global_pointer(): reads from base_branch (where PRs merge to)
-        - get_current_pointer(): reads from target_branch (current working branch)
+        - get_current_pointer(): reads from target_branch (current working
+          branch)
 
         Handles squash-merge case where one commit may have multiple
         Upstream-Commit trailers. Returns the most recent (furthest along
@@ -1380,9 +1363,9 @@ Merge this PR to enable automated upstream syncing.
 
     def list_local_cookbooks(self) -> List[str]:
         """
-        List cookbooks that exist in the current HEAD/branch.
-        Uses git to check what's actually committed, not filesystem (which may have conflict files).
-        Filters out cookbooks in the ignore_cookbooks config.
+        List cookbooks that exist in the current HEAD/branch. Uses git to check
+        what's actually committed, not filesystem (which may have conflict
+        files). Filters out cookbooks in the ignore_cookbooks config.
         """
         self.logger.debug("Listing local cookbooks from git")
 
@@ -1626,7 +1609,6 @@ Merge this PR to enable automated upstream syncing.
                     conflict_details=conflict_details,
                     dry_run=self.dry_run,
                 )
-                self.create_conflict_pr(branch, c)
                 break  # Stop immediately after first conflict
 
         # ---------------------------
@@ -1789,7 +1771,8 @@ Merge this PR to enable automated upstream syncing.
         self.logger.debug(f"Processing split on branch: {branch}")
         git("checkout", branch)
 
-        # Get branch commits mapped to their upstream commits (commits that were successfully applied)
+        # Get branch commits mapped to their upstream commits (commits that
+        # were successfully applied)
         branch_commits = self.get_branch_commits_with_trailers(branch)
         upstream_to_branch = {
             upstream: branch for branch, upstream in branch_commits
