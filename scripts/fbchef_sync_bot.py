@@ -403,6 +403,13 @@ def create_conflict_issue(
     except RuntimeError as e:
         logger.warning(f"Error searching for existing conflict issue: {e}")
 
+    # Close any older conflict issues since this commit is now the blocker
+    # Do this before the dry_run check so it happens in both modes
+    logger.debug(
+        f"Checking for older conflict issues to close (current blocker: {commit[:8]})"
+    )
+    close_resolved_conflict_issues(commit, dry_run=dry_run)
+
     if dry_run:
         if existing_issue:
             logger.info(
@@ -440,9 +447,113 @@ def create_conflict_issue(
                 cmd.extend(["--label", label])
             run(cmd)
             logger.info(f"✅ Conflict issue created for commit {commit[:8]}")
+
     except RuntimeError as e:
         logger.error(f"Failed to create/update conflict issue: {e}")
         logger.info(f"❌ Failed to create/update conflict issue:\n{e}")
+
+
+def close_resolved_conflict_issues(current_pointer: str, dry_run: bool = False):
+    """
+    Close any open conflict issues for commits that have been successfully synced past.
+    - current_pointer: the current upstream commit pointer (commits before this are resolved)
+    - dry_run: if True, just log what would happen
+    """
+    logger.debug(
+        f"Checking for old conflict issues to close (current pointer: {current_pointer[:8]})"
+    )
+
+    try:
+        # Search for all open conflict issues
+        output = run(
+            [
+                "gh",
+                "issue",
+                "list",
+                "--state",
+                "open",
+                "--json",
+                "number,title",
+                "--search",
+                "Sync conflict applying upstream commit in:title",
+            ]
+        )
+        issues = json.loads(output)
+        logger.debug(f"Found {len(issues)} open conflict issues")
+
+        for issue in issues:
+            # Extract commit hash from title: "Sync conflict applying upstream commit <hash>"
+            title = issue["title"]
+            match = re.search(
+                r"Sync conflict applying upstream commit ([0-9a-f]{8})", title
+            )
+            if not match:
+                logger.debug(
+                    f"Issue #{issue['number']} title doesn't match expected format: {title}"
+                )
+                continue
+
+            issue_commit = match.group(1)
+            logger.debug(
+                f"Checking issue #{issue['number']} for commit {issue_commit}"
+            )
+
+            # Find the full commit hash from the short hash
+            try:
+                full_hash = git("rev-parse", "--verify", issue_commit)
+                logger.debug(
+                    f"Resolved {issue_commit} to full hash {full_hash[:8]}..."
+                )
+            except RuntimeError:
+                logger.warning(
+                    f"Could not resolve commit hash {issue_commit} from issue #{issue['number']}"
+                )
+                continue
+
+            # Check if this commit has been synced (is it an ancestor of current_pointer, but not current_pointer itself)
+            is_ancestor, _, _ = try_git(
+                "merge-base", "--is-ancestor", full_hash, current_pointer
+            )
+            is_same = full_hash == current_pointer
+
+            # Only close if it's an ancestor but NOT the current pointer (which is the active blocker)
+            if is_ancestor and not is_same:
+                logger.info(
+                    f"Conflict issue #{issue['number']} for commit {issue_commit} is now resolved"
+                )
+
+                if dry_run:
+                    logger.info(
+                        f"[dry-run] Would close issue #{issue['number']}"
+                    )
+                else:
+                    try:
+                        comment = f"This conflict has been resolved. The sync has successfully moved past commit {issue_commit}."
+                        run(
+                            [
+                                "gh",
+                                "issue",
+                                "comment",
+                                str(issue["number"]),
+                                "--body",
+                                comment,
+                            ]
+                        )
+                        run(["gh", "issue", "close", str(issue["number"])])
+                        logger.info(
+                            f"✅ Closed resolved conflict issue #{issue['number']}"
+                        )
+                    except RuntimeError as e:
+                        logger.error(
+                            f"Failed to close issue #{issue['number']}: {e}"
+                        )
+            else:
+                logger.debug(
+                    f"Conflict issue #{issue['number']} for commit {issue_commit} is still blocking"
+                )
+
+    except RuntimeError as e:
+        logger.warning(f"Error searching for conflict issues to close: {e}")
 
 
 def create_or_update_issue_for_local_changes(
@@ -1285,6 +1396,12 @@ def run_sync():
     # NORMAL SYNC MODE
     # ---------------------------
     logger.info("Entering normal sync mode")
+
+    # Close any conflict issues for commits we've successfully synced past
+    if pointer:
+        logger.debug("Checking for resolved conflict issues to close")
+        close_resolved_conflict_issues(pointer, dry_run=DRY_RUN)
+
     commits = upstream_commits_since(pointer)
     if not commits:
         logger.info("No new commits to sync")
@@ -1415,6 +1532,16 @@ def run_sync():
     # ---------------------------
     if applied:
         logger.info(f"Successfully applied {len(applied)} commits")
+
+        # Close any conflict issues for commits we just successfully applied
+        if applied and not conflict_occurred:
+            logger.debug(
+                "Closing conflict issues for successfully applied commits"
+            )
+            # The latest applied commit is our new effective pointer
+            latest_applied = applied[-1]
+            close_resolved_conflict_issues(latest_applied, dry_run=DRY_RUN)
+
         if not DRY_RUN:
             logger.info(f"Pushing branch {branch} to {TARGET_REMOTE}")
             git("push", "-f", TARGET_REMOTE, branch)
