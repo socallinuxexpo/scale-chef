@@ -2003,6 +2003,36 @@ Merge this PR to enable automated upstream syncing.
             self.logger.warning(f"Unknown command: {command}")
             self.logger.info(f"Supported commands: split, rebase")
 
+    def bot_created_pr_or_issue_closed(self, event: dict) -> bool:
+        action = event.get("action")
+        if action != "closed":
+            self.logger.debug(
+                f"Ignoring {github_event_name} event with action: {action}"
+            )
+            return False
+
+        self.logger.debug(
+            f"Checking of closed event for {github_event_name} has our lables"
+        )
+        # Check if the PR/issue has our labels
+        labels = []
+        if "pull_request_target" in event:
+            labels = [
+                label["name"]
+                for label in event["pull_request"].get("labels", [])
+            ]
+        elif "issue" in event:
+            labels = [
+                label["name"] for label in event["issue"].get("labels", [])
+            ]
+
+        bot_labels = config.get("pr_labels", []) + config.get(
+            "issue_labels", []
+        )
+        has_bot_label = any(label in bot_labels for label in labels)
+
+        return has_bot_label
+
 
 # ===================================================
 # Main Entry Point
@@ -2086,44 +2116,22 @@ def main() -> None:
 
         # Check if this is a close event on a PR/issue with our labels
         logger.debug(f"Checking {github_event_name} event")
+        should_sync = False
         try:
             with open(github_event_path) as f:
                 event = json.load(f)
 
-            action = event.get("action")
-            if action == "closed":
-                # Check if the PR/issue has our labels
-                labels = []
-                if "pull_request_target" in event:
-                    labels = [
-                        label["name"]
-                        for label in event["pull_request"].get("labels", [])
-                    ]
-                elif "issue" in event:
-                    labels = [
-                        label["name"]
-                        for label in event["issue"].get("labels", [])
-                    ]
-
-                bot_labels = config.get("pr_labels", []) + config.get(
-                    "issue_labels", []
-                )
-                has_bot_label = any(label in bot_labels for label in labels)
-
-                if has_bot_label:
-                    logger.info(
-                        f"PR/Issue with bot label closed, running sync mode"
-                    )
-                    bot.sync()
-                else:
-                    logger.debug("PR/Issue closed but no bot labels, skipping")
-            else:
-                logger.debug(
-                    f"Ignoring {github_event_name} event with action: {action}"
-                )
+            should_sync = bot.bot_created_pr_or_issue_closed(event)
         except Exception as e:
             logger.warning(f"Error processing {github_event_name} event: {e}")
             logger.info("Not running any mode...")
+
+        if should_sync:
+            logger.info("PR/Issue with bot label closed, running sync mode")
+            bot.sync()
+        else:
+            logger.info("Not one of our issues/PRs being closed, ignoring.")
+
     else:
         # Default: sync mode (scheduled runs, workflow_dispatch, etc.)
         logger.info("Running in sync mode")
