@@ -70,12 +70,6 @@ class Chef
       end
     end
 
-    # Is this a RHEL-compatible OS with a version number of
-    # `version`
-    def el_version?(v)
-      self.rhel_family? && self._platform_version_helper?(v)
-    end
-
     # Is this a RHEL-compatible OS with a minimum major version number of
     # `version`
     def el_min_version?(version, full = false)
@@ -88,21 +82,28 @@ class Chef
       self.rhel_family? && self.os_max_version?(version, full)
     end
 
-    def rhel_family?
+    def rhel?
       self['platform_family'] == 'rhel'
     end
 
-    # DEPRECATED: use rhel_family?
-    alias rhel? rhel_family?
+    # DEPRECATED: use rhel?
+    def rhel_family?
+      self.rhel?
+    end
+
+    def rhel_version?(v)
+      self.rhel? && self._platform_version_helper?(v)
+    end
 
     # alias for the el_ variant
-    alias rhel_version? el_version?
+    def rhel_min_version?(version, full = false)
+      self.el_min_version?(version, full)
+    end
 
     # alias for the el_ variant
-    alias rhel_min_version? el_min_version?
-
-    # alias for the el_ variant
-    alias rhel_max_version? el_max_version?
+    def rhel_max_version?(version, full = false)
+      self.el_max_version?(version, full)
+    end
 
     # DEPRECATED: use rhel_version?
     def rhel_family7?
@@ -204,22 +205,6 @@ class Chef
 
     def rocky_min_version?(version, full = false)
       self.rocky? && self.os_min_version?(version, full)
-    end
-
-    def almalinux?
-      self['platform'] == 'almalinux'
-    end
-
-    def almalinux_max_version?(version, full = false)
-      self.almalinux? && self.os_max_version?(version, full)
-    end
-
-    def almalinux_min_version?(version, full = false)
-      self.almalinux? && self.os_min_version?(version, full)
-    end
-
-    def almalinux_version?(v)
-      self.almalinux? && self._platform_version_helper?(v)
     end
 
     def redhat?
@@ -1178,21 +1163,19 @@ class Chef
     def firstboot_os?
       # this has to work even when we fail early on so we can call this from
       # broken runs in handlers
-      return @_firstboot_os unless @_firstboot_os.nil?
-      @_firstboot_os = self['fb_init']['firstboot_os']
+      self['fb_init']['firstboot_os']
     rescue StandardError
       prefix = macos? ? '/var/root' : '/root'
-      @_firstboot_os = File.exist?(File.join(prefix, 'firstboot_os'))
+      File.exist?(File.join(prefix, 'firstboot_os'))
     end
 
     def firstboot_tier?
       # this has to work even when we fail early on so we can call this from
       # broken runs in handlers
-      return @_firstboot_tier unless @_firstboot_tier.nil?
-      @_firstboot_tier = self['fb_init']['firstboot_tier']
+      self['fb_init']['firstboot_tier']
     rescue StandardError
       prefix = macos? ? '/var/root' : '/root'
-      @_firstboot_tier = File.exist?(File.join(prefix, 'firstboot_tier'))
+      File.exist?(File.join(prefix, 'firstboot_tier'))
     end
 
     def firstboot_any_phase?
@@ -1266,8 +1249,9 @@ class Chef
 
     # returns the version-release of an rpm installed, or nil if not present
     def rpm_version(name)
-      if (self.centos? && !self.centos7?) || self.fedora? || self.redhat_min_version?(8) ||
-          self.oracle_min_version?(8) || self.almalinux_min_version?(8) || self.aristaeos_4_30_or_newer?
+      if (self.centos? && !self.centos7?) || self.fedora? || self.redhat8? ||
+          self.oracle8? || self.redhat9? || self.oracle9? || self.redhat10? ||
+          self.aristaeos_4_30_or_newer?
         # returns epoch.version
         v = Chef::Provider::Package::Dnf::PythonHelper.instance.
             package_query(:whatinstalled, name).version
@@ -1467,7 +1451,7 @@ class Chef
       else
         return self.nw_changes_allowed? ||
           ['ip6tnl0', 'tunlany0', 'tunl0'].include?(interface) ||
-          interface.match?(Regexp.new('^tunlany\d+:\d+'))
+          interface.match(Regexp.new('^tunlany\d+:\d+'))
       end
     end
 
@@ -1484,14 +1468,6 @@ class Chef
     # It can be ignored.
     def antlir2_build?
       false
-    end
-
-    # JSON recipes are a fairly new Chef feature (as of August 2025), and we
-    # can't assume everyone is using them yet. To ensure there's no downstream breakage,
-    # we'll be using this method as a way to support Chef clients that don't include the backport
-    def json_recipes_supported?
-      return @json_recipes_supported unless @json_recipes_supported.nil?
-      @json_recipes_supported ||= Chef::VERSION >= '19.1.53' || Chef::VERSION >= '18.7.28'
     end
 
     # A gate which can be used to limit dangerous code to only run during
