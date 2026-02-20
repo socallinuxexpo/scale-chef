@@ -196,7 +196,7 @@ def pr_title_and_description_from_commits(commits):
     body = "Syncing upstream commits. The PRs are listed below. You can"
     body += " comment in this PR with commands see below. Also, this"
     body += " description is build for squash-merge, make sure you keep"
-    body += " all the Upstream-Commit trailers in tact.\n\n"
+    body += " all the `Upstream-Commit` trailers in tact.\n\n"
     body += "\n".join(commit_entries)
     body += "\nTo split:\n```\n#bot split <shaA>-<shaB>\n```\n"
 
