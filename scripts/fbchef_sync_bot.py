@@ -47,6 +47,15 @@ parser.add_argument(
     choices=["debug", "info", "warning", "error", "critical"],
     help="Set the logging level (default: info)",
 )
+parser.add_argument(
+    "--comment",
+    help="Test split command with this comment body (requires --pr)",
+)
+parser.add_argument(
+    "--pr",
+    type=int,
+    help="PR number to test split on (requires --comment)",
+)
 args = parser.parse_args()
 DRY_RUN = args.dry_run
 FORCE_BOOTSTRAP = args.force_bootstrapping
@@ -77,6 +86,7 @@ def load_config():
         "ignore_cookbooks": ["fb_init", "fb_init_sample"],
         "pr_labels": ["fbchef_sync_bot"],
         "issue_labels": ["fbchef_sync_bot"],
+        "split_label": "split",
     }
 
     if not config_path.exists():
@@ -90,7 +100,9 @@ def load_config():
         # Merge with defaults
         config = {**default_config, **user_config}
         logger.debug(
-            f"Config loaded: ignore_cookbooks={config.get('ignore_cookbooks', [])}, pr_labels={config.get('pr_labels', [])}, issue_labels={config.get('issue_labels', [])}"
+            f"Config loaded: ignore_cookbooks={config.get('ignore_cookbooks', [])}, "
+            f"pr_labels={config.get('pr_labels', [])}, issue_labels={config.get('issue_labels', [])}, "
+            f"split_label={config.get('split_label', 'split')}"
         )
         return config
     except Exception as e:
@@ -203,13 +215,21 @@ def existing_sync_pr():
             "--state",
             "open",
             "--json",
-            "number,headRefName",
+            "number,headRefName,labels",
         ]
     )
     prs = json.loads(output)
     logger.debug(f"Found {len(prs)} open PRs")
+    split_label = CONFIG.get("split_label", "split")
     for pr in prs:
         if pr["headRefName"].startswith("sync/"):
+            # Skip PRs that have been split
+            pr_label_names = [label["name"] for label in pr.get("labels", [])]
+            if split_label in pr_label_names:
+                logger.debug(
+                    f"Skipping split PR #{pr['number']} ({pr['headRefName']})"
+                )
+                continue
             logger.debug(
                 f"Found existing sync PR: #{pr['number']} ({pr['headRefName']})"
             )
@@ -224,6 +244,51 @@ def get_branch_trailers(branch):
     trailers = re.findall(r"Upstream-Commit:\s*([0-9a-f]{40})", log)
     logger.debug(f"Found {len(trailers)} trailers")
     return trailers
+
+
+def get_branch_commits_with_trailers(branch):
+    """
+    Get branch commits that have Upstream-Commit trailers, returned as list of
+    (branch_commit_hash, upstream_commit_hash) tuples in chronological order.
+    """
+    logger.debug(f"Getting branch commits with trailers for: {branch}")
+    # Get all commits in branch with trailers (not just ones not in BASE_BRANCH)
+    # This is important because user might be splitting a partially-merged PR
+    log = git(
+        "log",
+        branch,
+        "--grep=Upstream-Commit:",
+        "--pretty=format:%H|%B%n---COMMIT-SEPARATOR---",
+        "--reverse",
+    )
+
+    commits = []
+    for entry in log.split("---COMMIT-SEPARATOR---"):
+        entry = entry.strip()
+        if not entry:
+            continue
+
+        lines = entry.split("|", 1)
+        if len(lines) < 2:
+            continue
+
+        branch_commit = lines[0].strip()
+        message = lines[1]
+
+        # Extract upstream commit from trailer
+        match = re.search(r"Upstream-Commit:\s*([0-9a-f]{40})", message)
+        if match:
+            upstream_commit = match.group(1)
+            commits.append((branch_commit, upstream_commit))
+            logger.debug(
+                f"  Found: branch={branch_commit[:8]} -> upstream={upstream_commit[:8]}"
+            )
+
+    logger.debug(f"Found {len(commits)} branch commits with trailers")
+    return commits
+
+    logger.debug(f"Found {len(commits)} branch commits with trailers")
+    return commits
 
 
 def shortlog(commit):
@@ -657,11 +722,16 @@ def create_pr(branch, commits):
         for label in CONFIG.get("pr_labels", []):
             cmd.extend(["--label", label])
         pr_url = run(cmd)
+        # Extract PR number from URL (format: https://github.com/owner/repo/pull/123)
+        pr_number = int(pr_url.strip().split("/")[-1])
+        logger.debug(f"Created PR #{pr_number}: {pr_url}")
+        return pr_number
     else:
         logger.debug(f"[dry-run] Would create PR {branch}")
         logger.info(
             f"[dry-run] Would create PR {branch} with {len(commits)} commits"
         )
+        return None
 
 
 def create_onboarding_pr(baseline):
@@ -1581,18 +1651,21 @@ def parse_split_command(body):
     return split_range
 
 
-def run_split():
+def run_split(comment_body=None, pr_number=None):
     logger.info("Running split operation")
-    logger.debug(f"Reading GitHub event from: {GITHUB_EVENT_PATH}")
-    with open(GITHUB_EVENT_PATH) as f:
-        event = json.load(f)
 
-    if "issue" not in event or "pull_request" not in event["issue"]:
-        logger.debug("Not a PR comment event, skipping")
-        return
+    # If called from command line with explicit params, use those
+    if comment_body is None or pr_number is None:
+        logger.debug(f"Reading GitHub event from: {GITHUB_EVENT_PATH}")
+        with open(GITHUB_EVENT_PATH) as f:
+            event = json.load(f)
 
-    comment_body = event["comment"]["body"]
-    pr_number = event["issue"]["number"]
+        if "issue" not in event or "pull_request" not in event["issue"]:
+            logger.debug("Not a PR comment event, skipping")
+            return
+
+        comment_body = event["comment"]["body"]
+        pr_number = event["issue"]["number"]
     logger.debug(f"Processing comment on PR #{pr_number}")
 
     parsed = parse_split_command(comment_body)
@@ -1602,37 +1675,116 @@ def run_split():
 
     start_sha, end_sha = parsed
     logger.info(f"Split command: {start_sha}-{end_sha}")
-    pr = existing_sync_pr()
-    if not pr:
-        logger.warning("No existing sync PR found")
-        return
+
+    # If PR number was provided (command line mode), fetch that specific PR
+    if pr_number:
+        logger.debug(f"Fetching PR #{pr_number} details")
+        pr_info = run(
+            [
+                "gh",
+                "pr",
+                "view",
+                str(pr_number),
+                "--json",
+                "number,headRefName,body",
+            ]
+        )
+        pr = json.loads(pr_info)
+    else:
+        pr = existing_sync_pr()
+        if not pr:
+            logger.warning("No existing sync PR found")
+            return
+        pr_number = pr["number"]
+        # Fetch full PR details including body
+        pr_info = run(
+            [
+                "gh",
+                "pr",
+                "view",
+                str(pr_number),
+                "--json",
+                "number,headRefName,body",
+            ]
+        )
+        pr = json.loads(pr_info)
 
     branch = pr["headRefName"]
     logger.debug(f"Processing split on branch: {branch}")
     git("checkout", branch)
-    trailers = get_branch_trailers(branch)
-    trailers_map = {t[:8]: t for t in trailers}
+
+    # Get branch commits mapped to their upstream commits (commits that were successfully applied)
+    branch_commits = get_branch_commits_with_trailers(branch)
+    upstream_to_branch = {
+        upstream: branch for branch, upstream in branch_commits
+    }
+
+    # Get the intended upstream commits from the PR body
+    pr_body = pr.get("body", "")
+    intended_upstream = re.findall(
+        r"Upstream-Commit:\s*([0-9a-f]{40})", pr_body
+    )
+    logger.debug(
+        f"Found {len(intended_upstream)} intended upstream commits in PR body"
+    )
+
+    # Build map for lookup using intended commits (what SHOULD be synced)
+    trailers_map = {t[:8]: t for t in intended_upstream}
+
+    logger.debug(
+        f"Intended upstream commits (first 8 chars): {list(trailers_map.keys())}"
+    )
+    logger.debug(f"Looking for start={start_sha[:8]}, end={end_sha[:8]}")
+
     start = trailers_map.get(start_sha[:8])
     end = trailers_map.get(end_sha[:8])
 
     if not start or not end:
         logger.error(f"Invalid split SHAs: start={start_sha}, end={end_sha}")
+        logger.error(
+            f"Intended upstream commits in PR: {list(trailers_map.keys())}"
+        )
         raise Exception("Invalid split SHAs")
 
-    start_idx = trailers.index(start)
-    end_idx = trailers.index(end)
+    start_idx = intended_upstream.index(start)
+    end_idx = intended_upstream.index(end)
+
+    # Ensure start_idx is before end_idx (handle user providing them in any order)
+    if start_idx > end_idx:
+        logger.debug(f"Swapping range order: {start_idx} > {end_idx}")
+        start_idx, end_idx = end_idx, start_idx
+
     logger.debug(f"Split range indices: {start_idx} to {end_idx}")
 
-    if start_idx > end_idx:
+    # Validate that the split is contiguous (from one end, not the middle)
+    if start_idx != 0 and end_idx != len(intended_upstream) - 1:
         logger.error(
-            f"Non-contiguous range: start_idx={start_idx} > end_idx={end_idx}"
+            f"Split must be from one end: either start at 0 or end at {len(intended_upstream) - 1}"
         )
-        raise Exception("Non-contiguous range")
+        logger.error(f"Got: start_idx={start_idx}, end_idx={end_idx}")
+        raise Exception(
+            "Split must be contiguous from one end, not from the middle"
+        )
 
-    first_range = trailers[start_idx : end_idx + 1]
-    second_range = trailers[end_idx + 1 :]
+    # Get the upstream commits for each range from the PR body
+    first_range_upstream = intended_upstream[start_idx : end_idx + 1]
+    second_range_upstream = (
+        intended_upstream[end_idx + 1 :]
+        if end_idx < len(intended_upstream) - 1
+        else []
+    )
+
+    # Get the branch commits that were actually applied (some might have failed)
+    first_range_branch = [
+        upstream_to_branch.get(u) for u in first_range_upstream
+    ]
+    second_range_branch = [
+        upstream_to_branch.get(u) for u in second_range_upstream
+    ]
+
     logger.debug(
-        f"First range: {len(first_range)} commits, Second range: {len(second_range)} commits"
+        f"First range: {len(first_range_upstream)} upstream commits, "
+        f"Second range: {len(second_range_upstream)} upstream commits"
     )
 
     # Rewrite original PR branch
@@ -1640,35 +1792,82 @@ def run_split():
     git("checkout", BASE_BRANCH)
     git("branch", "-D", branch)
     git("checkout", "-b", branch, BASE_BRANCH)
-    for c in first_range:
-        logger.debug(f"Cherry-picking {c[:8]} to first range")
-        cherry_pick_with_trailer(c)
+
+    for i, upstream_commit in enumerate(first_range_upstream):
+        branch_commit = first_range_branch[i]
+        if branch_commit:
+            # Commit was already applied to branch, cherry-pick the resolved version
+            logger.debug(
+                f"Cherry-picking resolved branch commit {branch_commit[:8]} (upstream {upstream_commit[:8]})"
+            )
+            git("cherry-pick", branch_commit)
+        else:
+            # Commit not yet applied, use cherry_pick_with_trailer
+            logger.debug(
+                f"Applying upstream commit {upstream_commit[:8]} with trailer"
+            )
+            cherry_pick_with_trailer(upstream_commit)
 
     if not DRY_RUN:
         logger.info(f"Pushing rewritten branch {branch}")
         git("push", "-f", TARGET_REMOTE, branch)
-        update_pr_body(pr_number, first_range)
+        update_pr_body(pr_number, first_range_upstream)
+
+        # Add split label to the first PR
+        split_label = CONFIG.get("split_label", "split")
+        logger.info(f"Adding {split_label} label to PR #{pr_number}")
+        run(["gh", "pr", "edit", str(pr_number), "--add-label", split_label])
     else:
         logger.debug(f"[dry-run] Would rewrite {branch}")
         logger.info(
-            f"[dry-run] Would rewrite original PR branch {branch} with commits {first_range}"
+            f"[dry-run] Would rewrite original PR branch {branch} with {len(first_range_upstream)} commits"
         )
 
-    if second_range:
-        new_branch = f"sync/{second_range[0][:8]}"
+    if second_range_upstream:
+        new_branch = f"sync/{second_range_upstream[0][:8]}"
         logger.info(f"Creating new branch {new_branch} for second range")
         git("checkout", "-b", new_branch, BASE_BRANCH)
-        for c in second_range:
-            logger.debug(f"Cherry-picking {c[:8]} to second range")
-            cherry_pick_with_trailer(c)
+
+        for i, upstream_commit in enumerate(second_range_upstream):
+            branch_commit = second_range_branch[i]
+            if branch_commit:
+                # Commit was already applied to branch, cherry-pick the resolved version
+                logger.debug(
+                    f"Cherry-picking resolved branch commit {branch_commit[:8]} (upstream {upstream_commit[:8]})"
+                )
+                git("cherry-pick", branch_commit)
+            else:
+                # Commit not yet applied, use cherry_pick_with_trailer
+                logger.debug(
+                    f"Applying upstream commit {upstream_commit[:8]} with trailer"
+                )
+                cherry_pick_with_trailer(upstream_commit)
+
         if not DRY_RUN:
             logger.info(f"Pushing new branch {new_branch}")
             git("push", "-f", TARGET_REMOTE, new_branch)
-            create_pr(new_branch, second_range)
+            new_pr_number = create_pr(new_branch, second_range_upstream)
+
+            if new_pr_number:
+                # Add split label to the second PR
+                split_label = CONFIG.get("split_label", "split")
+                logger.info(
+                    f"Adding {split_label} label to PR #{new_pr_number}"
+                )
+                run(
+                    [
+                        "gh",
+                        "pr",
+                        "edit",
+                        str(new_pr_number),
+                        "--add-label",
+                        split_label,
+                    ]
+                )
         else:
             logger.debug(f"[dry-run] Would create new PR {new_branch}")
             logger.info(
-                f"[dry-run] Would create new PR {new_branch} with commits {second_range}"
+                f"[dry-run] Would create new PR {new_branch} with {len(second_range_upstream)} commits"
             )
     else:
         logger.debug("No second range to process")
@@ -1680,11 +1879,19 @@ def run_split():
 
 if __name__ == "__main__":
     logger.info(f"Starting fbchef_sync_bot (log level: {args.log_level})")
-    logger.debug(f"GITHUB_EVENT_NAME: {GITHUB_EVENT_NAME}")
-    if GITHUB_EVENT_NAME == "issue_comment":
+
+    # Check for command-line split testing
+    if args.comment and args.pr:
+        logger.info(f"Running in command-line split test mode (PR #{args.pr})")
+        run_split(comment_body=args.comment, pr_number=args.pr)
+    elif args.comment or args.pr:
+        logger.error("Both --comment and --pr must be provided together")
+        sys.exit(1)
+    elif GITHUB_EVENT_NAME == "issue_comment":
         logger.info("Running in split mode (issue_comment event)")
         run_split()
     else:
+        logger.debug(f"GITHUB_EVENT_NAME: {GITHUB_EVENT_NAME}")
         logger.info("Running in sync mode")
         run_sync()
     logger.info("fbchef_sync_bot completed")
