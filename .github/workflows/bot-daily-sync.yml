@@ -3,10 +3,18 @@ name: Chef Sync Bot - Daily Upstream Sync
 on:
   workflow_dispatch:  # allow manual trigger from UI
   pull_request:
+    types: [opened, synchronize, closed]
     branches:
       - main
+  issues:
+    types: [closed]
   #schedule:
   #  - cron: '0 6 * * *'  # daily at 06:00 UTC, adjust as needed
+
+# Ensure only one bot run executes at a time across all triggers
+concurrency:
+  group: chef-sync-bot
+  cancel-in-progress: false  # Queue runs instead of canceling
 
 jobs:
   sync:
