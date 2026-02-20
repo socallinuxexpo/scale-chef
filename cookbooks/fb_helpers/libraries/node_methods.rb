@@ -219,6 +219,10 @@ class Chef
       self.oracle? && self.os_min_version?(version, full)
     end
 
+    def oracle10?
+      self.oracle? && self['platform_version'].start_with?('10')
+    end
+
     def oracle9?
       self.oracle? && self['platform_version'].start_with?('9')
     end
@@ -1096,7 +1100,7 @@ class Chef
     # returns the version-release of an rpm installed, or nil if not present
     def rpm_version(name)
       if (self.centos? && !self.centos7?) || self.fedora? || self.redhat8? || self.oracle8? || self.redhat9? ||
-        self.oracle9? || self.aristaeos_4_30_or_newer?
+        self.oracle9? || self.redhat10? || self.aristaeos_4_30_or_newer?
         # returns epoch.version
         v = Chef::Provider::Package::Dnf::PythonHelper.instance.
             package_query(:whatinstalled, name).version
