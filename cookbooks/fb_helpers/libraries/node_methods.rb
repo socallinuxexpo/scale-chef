@@ -31,10 +31,6 @@ class Chef
       self['platform_version'].split('.')[0]
     end
 
-    def rhel_family?
-      self['platform_family'] == 'rhel'
-    end
-
     def _canonical_version(version)
       @canonical_version ||= {}
 
@@ -48,7 +44,8 @@ class Chef
           when FB::Version
             version
           else
-            fail 'fb_helpers: Version comparison can only be performed with strings and numbers'
+            fail 'fb_helpers: Version comparison can only be performed ' +
+              'with strings and numbers'
           end
       end
     end
@@ -73,58 +70,84 @@ class Chef
       end
     end
 
-    # Is this a RHEL-compatible OS with a minimum major version number of `version`
+    # Is this a RHEL-compatible OS with a version number of
+    # `version`
+    def el_version?(v)
+      self.rhel_family? && self._platform_version_helper?(v)
+    end
+
+    # Is this a RHEL-compatible OS with a minimum major version number of
+    # `version`
     def el_min_version?(version, full = false)
       self.rhel_family? && self.os_min_version?(version, full)
     end
 
-    # Is this a RHEL-compatible OS with a maximum major version number of `version`
+    # Is this a RHEL-compatible OS with a maximum major version number of
+    # `version`
     def el_max_version?(version, full = false)
       self.rhel_family? && self.os_max_version?(version, full)
     end
 
+    def rhel_family?
+      self['platform_family'] == 'rhel'
+    end
+
+    # DEPRECATED: use rhel_family?
+    alias rhel? rhel_family?
+
+    # alias for the el_ variant
+    alias rhel_version? el_version?
+
+    # alias for the el_ variant
+    alias rhel_min_version? el_min_version?
+
+    # alias for the el_ variant
+    alias rhel_max_version? el_max_version?
+
+    # DEPRECATED: use rhel_version?
     def rhel_family7?
-      self.rhel_family? && self['platform_version'].start_with?('7')
+      self.rhel_version?(7)
     end
 
+    # DEPRECATED: use rhel_version?
     def rhel_family8?
-      self.rhel_family? && self['platform_version'].start_with?('8')
+      self.rhel_version?(8)
     end
 
+    # DEPRECATED: use rhel_version?
     def rhel_family9?
-      self.rhel_family? && self['platform_version'].start_with?('9')
+      self.rhel_version?(9)
     end
 
-    def rhel?
-      self.rhel_family?
-    end
-
-    def rhel_min_version?(version, full = false)
-      self.rhel? && self.el_min_version?(version, full)
-    end
-
-    def rhel_max_version?(version, full = false)
-      self.rhel? && self.el_max_version?(version, full)
-    end
-
+    # DEPRECATED: use rhel_version?
     def rhel7?
-      self.rhel? && self['platform_version'].start_with?('7')
+      self.rhel_version?(7)
     end
 
+    # DEPRECATED: use rhel_version?
     def rhel8?
-      self.rhel? && self['platform_version'].start_with?('8')
+      self.rhel_version?(8)
     end
 
+    # DEPRECATED: use rhel_version?
     def rhel8_8?
-      self.rhel? && self['platform_version'].start_with?('8.8')
+      self.rhel_version?('8.8')
     end
 
+    # DEPRECATED: use rhel_version?
     def rhel9?
-      self.rhel? && self['platform_version'].start_with?('9')
+      self.rhel_version?(9)
     end
 
+    # DEPRECATED: use rhel_version?
     def rhel10?
-      self.rhel? && self['platform_version'].start_with?('10')
+      self.rhel_version?(10)
+    end
+
+    # DO NOT ADD anymore rhelXX? methods, use rhel_version?
+
+    def centos?
+      self['platform'] == 'centos'
     end
 
     def centos_min_version?(version, full = false)
@@ -135,33 +158,41 @@ class Chef
       self.centos? && self.os_max_version?(version, full)
     end
 
-    def centos?
-      self['platform'] == 'centos'
+    def centos_version?(v)
+      self.centos? && self._platform_version_helper?(v)
     end
 
-    def centos10?
-      self.centos? && self['platform_version'].start_with?('10')
-    end
-
-    def centos9?
-      self.centos? && self['platform_version'].start_with?('9')
-    end
-
-    def centos8?
-      self.centos? && self['platform_version'].start_with?('8')
-    end
-
-    def centos7?
-      self.centos? && self['platform_version'].start_with?('7')
-    end
-
-    def centos6?
-      self.centos? && self['platform_version'].start_with?('6')
-    end
-
+    # DEPRECATED: use centos_version?
     def centos5?
-      self.centos? && self['platform_version'].start_with?('5')
+      self.centos_version?(5)
     end
+
+    # DEPRECATED: use centos_version?
+    def centos6?
+      self.centos_version?(6)
+    end
+
+    # DEPRECATED: use centos_version?
+    def centos7?
+      self.centos_version?(7)
+    end
+
+    # DEPRECATED: use centos_version?
+    def centos8?
+      self.centos_version?(8)
+    end
+
+    # DEPRECATED: use centos_version?
+    def centos9?
+      self.centos_version?(9)
+    end
+
+    # DEPRECATED: use centos_version?
+    def centos10?
+      self.centos_version?(10)
+    end
+
+    # DO NOT ADD anymore centosXX? methods, use rhel_version?
 
     def rocky?
       self['platform'] == 'rocky'
@@ -173,6 +204,22 @@ class Chef
 
     def rocky_min_version?(version, full = false)
       self.rocky? && self.os_min_version?(version, full)
+    end
+
+    def almalinux?
+      self['platform'] == 'almalinux'
+    end
+
+    def almalinux_max_version?(version, full = false)
+      self.almalinux? && self.os_max_version?(version, full)
+    end
+
+    def almalinux_min_version?(version, full = false)
+      self.almalinux? && self.os_min_version?(version, full)
+    end
+
+    def almalinux_version?(v)
+      self.almalinux? && self._platform_version_helper?(v)
     end
 
     def redhat?
@@ -187,25 +234,36 @@ class Chef
       self.redhat? && self.os_min_version?(version, full)
     end
 
+    def redhat_version?(v)
+      self.redhat? && self._platform_version_helper?(v)
+    end
+
+    # DEPRECATED: use redhat_version?
     def redhat6?
-      self.redhat? && self['platform_version'].start_with?('6')
+      self.redhat_version?(6)
     end
 
+    # DEPRECATED: use redhat_version?
     def redhat7?
-      self.redhat? && self['platform_version'].start_with?('7')
+      self.redhat_version?(7)
     end
 
+    # DEPRECATED: use redhat_version?
     def redhat8?
-      self.redhat? && self['platform_version'].start_with?('8')
+      self.redhat_version?(8)
     end
 
+    # DEPRECATED: use redhat_version?
     def redhat9?
-      self.redhat? && self['platform_version'].start_with?('9')
+      self.redhat_version?(9)
     end
 
+    # DEPRECATED: use redhat_version?
     def redhat10?
-      self.redhat? && self['platform_version'].start_with?('10')
+      self.redhat_version?(10)
     end
+
+    # DO NOT ADD anymore redhatXX? methods, use redhat_version?
 
     def oracle?
       self['platform'] == 'oracle'
@@ -219,29 +277,41 @@ class Chef
       self.oracle? && self.os_min_version?(version, full)
     end
 
-    def oracle10?
-      self.oracle? && self['platform_version'].start_with?('10')
+    def oracle_version?(v)
+      self.oracle? && self._platform_version_helper?(v)
     end
 
-    def oracle9?
-      self.oracle? && self['platform_version'].start_with?('9')
-    end
-
-    def oracle8?
-      self.oracle? && self['platform_version'].start_with?('8')
-    end
-
-    def oracle7?
-      self.oracle? && self['platform_version'].start_with?('7')
-    end
-
-    def oracle6?
-      self.oracle? && self['platform_version'].start_with?('6')
-    end
-
+    # DEPRECATED: use oracle_version?
     def oracle5?
-      self.oracle? && self['platform_version'].start_with?('5')
+      self.oracle_version?(5)
     end
+
+    # DEPRECATED: use oracle_version?
+    def oracle6?
+      self.oracle_version?(6)
+    end
+
+    # DEPRECATED: use oracle_version?
+    def oracle7?
+      self.oracle_version?(7)
+    end
+
+    # DEPRECATED: use oracle_version?
+    def oracle8?
+      self.oracle_version?(8)
+    end
+
+    # DEPRECATED: use oracle_version?
+    def oracle9?
+      self.oracle_version?(9)
+    end
+
+    # DEPRECATED: use oracle_version?
+    def oracle10?
+      self.oracle_version?(10)
+    end
+
+    # DO NOT ADD anymore redhatXX? methods, use _version?
 
     def fedora_family?
       self['platform_family'] == 'fedora'
@@ -251,61 +321,81 @@ class Chef
       self['platform'] == 'fedora'
     end
 
+    def fedora_version?(v)
+      self.fedora? && self._platform_version_helper?(v)
+    end
+
+    # DEPRECATED: Use fedora_version?
     def fedora27?
-      self.fedora? && self['platform_version'] == '27'
+      self.fedora_version?(27)
     end
 
+    # DEPRECATED: Use fedora_version?
     def fedora28?
-      self.fedora? && self['platform_version'] == '28'
+      self.fedora_version?(28)
     end
 
+    # DEPRECATED: Use fedora_version?
     def fedora29?
-      self.fedora? && self['platform_version'] == '29'
+      self.fedora_version?(29)
     end
 
+    # DEPRECATED: Use fedora_version?
     def fedora30?
-      self.fedora? && self['platform_version'] == '30'
+      self.fedora_version?(30)
     end
 
+    # DEPRECATED: Use fedora_version?
     def fedora31?
-      self.fedora? && self['platform_version'] == '31'
+      self.fedora_version?(31)
     end
 
+    # DEPRECATED: Use fedora_version?
     def fedora32?
-      self.fedora? && self['platform_version'] == '32'
+      self.fedora_version?(32)
     end
 
+    # DEPRECATED: Use fedora_version?
     def fedora33?
-      self.fedora? && self['platform_version'] == '33'
+      self.fedora_version?(33)
     end
 
+    # DEPRECATED: Use fedora_version?
     def fedora34?
-      self.fedora? && self['platform_version'] == '34'
+      self.fedora_version?(34)
     end
 
+    # DEPRECATED: Use fedora_version?
     def fedora35?
-      self.fedora? && self['platform_version'] == '35'
+      self.fedora_version?(35)
     end
 
+    # DEPRECATED: Use fedora_version?
     def fedora36?
-      self.fedora? && self['platform_version'] == '36'
+      self.fedora_version?(36)
     end
 
+    # DEPRECATED: Use fedora_version?
     def fedora37?
-      self.fedora? && self['platform_version'] == '37'
+      self.fedora_version?(37)
     end
 
+    # DEPRECATED: Use fedora_version?
     def fedora38?
-      self.fedora? && self['platform_version'] == '38'
+      self.fedora_version?(38)
     end
 
+    # DEPRECATED: Use fedora_version?
     def fedora39?
-      self.fedora? && self['platform_version'] == '39'
+      self.fedora_version?(39)
     end
 
+    # DEPRECATED: Use fedora_version?
     def fedora40?
-      self.fedora? && self['platform_version'] == '40'
+      self.fedora_version?(40)
     end
+
+    # DO NOT ADD MORE fedoraXX? methods - use `fedora_version?`
 
     def fedora_max_version?(version, full = false)
       self.fedora? && self.os_max_version?(version, full)
@@ -347,6 +437,36 @@ class Chef
       self['platform'] == 'ubuntu'
     end
 
+    # If it includes a dot, compares version exactly.
+    # If it does not contain a dot, ensures the value
+    # is either the same, or starts with that verison and a dot
+    def _platform_version_helper?(v)
+      case v
+      when Integer, String
+        v = v.to_s
+        # If they're exactly equal as strings, that's just true always
+        return true if self['platform_version'] == v
+
+        if v.include?('.')
+          # If there's a dot, expect exact match, and if we're here
+          # that's not true, so return false
+          false
+        else
+          # If there's no dot and it's not exact match,
+          # then check it matches the major version
+          self['platform_version'].start_with?("#{v}.")
+        end
+      when Float
+        # this is needed so that 24.4 matches 24.04 - converts
+        # it all into FB::Version and does the right thing
+        self._self_version == v.to_s
+      end
+    end
+
+    def ubuntu_version?(v)
+      ubuntu_platform? && self._platform_version_helper?(v)
+    end
+
     def ubuntu_max_version?(version, full = false)
       self.ubuntu? && self.os_max_version?(version, full)
     end
@@ -355,45 +475,57 @@ class Chef
       self.ubuntu? && self.os_min_version?(version, full)
     end
 
+    # DEPRECATED: Use ubuntu_version?
     def ubuntu12?
-      ubuntu? && self['platform_version'].start_with?('12')
+      self.ubuntu_version?(12)
     end
 
+    # DEPRECATED: Use ubuntu_version?
     def ubuntu14?
-      ubuntu? && self['platform_version'].start_with?('14.')
+      self.ubuntu_version?(14)
     end
 
+    # DEPRECATED: Use ubuntu_version?
     def ubuntu15?
-      ubuntu? && self['platform_version'].start_with?('15.')
+      self.ubuntu_version?(15)
     end
 
+    # DEPRECATED: Use ubuntu_version?
     def ubuntu16?
-      ubuntu? && self['platform_version'].start_with?('16.')
+      self.ubuntu_version?(16)
     end
 
+    # DEPRECATED: Use ubuntu_version?
     def ubuntu1610?
-      ubuntu? && self['platform_version'] == '16.10'
+      self.ubuntu_version?(16.10)
     end
 
+    # DEPRECATED: Use ubuntu_version?
     def ubuntu17?
-      ubuntu? && self['platform_version'].start_with?('17')
+      self.ubuntu_version?(17)
     end
 
+    # DEPRECATED: Use ubuntu_version?
     def ubuntu1704?
-      ubuntu? && self['platform_version'] == '17.04'
+      self.ubuntu_version?(17.04)
     end
 
+    # DEPRECATED: Use ubuntu_version?
     def ubuntu18?
-      ubuntu? && self['platform_version'].start_with?('18.')
+      self.ubuntu_version?(18)
     end
 
+    # DEPRECATED: Use ubuntu_version?
     def ubuntu1804?
-      ubuntu? && self['platform_version'] == '18.04'
+      self.ubuntu_version?(18.04)
     end
 
+    # DEPRECATED: Use ubuntu_version?
     def ubuntu20?
-      ubuntu? && self['platform_version'].start_with?('20.')
+      self.ubuntu_version?(20)
     end
+
+    # DO NOT ADD ADDITIONAL ubuntuXX? methods, use ubuntu_version?
 
     def linuxmint?
       self['platform'] == 'linuxmint'
@@ -413,33 +545,48 @@ class Chef
 
     alias macosx? macos?
 
+    def macos_version?(v)
+      macos? && self._platform_version_helper?(v)
+    end
+
+    # DEPRECATED: Use macos_version?
     def macos10?
-      macos? && self['platform_version'].start_with?('10.')
+      self.macos_version?(10)
     end
 
+    # DEPRECATED: Use macos_version?
     def macos11?
-      macos? && self['platform_version'].start_with?('11.')
+      self.macos_version?(11)
     end
 
+    # DEPRECATED: Use macos_version?
     def macos12?
-      macos? && self['platform_version'].start_with?('12.')
+      self.macos_version?(12)
     end
 
+    # DEPRECATED: Use macos_version?
     def macos13?
+      self.macos_version?(13)
       macos? && self['platform_version'].start_with?('13.')
     end
 
+    # DEPRECATED: Use macos_version?
     def macos14?
-      macos? && self['platform_version'].start_with?('14.')
+      self.macos_version?(14)
     end
 
+    # DEPRECATED: Use macos_version?
+    # This function... has never worked. You can't >= a string...
     def macos15v4plus?
       macos? && self['platform_version'] >= '15.4'
     end
 
+    # DEPRECATED: Use macos_version?
     def macos15?
-      macos? && self['platform_version'].start_with?('15.')
+      self.macos_version?(15)
     end
+
+    # DO NOT ADD ADDITIONAL macosXX? methods, use maco_version?
 
     def mac_mini_2018?
       macos? && self['hardware']['machine_model'] == 'Macmini8,1'
@@ -474,7 +621,8 @@ class Chef
     end
 
     def windows10_or_newer?
-      windows_desktop? && self._self_version >= self._canonical_version('10.0.1')
+      windows_desktop? &&
+        self._self_version >= self._canonical_version('10.0.1')
     end
 
     def windows_server?
@@ -551,59 +699,76 @@ class Chef
     end
 
     def windows2016_or_newer?
-      windows_server? && self._self_version >= self._canonical_version('10.0.14393')
+      windows_server? &&
+        self._self_version >= self._canonical_version('10.0.14393')
     end
 
     def windows2019_or_newer?
-      windows_server? && self._self_version >= self._canonical_version('10.0.17763')
+      windows_server? &&
+        self._self_version >= self._canonical_version('10.0.17763')
     end
 
     def windows2022_or_newer?
-      windows_server? && self._self_version >= self._canonical_version('10.0.20348')
+      windows_server? &&
+        self._self_version >= self._canonical_version('10.0.20348')
     end
 
     def windows2025_or_newer?
-      windows_server? && self._self_version >= self._canonical_version('10.0.26100')
+      windows_server? &&
+        self._self_version >= self._canonical_version('10.0.26100')
     end
 
     def windows2012_or_older?
-      windows_server? && self._self_version < self._canonical_version('6.3')
+      windows_server? &&
+        self._self_version < self._canonical_version('6.3')
     end
 
     def windows2012r2_or_older?
-      windows_server? && self._self_version < self._canonical_version('6.4')
+      windows_server? &&
+        self._self_version < self._canonical_version('6.4')
     end
 
     def windows2016_or_older?
-      windows_server? && self._self_version <= self._canonical_version('10.0.14393')
+      windows_server? &&
+        self._self_version <= self._canonical_version('10.0.14393')
     end
 
     def windows2019_or_older?
-      windows_server? && self._self_version <= self._canonical_version('10.0.17763')
+      windows_server? &&
+        self._self_version <= self._canonical_version('10.0.17763')
     end
 
     def windows2022_or_older?
-      windows_server? && self._self_version <= self._canonical_version('10.0.20348')
+      windows_server? &&
+        self._self_version <= self._canonical_version('10.0.20348')
     end
 
     def windows2025_or_older?
-      windows_server? && self._self_version <= self._canonical_version('10.0.26100')
+      windows_server? &&
+        self._self_version <= self._canonical_version('10.0.26100')
     end
 
     def aristaeos?
       self['platform'] == 'arista_eos'
     end
 
+    def aristaeos_version_plus?(v)
+      self.aristaeos? && self.os_min_version?(v, true)
+    end
+
+    # DEPRECATED: Use aristaeos_version_plus?
     def aristaeos_4_28_or_newer?
-      self.aristaeos? && self._self_version >= self._canonical_version('4.28')
+      self.aristaeos_version_plus?('4.28')
     end
 
+    # DEPRECATED: Use aristaeos_version_plus?
     def aristaeos_4_30_or_newer?
-      self.aristaeos? && self._self_version >= self._canonical_version('4.30')
+      self.aristaeos_version_plus?('4.30')
     end
 
+    # DEPRECATED: Use aristaeos_version_plus?
     def aristaeos_4_32_or_newer?
-      self.aristaeos? && self._self_version >= self._canonical_version('4.32')
+      self.aristaeos_version_plus?('4.32')
     end
 
     def embedded?
@@ -1013,19 +1178,21 @@ class Chef
     def firstboot_os?
       # this has to work even when we fail early on so we can call this from
       # broken runs in handlers
-      self['fb_init']['firstboot_os']
+      return @_firstboot_os unless @_firstboot_os.nil?
+      @_firstboot_os = self['fb_init']['firstboot_os']
     rescue StandardError
       prefix = macos? ? '/var/root' : '/root'
-      File.exist?(File.join(prefix, 'firstboot_os'))
+      @_firstboot_os = File.exist?(File.join(prefix, 'firstboot_os'))
     end
 
     def firstboot_tier?
       # this has to work even when we fail early on so we can call this from
       # broken runs in handlers
-      self['fb_init']['firstboot_tier']
+      return @_firstboot_tier unless @_firstboot_tier.nil?
+      @_firstboot_tier = self['fb_init']['firstboot_tier']
     rescue StandardError
       prefix = macos? ? '/var/root' : '/root'
-      File.exist?(File.join(prefix, 'firstboot_tier'))
+      @_firstboot_tier = File.exist?(File.join(prefix, 'firstboot_tier'))
     end
 
     def firstboot_any_phase?
@@ -1099,8 +1266,8 @@ class Chef
 
     # returns the version-release of an rpm installed, or nil if not present
     def rpm_version(name)
-      if (self.centos? && !self.centos7?) || self.fedora? || self.redhat8? || self.oracle8? || self.redhat9? ||
-        self.oracle9? || self.redhat10? || self.aristaeos_4_30_or_newer?
+      if (self.centos? && !self.centos7?) || self.fedora? || self.redhat_min_version?(8) ||
+          self.oracle_min_version?(8) || self.almalinux_min_version?(8) || self.aristaeos_4_30_or_newer?
         # returns epoch.version
         v = Chef::Provider::Package::Dnf::PythonHelper.instance.
             package_query(:whatinstalled, name).version
@@ -1300,7 +1467,7 @@ class Chef
       else
         return self.nw_changes_allowed? ||
           ['ip6tnl0', 'tunlany0', 'tunl0'].include?(interface) ||
-          interface.match(Regexp.new('^tunlany\d+:\d+'))
+          interface.match?(Regexp.new('^tunlany\d+:\d+'))
       end
     end
 
@@ -1317,6 +1484,14 @@ class Chef
     # It can be ignored.
     def antlir2_build?
       false
+    end
+
+    # JSON recipes are a fairly new Chef feature (as of August 2025), and we
+    # can't assume everyone is using them yet. To ensure there's no downstream breakage,
+    # we'll be using this method as a way to support Chef clients that don't include the backport
+    def json_recipes_supported?
+      return @json_recipes_supported unless @json_recipes_supported.nil?
+      @json_recipes_supported ||= Chef::VERSION >= '19.1.53' || Chef::VERSION >= '18.7.28'
     end
 
     # A gate which can be used to limit dangerous code to only run during

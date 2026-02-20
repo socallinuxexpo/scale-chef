@@ -39,23 +39,26 @@ your node.
 * `node.centos?`
     Is CentOS
 
+* `node.centos_version?(v)`
+    Is this CentOS version v
+
 * `node.centos5?`
-    Is CentOS Linux 5
+    Is CentOS Linux 5 - Deprecated: use `node.centos_version?`
 
 * `node.centos6?`
-    Is CentOS Linux 6
+    Is CentOS Linux 6 - Deprecated: use `node.centos_version?`
 
 * `node.centos7?`
-    Is CentOS Linux 7
+    Is CentOS Linux 7 - Deprecated: use `node.centos_version?`
 
 * `node.centos8?`
-    Is CentOS Linux 8 or CentOS Stream 8
+    Is CentOS Linux 8 or CentOS Stream 8 - Deprecated: use `node.centos_version?`
 
 * `node.centos9?`
-    Is CentOS Stream 9
+    Is CentOS Stream 9 - Deprecated: use `node.centos_version?`
 
 * `node.centos10?`
-    Is CentOS Stream 10
+    Is CentOS Stream 10 - Deprecated: use `node.centos_version?`
 
 * `node.centos_max_version?(v, full=false)`
     Is RHEL-compatible with a maximum version number of v
@@ -66,49 +69,52 @@ your node.
     See os_min_version? for details
 
 * `node.fedora?`
-    Is Fedora
+    Is Fedora. Needs to be Deprecated in favor of ChefUtils fedora?
+
+* `node.fedora_version?(v)`
+   Is this Fedora version v (e.g. `node.fedora_version?(41)`)
 
 * `node.fedora27?`
-    Is Fedora 27
+    Is Fedora 27 - Deprecated, use `node.fedora_version?`
 
 * `node.fedora28?`
-    Is Fedora 28
+    Is Fedora 28 - Deprecated use `node.fedora_version?`
 
 * `node.fedora29?`
-    Is Fedora 29
+    Is Fedora 29 - Deprecated use `node.fedora_version?`
 
 * `node.fedora30?`
-    Is Fedora 30
+    Is Fedora 30 - Deprecated use `node.fedora_version?`
 
 * `node.fedora31?`
-    Is Fedora 31
+    Is Fedora 31 - Deprecated use `node.fedora_version?`
 
 * `node.fedora32?`
-    Is Fedora 32
+    Is Fedora 32 - Deprecated use `node.fedora_version?`
 
 * `node.fedora33?`
-    Is Fedora 33
+    Is Fedora 33 - Deprecated use `node.fedora_version?`
 
 * `node.fedora34?`
-    Is Fedora 34
+    Is Fedora 34 - Deprecated use `node.fedora_version?`
 
 * `node.fedora35?`
-    Is Fedora 35
+    Is Fedora 35 - Deprecated use `node.fedora_version?`
 
 * `node.fedora36?`
-    Is Fedora 36
+    Is Fedora 36 - Deprecated use `node.fedora_version?`
 
 * `node.fedora37?`
-    Is Fedora 37
+    Is Fedora 37 - Deprecated use `node.fedora_version?`
 
 * `node.fedora38?`
-    Is Fedora 38
+    Is Fedora 38 - Deprecated use `node.fedora_version?`
 
 * `node.fedora39?`
-    Is Fedora 39
+    Is Fedora 39 - Deprecated use `node.fedora_version?`
 
 * `node.fedora40?`
-    Is Fedora 40
+    Is Fedora 40 - Deprecated use `node.fedora_version?`
 
 * `node.fedora_max_version?(v, full=false)`
     Is RHEL-compatible with a maximum version number of v
@@ -124,20 +130,23 @@ your node.
 * `node.redhat?`
     Is Redhat Enterprise Linux
 
+* `node.redhat_version?`
+    Is Redhat Enterprise Linux version v
+
 * `node.redhat6?`
-    Is Redhat Enterprise Linux 6
+    Is Redhat Enterprise Linux 6 - Deprecated use `node.redhat_version?`
 
 * `node.redhat7?`
-    Is Redhat Enterprise Linux 7
+    Is Redhat Enterprise Linux 7 - Deprecated use `node.redhat_version?`
 
 * `node.redhat8?`
-    Is Redhat Enterprise Linux 8
+    Is Redhat Enterprise Linux 8 - Deprecated use `node.redhat_version?`
 
 * `node.redhat9?`
-    Is Redhat Enterprise Linux 9
+    Is Redhat Enterprise Linux 9 - Deprecated use `node.redhat_version?`
 
 * `node.redhat10?`
-    Is Redhat Enterprise Linux 10
+    Is Redhat Enterprise Linux 10 - Deprecated use `node.redhat_version?`
 
 * `node.rhel_max_version?(v, full=false)`
     Is Redhat Enterprise Linux with a maximum major version number of v
@@ -148,84 +157,95 @@ your node.
     See os_min_version? for details.
 
 * `node.rhel?`
-    Is Redhat Enterprise Linux
+    Is Redhat Enterprise Linux-compatible (eg CentOS, Oracle Linux, Rocky Linux)
+
+* `node.rhel_version?`
+    Is Redhat Enterprise Linux Family version v
 
 * `node.rhel7?`
-    Is Redhat Enterprise Linux 7
+    Is Redhat Enterprise Linux 7 - Deprecated use `node.rhel_version?`
 
 * `node.rhel8?`
-    Is Redhat Enterprise Linux 8
+    Is Redhat Enterprise Linux 8 - Deprecated use `node.rhel_version?`
 
 * `node.rhel8_8?`
-    Is Redhat Enterprise Linux 8.8
+    Is Redhat Enterprise Linux 8.8 - Deprecated use `node.rhel_version?`
 
 * `node.rhel9?`
-    Is Redhat Enterprise Linux 9
+    Is Redhat Enterprise Linux 9 - Deprecated use `node.rhel_version?`
 
 * `node.rhel10?`
-    Is Redhat Enterprise Linux 10
+    Is Redhat Enterprise Linux 10 - Deprecated use `node.rhel_version?`
 
 * `node.oracle?`
     Is Oracle Enterprise Linux
 
+* `node.oracle_version?`
+    Is Oracle Enterprise Linux version v
+
 * `node.oracle5?`
-    Is Oracle Enterprise Linux 5
+    Is Oracle Enterprise Linux 5 - Deprecated use `node.oracle_version?`
 
 * `node.oracle6?`
-    Is Oracle Enterprise Linux 6
+    Is Oracle Enterprise Linux 6 - Deprecated use `node.oracle_version?`
 
 * `node.oracle7?`
-    Is Oracle Enterprise Linux 7
+    Is Oracle Enterprise Linux 7 - Deprecated use `node.oracle_version?`
 
 * `node.oracle8?`
-    Is Oracle Enterprise Linux 8
+    Is Oracle Enterprise Linux 8 - Deprecated use `node.oracle_version?`
 
 * `node.rhel_family?`
-    Is Redhat Enterprise Linux-compatible (eg CentOS, Oracle Linux, Rocky Linux)
+    Backwards-compat alias for `node.rhel?`
 
 * `node.el_max_version?(v, full=false)`
-    Is RHEL-compatible with a maximum version number of v
-    See os_max_version? for details.
+    Alias for rhel_max_version?
 
 * `node.el_min_version?(v, full=false)`
-    Is RHEL-compatible with a minimum version number of v
-    See os_min_version? for details.
+    Alias for rhel_min_version?
 
 * `node.debian?`
     Is Debian
 
-* `node.ubuntu?`
+* `node.ubuntu?` - need to be removed in favor of ChefUtils `ubuntu_platform?`
     Is Ubuntu
 
+* `node.ubuntu_version?(v)`
+    True if ubuntu and this specific version. If you pass in an integer, or
+    string-holding-an-integer (e.g. `22`), then it will be true for all 22
+    versions (22.04, 22.10, etc.). If you pass in a float, or
+    string-holding-a-float (e.g. `22.04`), then it will return true only for
+    that specific version.
+
 * `node.ubuntu12?`
-    Is Ubuntu14
+    Is Ubuntu12 - Deprecated, use `node.ubuntu_version?`
 
 * `node.ubuntu14?`
-    Is Ubuntu14
+    Is Ubuntu14 - Deprecated, use `node.ubuntu_version?`
 
 * `node.ubuntu15?`
-    Is Ubuntu15
+    Is Ubuntu15 - Deprecated, use `node.ubuntu_version?`
 
 * `node.ubuntu16?`
-    Is Ubuntu16
+    Is Ubuntu16 - Deprecated, use `node.ubuntu_version?`
 
 * `node.ubuntu1610?`
-    Is Ubuntu16.10
+    Is Ubuntu16.10 - Deprecated, use `node.ubuntu_version?`
 
 * `node.ubuntu17?`
-    Is Ubuntu17
+    Is Ubuntu17 - Deprecated, use `node.ubuntu_version?`
 
 * `node.ubuntu1704?`
-    Is Ubuntu17.04
+    Is Ubuntu17.04 - Deprecated, use `node.ubuntu_version?`
 
 * `node.ubuntu18?`
-    Is Ubuntu18
+    Is Ubuntu18 - Deprecated, use `node.ubuntu_version?`
 
 * `node.ubuntu1804?`
-    Is Ubuntu18.04
+    Is Ubuntu18.04 - Deprecated, use `node.ubuntu_version?`
 
 * `node.ubuntu20?`
-    Is Ubuntu20
+    Is Ubuntu20 - Deprecated, use `node.ubuntu_version?`
 
 * `node.linux?`
     Is Linux
@@ -233,14 +253,17 @@ your node.
 * `node.macos?`
     Is macOS (any version)
 
+* `node.macos_version?(v)`
+    Is macOS version v
+
 * `node.macos10?`
-    Is macOS Catalina (macOS 10)
+    Is macOS Catalina (macOS 10) - Deprecated use `node.macos_version?`
 
 * `node.macos11?`
-    Is macOS Big Sur (macOS 11)
+    Is macOS Big Sur (macOS 11) - Deprecated use `node.macos_version?`
 
 * `node.macos12?`
-    Is macOS Monterey (macOS 12)
+    Is macOS Monterey (macOS 12) - Deprecated use `node.macos_version?`
 
 * `node.windows?`
     Is Windows
@@ -267,16 +290,23 @@ your node.
     Is Windows 2019
 
 * `node.aristaeos?`
-    Is network switch running Arista EOS
+    Is network switch running Arista EOS.
+
+* `node.aristaeos_v_plus?(v)`
+    Is network switch running Arista EOS and OS version v or newer.
+    `v` must be a string.
 
 * `node.aristaeos_4_28_or_newer?`
     Is network switch running Arista EOS and OS version is 4.28 or newer
+    Deprecated - use `node.aristaeos_v_plus?`
 
 * `node.aristaeos_4_30_or_newer?`
     Is network switch running Arista EOS and OS version is 4.30 or newer
+    Deprecated - use `node.aristaeos_v_plus?`
 
 * `node.aristaeos_4_32_or_newer?`
     Is network switch running Arista EOS and OS version is 4.32 or newer
+    Deprecated - use `node.aristaeos_v_plus?`
 
 * `node.embedded?`
     Is embedded Linux, implies 'node.aristaeos?'. These devices likely have
@@ -364,7 +394,7 @@ your node.
 * `node.in_flexible_shard?(shard, shard_size)`
    True if the flexible shard we are in is less-than-or-equal to `shard`.  In
    other words, `node.in_flexible_shard?(24, 1000)` is true if you are in
-   shards 0-24 per-thousandth (the equivalent to 0%-2.4%).  This sharding is
+   shards 0-23 per-thousandth (the equivalent to 2.4%).  This sharding is
    *not* compatible with the `node.in_shard?()` implementation, so please choose
    one or the other when starting your experiment.
 
@@ -521,6 +551,11 @@ your node.
     workload and can disrupted.  For initial boot you must
     pass `CHEF_BOOT_SERVICE=true` as an environment variable from your
     boot-time chef invocation.
+
+* `node.json_recipes_support?`
+    A check on if JSON recipes are supported. Will eventually use the
+    backport mechanism in this cookbook, but for now just checks the
+    version numbers.
 
 ### FB::Helpers
 The following constants are available:
@@ -894,6 +929,31 @@ fail the run if any subsequent `:update` or `:merge` actions are triggered.
 The `:merge` which triggers the actual aggregated notification should only happen
 a single time, immediately before the resource which is being notified; all
 other flows are fundamentally flawed.
+
+#### include_recipe_at_converge_time
+
+***EXPERIMENTAL AS HECK!***
+
+*Changes to this resource in the future are expected (as of Sept 2025), and the
+resource may be removed entirely in some future commit, so it's advised to
+avoid external use until this scary warning is removed. It is being documented
+and included in fb_helpers to ensure no inadvertent downstream breakage.*
+
+Many resources *could* be moved to JSON recipes if there was some way of
+delaying the resource additions to converge time when a node attribute can be
+read (a common feature in the FB API model). It shouldn't be used where
+conditional logic can be used at compile time (eg when using `node.centos?`) -
+use a normal `include_recipe` call instead. This resource is intended to load
+JSON recipes where the resources are static in their constitution - while Ruby
+recipes *can* be loaded, you really shouldn't.
+
+Usage example:
+
+```ruby
+include_recipe_at_converge_time 'fb_example::json_recipe_with_package_resources' do
+  only_if { node['fb_example']['manage_packages'] }
+end
+```
 
 ### Reboot control
 If it's safe for Chef to reboot your host, set `reboot_allowed` to true in
