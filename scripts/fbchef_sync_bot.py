@@ -15,7 +15,7 @@ import yaml
 logger = logging.getLogger(__name__)
 
 
-def load_config():
+def load_config() -> Dict:
     """
     Load configuration from fbchef_sync_bot.yaml if it exists.
     Returns a dict with config values (with defaults if file doesn't exist).
@@ -51,7 +51,7 @@ def load_config():
         return default_config
 
 
-def run(cmd, check=True):
+def run(cmd: List[str], check: bool = True) -> str:
     logger.debug(f"Running command: {' '.join(cmd)}")
     result = subprocess.run(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
@@ -64,12 +64,12 @@ def run(cmd, check=True):
     return result.stdout.strip()
 
 
-def git(*args):
+def git(*args: str) -> str:
     logger.debug(f"Git command: git {' '.join(args)}")
     return run(["git", *args])
 
 
-def try_git(*args):
+def try_git(*args: str) -> Tuple[bool, str, str]:
     logger.debug(f"Try git command: git {' '.join(args)}")
     result = subprocess.run(["git", *args], capture_output=True, text=True)
     logger.debug(f"Try git exit code: {result.returncode}")
@@ -141,7 +141,7 @@ class FBChefSyncBot:
             return matches
         return matches[0] if matches else None
 
-    def get_global_pointer(self):
+    def get_global_pointer(self) -> Optional[str]:
         """
         Get the most recent Upstream-Commit from base_branch.
 
@@ -164,7 +164,7 @@ class FBChefSyncBot:
         self.logger.debug(f"Found global pointer: {pointer}")
         return pointer
 
-    def fetch_upstream(self):
+    def fetch_upstream(self) -> None:
 
         self.logger.info(
             f"Fetching upstream from remote: {self.upstream_remote}"
@@ -172,7 +172,7 @@ class FBChefSyncBot:
         git("fetch", self.upstream_remote)
         self.logger.debug("Upstream fetch completed")
 
-    def upstream_commits_since(self, pointer):
+    def upstream_commits_since(self, pointer: Optional[str]) -> List[str]:
 
         if not pointer:
             self.logger.debug(
@@ -189,7 +189,7 @@ class FBChefSyncBot:
         self.logger.debug(f"Found {len(commits)} upstream commits")
         return commits
 
-    def touches_cookbooks(self, commit):
+    def touches_cookbooks(self, commit: str) -> bool:
 
         self.logger.debug(f"Checking if commit {commit[:8]} touches cookbooks")
         files = git("show", "--name-only", "--pretty=format:", commit)
@@ -197,7 +197,7 @@ class FBChefSyncBot:
         self.logger.debug(f"Commit {commit[:8]} touches cookbooks: {touches}")
         return touches
 
-    def existing_sync_pr(self):
+    def existing_sync_pr(self) -> Optional[Dict]:
 
         self.logger.debug(
             f"Searching for existing sync PR on base branch: {self.base_branch}"
@@ -236,7 +236,7 @@ class FBChefSyncBot:
         self.logger.debug("No existing sync PR found")
         return None
 
-    def get_branch_trailers(self, branch):
+    def get_branch_trailers(self, branch: str) -> List[str]:
         """
         Get all Upstream-Commit trailer values from a branch.
 
@@ -250,7 +250,9 @@ class FBChefSyncBot:
         self.logger.debug(f"Found {len(trailers)} trailers")
         return trailers
 
-    def get_branch_commits_with_trailers(self, branch):
+    def get_branch_commits_with_trailers(
+        self, branch: str
+    ) -> List[Tuple[str, str]]:
         """
         Get branch commits that have Upstream-Commit trailers, returned as list of
         (branch_commit_hash, upstream_commit_hash) tuples in chronological order.
@@ -294,11 +296,13 @@ class FBChefSyncBot:
         self.logger.debug(f"Found {len(commits)} branch commits with trailers")
         return commits
 
-    def shortlog(self, commit):
+    def shortlog(self, commit: str) -> str:
 
         return git("log", "-1", "--pretty=%s", commit)
 
-    def pr_title_and_description_from_commits(self, commits):
+    def pr_title_and_description_from_commits(
+        self, commits: List[str]
+    ) -> Tuple[str, str]:
 
         commit_entries = []
         for c in commits:
@@ -353,7 +357,7 @@ class FBChefSyncBot:
         cmd.extend(["--body", body])
         return cmd
 
-    def update_pr_body(self, pr_number, commits):
+    def update_pr_body(self, pr_number: int, commits: List[str]) -> None:
         """
         Update an existing PR's title and body with new commit list.
         """
@@ -372,7 +376,7 @@ class FBChefSyncBot:
                 f"[dry-run] Would update PR #{pr_number} title and body with {len(commits)} commits"
             )
 
-    def create_conflict_pr(self, branch, commit):
+    def create_conflict_pr(self, branch: str, commit: str) -> None:
         self.logger.warning(
             f"Conflict detected while applying commit {commit[:8]}"
         )
@@ -393,7 +397,7 @@ Please resolve manually.
 """
         )
 
-    def find_existing_issue_for_cookbook(self, cookbook):
+    def find_existing_issue_for_cookbook(self, cookbook: str) -> Optional[int]:
         """
         Find an existing open issue for a cookbook's local changes.
         Returns the issue number if found, None otherwise.
@@ -433,10 +437,10 @@ Please resolve manually.
     def create_conflict_issue(
         self,
         commit: str,
-        cookbooks: list = None,
-        conflict_details: str = None,
+        cookbooks: Optional[List[str]] = None,
+        conflict_details: Optional[str] = None,
         dry_run: bool = False,
-    ):
+    ) -> None:
         """
         Create or update a GitHub issue for a sync conflict (single issue regardless of cookbooks involved).
         - commit: upstream commit SHA that caused the conflict
@@ -571,7 +575,7 @@ Please resolve manually.
 
     def close_resolved_conflict_issues(
         self, current_pointer: str, dry_run: bool = False
-    ):
+    ) -> None:
         """
         Close any open conflict issues for commits that have been successfully synced past.
         - current_pointer: the current upstream commit pointer (commits before this are resolved)
@@ -678,10 +682,10 @@ Please resolve manually.
 
     def create_or_update_issue_for_local_changes(
         self,
-        cookbooks: list,
+        cookbooks: List[str],
         commit: str,
         dry_run: bool = False,
-    ):
+    ) -> None:
         """
         Create or update GitHub issues noting that local changes exist in cookbooks.
         Creates/updates one issue per cookbook (for non-blocking local changes after successful sync).
@@ -761,7 +765,7 @@ Please resolve manually.
                     f"Failed to create/update issue for {cookbook}: {e}"
                 )
 
-    def create_pr(self, branch, commits):
+    def create_pr(self, branch: str, commits: List[str]) -> Optional[int]:
         """
         Create a new PR for syncing upstream commits.
         """
@@ -784,7 +788,7 @@ Please resolve manually.
             )
             return None
 
-    def create_onboarding_pr(self, baseline):
+    def create_onboarding_pr(self, baseline: str) -> Optional[int]:
         """
         Create onboarding PR to establish initial upstream sync baseline.
         """
@@ -824,7 +828,7 @@ Merge this PR to enable automated upstream syncing.
             self.logger.debug(f"[dry-run] Created onboarding branch {branch}")
             return None
 
-    def is_commit_already_applied(self, commit):
+    def is_commit_already_applied(self, commit: str) -> bool:
         """
         Check if the changes from a commit are already present in the current branch.
         This checks the actual content, not just the Upstream-Commit trailer.
@@ -919,7 +923,7 @@ Merge this PR to enable automated upstream syncing.
             )
             return False
 
-    def capture_conflict_details(self, conflicting_files):
+    def capture_conflict_details(self, conflicting_files: List[str]) -> str:
         """
         Capture the conflict details for files that have conflicts.
         Returns a formatted string showing the conflicts.
@@ -967,7 +971,7 @@ Merge this PR to enable automated upstream syncing.
         )
         return result
 
-    def _abort_cherry_pick_safely(self):
+    def _abort_cherry_pick_safely(self) -> None:
         """
         Safely abort a cherry-pick with fallback to manual cleanup.
         """
@@ -1085,7 +1089,7 @@ Merge this PR to enable automated upstream syncing.
             self.logger.warning(f"Error capturing basic conflict info: {e}")
             return "Could not capture conflict details"
 
-    def cherry_pick_with_trailer(self, commit):
+    def cherry_pick_with_trailer(self, commit: str) -> bool:
         """
         Cherry-pick a commit with an Upstream-Commit trailer.
         Returns True if the commit was applied, False if it was skipped.
@@ -1211,7 +1215,7 @@ Merge this PR to enable automated upstream syncing.
                 return False  # Successfully skipped - repo already cleaned up
             return True  # Successfully applied
 
-    def filter_and_commit_fb_changes(self, commit):
+    def filter_and_commit_fb_changes(self, commit: str) -> bool:
         """
         After a cherry-pick --no-commit, filter to only keep changes in cookbooks/fb_*
         that exist locally, then commit with the original message plus trailer.
@@ -1294,7 +1298,7 @@ Merge this PR to enable automated upstream syncing.
 
         return True
 
-    def get_current_pointer(self):
+    def get_current_pointer(self) -> Optional[str]:
         """
         Get the most recent Upstream-Commit from target_branch.
 
@@ -1374,7 +1378,7 @@ Merge this PR to enable automated upstream syncing.
         )
         return most_recent
 
-    def list_local_cookbooks(self):
+    def list_local_cookbooks(self) -> List[str]:
         """
         List cookbooks that exist in the current HEAD/branch.
         Uses git to check what's actually committed, not filesystem (which may have conflict files).
@@ -1426,7 +1430,7 @@ Merge this PR to enable automated upstream syncing.
             )
             return cookbooks
 
-    def detect_global_baseline(self):
+    def detect_global_baseline(self) -> Optional[str]:
 
         self.logger.info("Detecting global baseline")
         cookbooks = self.list_local_cookbooks()
@@ -1454,7 +1458,7 @@ Merge this PR to enable automated upstream syncing.
         self.logger.info(f"Global baseline detected at {base}")
         return base
 
-    def find_baseline_for_cookbook(self, cb):
+    def find_baseline_for_cookbook(self, cb: str) -> Optional[str]:
 
         self.logger.info(f"Finding baseline for cookbook: {cb}")
         upstream_commits = git(
@@ -1475,7 +1479,7 @@ Merge this PR to enable automated upstream syncing.
         self.logger.info(f"No baseline match found for {cb}")
         return None
 
-    def detect_local_changes(self, cookbook):
+    def detect_local_changes(self, cookbook: str) -> bool:
 
         self.logger.debug(f"Detecting local changes in cookbook: {cookbook}")
         success, _, _ = try_git(
@@ -1487,7 +1491,7 @@ Merge this PR to enable automated upstream syncing.
         )
         return has_changes
 
-    def sync(self):
+    def sync(self) -> None:
 
         self.logger.info("Starting sync operation")
         self.logger.debug(
@@ -1697,7 +1701,7 @@ Merge this PR to enable automated upstream syncing.
 
         self.logger.info(f"Sync complete: {len(applied)} commits applied")
 
-    def parse_split_command(self, body):
+    def parse_split_command(self, body: str) -> Optional[Tuple[str, str]]:
 
         self.logger.debug("Parsing split command from comment body")
         match = re.search(
@@ -1712,7 +1716,11 @@ Merge this PR to enable automated upstream syncing.
         )
         return split_range
 
-    def split(self, comment_body=None, pr_number=None):
+    def split(
+        self,
+        comment_body: Optional[str] = None,
+        pr_number: Optional[int] = None,
+    ) -> None:
 
         self.logger.info("Running split operation")
 
@@ -1952,7 +1960,7 @@ Merge this PR to enable automated upstream syncing.
 # ===================================================
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Facebook Chef Sync Bot")
     parser.add_argument(
         "--dry-run",
