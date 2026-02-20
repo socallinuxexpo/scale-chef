@@ -65,6 +65,12 @@ services.each do |svc|
     action :enable
   end
 
+  service svc do
+    only_if { node['fb_iptables']['enable'] }
+    only_if { node['fb_iptables']['start'] }
+    action :start
+  end
+
   service "disable #{svc}" do
     not_if { node['fb_iptables']['enable'] }
     service_name svc
@@ -83,9 +89,8 @@ template '/etc/fb_iptables.conf' do
     :ip6tables_rules_file => ip6tables_rule_file,
   )
 end
-
 # DO NOT MAKE THIS A TEMPLATE! USE THE CONFIG FILE TEMPLATED ABOVE!!
-cookbook_file '/usr/sbin/fb_iptables_reload' do
+cookbook_file '/usr/bin/fb_iptables_reload' do
   source 'fb_iptables_reload.sh'
   owner node.root_user
   group node.root_group
