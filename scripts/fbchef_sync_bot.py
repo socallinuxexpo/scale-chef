@@ -2073,7 +2073,17 @@ def main() -> None:
         # PR comment with bot command
         logger.info("Running in command mode (issue_comment event)")
         bot.handle_command()
-    elif github_event_name in ("issues", "pull_request") and github_event_path:
+    elif (
+        github_event_name in ("issues", "pull_request_target")
+        and github_event_path
+    ):
+        # We will be notified anytime an issue or pull request close, and
+        # run a sync again instead of waiting for the next scheduled run.
+
+        # However, for PRs we don't want to run in PR context, so we use
+        # pull_request_target for these. If it's `pull_request`, it's
+        # a different case.
+
         # Check if this is a close event on a PR/issue with our labels
         logger.debug(f"Checking {github_event_name} event")
         try:
@@ -2084,7 +2094,7 @@ def main() -> None:
             if action == "closed":
                 # Check if the PR/issue has our labels
                 labels = []
-                if "pull_request" in event:
+                if "pull_request_target" in event:
                     labels = [
                         label["name"]
                         for label in event["pull_request"].get("labels", [])
@@ -2113,9 +2123,7 @@ def main() -> None:
                 )
         except Exception as e:
             logger.warning(f"Error processing {github_event_name} event: {e}")
-            # Fall through to sync mode
-            logger.info("Running in sync mode")
-            bot.sync()
+            logger.info("Not running any mode...")
     else:
         # Default: sync mode (scheduled runs, workflow_dispatch, etc.)
         logger.info("Running in sync mode")
