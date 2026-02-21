@@ -5,7 +5,6 @@ on:
     inputs:
       upstream_repo_url:
         description: 'URL of the upstream repository to sync from'
-        required: true
         type: string
         default: 'https://www.github.com/facebook/chef-cookbooks.git'
       upstream_remote_name:

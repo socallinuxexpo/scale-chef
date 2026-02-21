@@ -26,6 +26,7 @@ def load_config() -> Dict:
         "pr_labels": ["fbchef_sync_bot"],
         "issue_labels": ["fbchef_sync_bot"],
         "split_label": "fbchef_sync_bot_pr_split",
+        "bot_command_prefix": "#fbchefsync",
     }
 
     if not config_path.exists():
@@ -308,12 +309,16 @@ class FBChefSyncBot:
                 f"* {self.shortlog(c)}\n  * Upstream-Commit: {c}\n"
             )
 
+        split_cmd = (
+            f"{self.config.get('bot_command_prefix')} split <shaA>-<shaB>"
+        )
+
         body = "Syncing upstream commits. The PRs are listed below. You can"
         body += " comment in this PR with commands see below. Also, this"
         body += " description is build for squash-merge, make sure you keep"
         body += " all the `Upstream-Commit` trailers in tact.\n\n"
         body += "\n".join(commit_entries)
-        body += "\nTo split:\n```\n#bot split <shaA>-<shaB>\n```\n"
+        body += f"\nTo split:\n```\n{split_cmd}\n```\n"
 
         title = f"Sync upstream ({len(commits)} commits)"
 
@@ -1724,11 +1729,14 @@ Merge this PR to enable automated upstream syncing.
             Tuple of (command_name, command_args) or None if no command found
 
         Example:
-            "#bot split abc123-def456" returns ("split", "abc123-def456")
-            "#bot rebase" returns ("rebase", "")
+            "#fbchefsync split abc123-def456" returns ("split", "abc123-def456")
+            "#fbchefsync rebase" returns ("rebase", "")
         """
         self.logger.debug("Parsing bot command from comment body")
-        match = re.search(r"#bot\s+(\w+)(?:\s+(.+))?", body, re.IGNORECASE)
+        cmd_pfx = self.config.get("command_prefix")
+        match = re.search(
+            r"%s\s+(\w+)(?:\s+(.+))?" % cmd_pfx, body, re.IGNORECASE
+        )
         if not match:
             self.logger.debug("No bot command found")
             return None
@@ -1779,7 +1787,7 @@ Merge this PR to enable automated upstream syncing.
             self.logger.error(f"Invalid split args format: {args}")
             self.logger.error("Expected format: <sha1>-<sha2>")
             raise ValueError(
-                f"Invalid split command format. Expected `#bot split <sha1>-<sha2>`, got `{args}`"
+                f"Invalid split command format. Expected `split <sha1>-<sha2>`, got `{args}`"
             )
 
         start_sha, end_sha = parsed
@@ -2131,8 +2139,8 @@ Merge this PR to enable automated upstream syncing.
                 error_msg = (
                     f"❌ Unknown command: `{command}`\n\n"
                     f"Supported commands:\n"
-                    f"- `#bot split <sha1>-<sha2>` - Split a PR into two PRs\n"
-                    f"- `#bot rebase` - Rebase the PR onto the latest base branch\n"
+                    f"- `split <sha1>-<sha2>` - Split a PR into two PRs\n"
+                    f"- `rebase` - Rebase the PR onto the latest base branch\n"
                 )
                 self.add_comment(pr_number, error_msg)
         except Exception as e:
@@ -2237,7 +2245,7 @@ def main() -> None:
     if args.command and args.pr:
         # Command line test mode - construct a comment body with the command
         logger.info(f"Running command test (PR #{args.pr}): {args.command}")
-        comment_body = f"#bot {args.command}"
+        comment_body = f"{config.get('bot_command_prefix')} {args.command}"
         bot.handle_command(comment_body=comment_body, pr_number=args.pr)
     elif args.command or args.pr:
         logger.error("Both --command and --pr required for test mode")

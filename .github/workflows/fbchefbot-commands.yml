@@ -1,4 +1,4 @@
-name: Chef Sync Bot - Command handler
+name: FBChefSync Bot - Command handler
 
 on:
   issue_comment:
@@ -12,7 +12,7 @@ concurrency:
 jobs:
   split:
     name: Handle '#bot' commands
-    uses: ./.github/workflows/reusable-chef-sync-bot.yml
+    uses: ./.github/workflows/reusable-fbchefsync-bot.yml
     with:
       python_version: '3.11'
     secrets:
