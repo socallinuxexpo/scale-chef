@@ -1733,10 +1733,9 @@ Merge this PR to enable automated upstream syncing.
             "#fbchefsync rebase" returns ("rebase", "")
         """
         self.logger.debug("Parsing bot command from comment body")
-        cmd_pfx = self.config.get("command_prefix")
-        match = re.search(
-            r"%s\s+(\w+)(?:\s+(.+))?" % cmd_pfx, body, re.IGNORECASE
-        )
+        cmd_pfx = self.config.get("bot_command_prefix")
+        regex = r"%s\s+(\w+)(?:\s+(.+))?" % cmd_pfx
+        match = re.search(regex, body, re.IGNORECASE)
         if not match:
             self.logger.debug("No bot command found")
             return None
@@ -2099,8 +2098,6 @@ Merge this PR to enable automated upstream syncing.
             comment_body: Comment body text (if None, reads from event)
             pr_number: PR number (if None, reads from event)
         """
-        self.logger.info("Running command mode")
-
         # If not called with explicit params, read from GitHub event
         if comment_body is None or pr_number is None:
             self.logger.debug(
@@ -2110,7 +2107,8 @@ Merge this PR to enable automated upstream syncing.
                 event = json.load(f)
 
             if "issue" not in event or "pull_request" not in event["issue"]:
-                self.logger.debug("Not a PR comment event, skipping")
+                self.logger.info("Not a PR comment event, skipping")
+                self.logger.debug("Event info: %s", json.dumps(event, indent=2))
                 return
 
             comment_body = event["comment"]["body"]
@@ -2246,6 +2244,7 @@ def main() -> None:
         # Command line test mode - construct a comment body with the command
         logger.info(f"Running command test (PR #{args.pr}): {args.command}")
         comment_body = f"{config.get('bot_command_prefix')} {args.command}"
+        logger.debug(f"Constructed comment body for test: {comment_body}")
         bot.handle_command(comment_body=comment_body, pr_number=args.pr)
     elif args.command or args.pr:
         logger.error("Both --command and --pr required for test mode")
