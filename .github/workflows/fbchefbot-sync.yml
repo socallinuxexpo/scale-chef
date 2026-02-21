@@ -1,4 +1,4 @@
-name: Chef Sync Bot - Daily Upstream Sync
+name: FBChefSync Bot - Upstream Sync
 
 on:
   workflow_dispatch:  # allow manual trigger from UI
@@ -23,9 +23,8 @@ concurrency:
 jobs:
   sync:
     name: Run daily sync
-    uses: ./.github/workflows/reusable-chef-sync-bot.yml
+    uses: ./.github/workflows/reusable-fbchefsync-bot.yml
     with:
-      upstream_repo_url: 'https://github.com/facebook/chef-cookbooks.git'
       upstream_remote_name: 'fb-upstream'
       # For pull_request: use PR head branch, otherwise use main
       base_branch: ${{ github.event_name == 'pull_request' && github.head_ref || 'main' }}
