@@ -23,7 +23,7 @@ concurrency:
 jobs:
   sync:
     name: Run daily sync
-    uses: jaymzh/chef-cookbooks/.github/workflows/reusable-fbchefsync-bot.yml
+    uses: jaymzh/chef-cookbooks/.github/workflows/reusable-fbchefsync-bot.yml@bot
     with:
       upstream_remote_name: 'fb-upstream'
       # For pull_request: use PR head branch, otherwise use main
