@@ -12,7 +12,7 @@ concurrency:
 jobs:
   split:
     name: Handle '#bot' commands
-    uses: jaymzh/chef-cookbooks/.github/workflows/reusable-fbchefsync-bot.yml
+    uses: jaymzh/chef-cookbooks/.github/workflows/reusable-fbchefsync-bot.yml@bot
     with:
       python_version: '3.11'
     secrets:
