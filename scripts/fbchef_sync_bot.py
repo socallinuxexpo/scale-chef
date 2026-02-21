@@ -20,7 +20,7 @@ def load_config() -> Dict:
     Load configuration from fbchef_sync_bot.yaml if it exists.
     Returns a dict with config values (with defaults if file doesn't exist).
     """
-    config_path = Path("fbchef_sync_bot.yaml")
+    config_path = Path("fbchefsync_bot.yaml")
     default_config = {
         "ignore_cookbooks": ["fb_init", "fb_init_sample"],
         "pr_labels": ["fbchef_sync_bot"],
@@ -309,16 +309,18 @@ class FBChefSyncBot:
                 f"* {self.shortlog(c)}\n  * Upstream-Commit: {c}\n"
             )
 
-        split_cmd = (
-            f"{self.config.get('bot_command_prefix')} split <shaA>-<shaB>"
-        )
+        prefix = self.config.get("bot_command_prefix")
+        cmds = [
+            f"{prefix} split <shaA>-<shaB>: Split range of commits into a separate PR. Must be first or last commits.",
+            f"{prefix} rebase: Rebase this PR",
+        ]
 
         body = "Syncing upstream commits. The PRs are listed below. You can"
         body += " comment in this PR with commands see below. Also, this"
         body += " description is build for squash-merge, make sure you keep"
         body += " all the `Upstream-Commit` trailers in tact.\n\n"
         body += "\n".join(commit_entries)
-        body += f"\nTo split:\n```\n{split_cmd}\n```\n"
+        body += "\n\nCommands:\n```\t" + "\n\t".join(cmds) + "\n```\n"
 
         title = f"Sync upstream ({len(commits)} commits)"
 
