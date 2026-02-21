@@ -399,6 +399,36 @@ class FBChefSyncBot:
 
         return cmd
 
+    def add_comment(
+        self, pr_number: int, body: str, is_issue: bool = False
+    ) -> None:
+        """
+        Add a comment to a PR or Issue.
+
+        Args:
+            pr_number: PR or Issue number
+            body: Comment body text
+            is_issue: If True, comment on an issue; if False, comment on a PR
+        """
+        entity_type = "issue" if is_issue else "PR"
+        self.logger.debug(f"Adding comment to {entity_type} #{pr_number}")
+
+        if not self.dry_run:
+            self.logger.info(f"Adding comment to {entity_type} #{pr_number}")
+            cmd = [
+                "gh",
+                "pr" if not is_issue else "issue",
+                "comment",
+                str(pr_number),
+                "--body",
+                body,
+            ]
+            run(cmd)
+        else:
+            self.logger.info(
+                f"[dry-run] Would add comment to {entity_type} #{pr_number}: {body[:50]}..."
+            )
+
     def update_pr_body(self, pr_number: int, commits: List[str]) -> None:
         """
         Update an existing PR's title and body with new commit list.
@@ -1748,7 +1778,9 @@ Merge this PR to enable automated upstream syncing.
         if not parsed:
             self.logger.error(f"Invalid split args format: {args}")
             self.logger.error("Expected format: <sha1>-<sha2>")
-            return
+            raise ValueError(
+                f"Invalid split command format. Expected `#bot split <sha1>-<sha2>`, got `{args}`"
+            )
 
         start_sha, end_sha = parsed
         self.logger.info(f"Split command: {start_sha}-{end_sha}")
@@ -1807,7 +1839,13 @@ Merge this PR to enable automated upstream syncing.
             self.logger.error(
                 f"Intended upstream commits in PR: {list(trailers_map.keys())}"
             )
-            raise Exception("Invalid split SHAs")
+            available_shas = ", ".join(list(trailers_map.keys())[:10])
+            if len(trailers_map) > 10:
+                available_shas += f", ... ({len(trailers_map)} total)"
+            raise ValueError(
+                f"Invalid commit SHAs. Could not find `{start_sha[:8]}` or `{end_sha[:8]}` in this PR. "
+                f"Available SHAs: {available_shas}"
+            )
 
         start_idx = intended_upstream.index(start)
         end_idx = intended_upstream.index(end)
@@ -1825,8 +1863,11 @@ Merge this PR to enable automated upstream syncing.
                 f"Split must be from one end: either start at 0 or end at {len(intended_upstream) - 1}"
             )
             self.logger.error(f"Got: start_idx={start_idx}, end_idx={end_idx}")
-            raise Exception(
-                "Split must be contiguous from one end, not from the middle"
+            raise ValueError(
+                f"Split must be contiguous from one end of the PR, not from the middle. "
+                f"The range `{start_sha[:8]}-{end_sha[:8]}` is in the middle (positions {start_idx} to {end_idx} "
+                f"out of {len(intended_upstream)} commits). Please choose a range that starts at the beginning "
+                f"or ends at the end of the commit list."
             )
 
         # Get the upstream commits for each range from the PR body
@@ -1941,6 +1982,21 @@ Merge this PR to enable automated upstream syncing.
         else:
             self.logger.debug("No second range to process")
 
+        # Add success comment
+        if not self.dry_run:
+            if second_range_upstream:
+                success_msg = (
+                    f"✅ Split completed successfully!\n\n"
+                    f"- Updated this PR with {len(first_range_upstream)} commit(s)\n"
+                    f"- Created new PR #{new_pr_number} with {len(second_range_upstream)} commit(s)"
+                )
+            else:
+                success_msg = (
+                    f"✅ Split completed successfully!\n\n"
+                    f"- Updated this PR with {len(first_range_upstream)} commit(s)"
+                )
+            self.add_comment(pr_number, success_msg)
+
     def cmd_rebase(self, args: str, pr_number: int) -> None:
         """
         Handle the 'rebase' command.
@@ -1950,9 +2006,78 @@ Merge this PR to enable automated upstream syncing.
             pr_number: PR number to rebase
         """
         self.logger.info(f"Executing rebase command on PR #{pr_number}")
-        self.logger.warning("Rebase command not yet implemented")
-        # TODO: Implement rebase logic
-        # This could rebase the PR branch onto the latest base branch
+
+        # Fetch PR details
+        self.logger.debug(f"Fetching PR #{pr_number} details")
+        pr_info = run(
+            [
+                "gh",
+                "pr",
+                "view",
+                str(pr_number),
+                "--json",
+                "number,headRefName,body",
+            ]
+        )
+        pr = json.loads(pr_info)
+
+        branch = pr["headRefName"]
+        self.logger.debug(f"Rebasing branch: {branch}")
+
+        # Fetch the latest changes from base branch
+        self.logger.info(f"Fetching latest {self.base_branch}")
+        git("fetch", self.target_remote, self.base_branch)
+
+        # Checkout the PR branch
+        git("checkout", branch)
+
+        # Get the upstream commits from the PR body before rebase
+        pr_body = pr.get("body", "")
+        intended_upstream = re.findall(
+            r"Upstream-Commit:\s*([0-9a-f]{40})", pr_body
+        )
+        self.logger.debug(
+            f"Found {len(intended_upstream)} intended upstream commits in PR body"
+        )
+
+        # Perform the rebase
+        self.logger.info(
+            f"Rebasing {branch} onto {self.target_remote}/{self.base_branch}"
+        )
+        try:
+            git("rebase", f"{self.target_remote}/{self.base_branch}")
+        except RuntimeError as e:
+            self.logger.error(f"Rebase failed: {e}")
+            raise ValueError(
+                f"Rebase failed with conflicts. Please resolve conflicts manually. "
+                f"You may need to checkout the branch locally and run:\n"
+                f"```\n"
+                f"git checkout {branch}\n"
+                f"git rebase origin/{self.base_branch}\n"
+                f"# Resolve conflicts\n"
+                f"git rebase --continue\n"
+                f"git push --force-with-lease\n"
+                f"```"
+            )
+
+        if not self.dry_run:
+            self.logger.info(f"Pushing rebased branch {branch}")
+            git("push", "--force-with-lease", self.target_remote, branch)
+
+            # Add success comment
+            commit_count = (
+                len(intended_upstream) if intended_upstream else "all"
+            )
+            success_msg = (
+                f"✅ Rebase completed successfully!\n\n"
+                f"- Rebased {commit_count} commit(s) onto latest `{self.base_branch}`\n"
+                f"- Branch `{branch}` has been updated"
+            )
+            self.add_comment(pr_number, success_msg)
+        else:
+            self.logger.info(
+                f"[dry-run] Would rebase branch {branch} onto {self.base_branch}"
+            )
 
     def handle_command(
         self,
@@ -1995,13 +2120,31 @@ Merge this PR to enable automated upstream syncing.
         self.logger.info(f"Dispatching command: {command} with args: {args!r}")
 
         # Dispatch to appropriate handler
-        if command == "split":
-            self.cmd_split(args=args, pr_number=pr_number)
-        elif command == "rebase":
-            self.cmd_rebase(args, pr_number)
-        else:
-            self.logger.warning(f"Unknown command: {command}")
-            self.logger.info(f"Supported commands: split, rebase")
+        try:
+            if command == "split":
+                self.cmd_split(args=args, pr_number=pr_number)
+            elif command == "rebase":
+                self.cmd_rebase(args, pr_number)
+            else:
+                # Unknown command - comment on the PR
+                self.logger.warning(f"Unknown command: {command}")
+                error_msg = (
+                    f"❌ Unknown command: `{command}`\n\n"
+                    f"Supported commands:\n"
+                    f"- `#bot split <sha1>-<sha2>` - Split a PR into two PRs\n"
+                    f"- `#bot rebase` - Rebase the PR onto the latest base branch\n"
+                )
+                self.add_comment(pr_number, error_msg)
+        except Exception as e:
+            # Command execution failed - comment on the PR
+            self.logger.error(f"Command execution failed: {e}", exc_info=True)
+            error_msg = (
+                f"❌ Failed to execute command `{command}`\n\n"
+                f"**Error:** {str(e)}\n\n"
+                f"Please check the command syntax and try again. "
+                f"See the bot logs for more details."
+            )
+            self.add_comment(pr_number, error_msg)
 
     def bot_created_pr_or_issue_closed(self, event: dict) -> bool:
         action = event.get("action")
