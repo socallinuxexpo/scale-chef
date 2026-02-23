@@ -1,7 +1,5 @@
 ---
-bot_label: "fbchef_sync_bot"
-split_label: "fbchef_sync_bot_pr_split"
 universe_upstreams:
   pd-chef-cookbooks:
-    prefix: pd_
+    prefix: pd
     repo_url: https://github.com/jaymzh/chef-fb-api-cookbooks.git
