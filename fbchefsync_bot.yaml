@@ -1,8 +1,7 @@
 ---
-ignore_cookbooks:
-  - fb_init
-  - fb_init_sample
-pr_labels:
-  - "fbchef_sync_bot"
-issue_labels:
-  - "fbchef_sync_bot"
+bot_label: "fbchef_sync_bot"
+split_label: "fbchef_sync_bot_pr_split"
+universe_upstreams:
+  pd-chef-cookbooks:
+    prefix: pd_
+    repo_url: https://github.com/jaymzh/chef-fb-api-cookbooks.git
