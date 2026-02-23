@@ -1,4 +1,4 @@
-name: FBChefSync Bot - Command handler
+name: Line Cook - Command handler
 
 on:
   issue_comment:
@@ -6,14 +6,16 @@ on:
 
 # Ensure only one bot run executes at a time across all triggers
 concurrency:
-  group: chef-sync-bot
+  group: line-cook
   cancel-in-progress: false  # Queue runs instead of canceling
 
 jobs:
   split:
-    name: Handle '#bot' commands
+    name: Handle '#linecook' commands
     uses: jaymzh/chef-cookbooks/.github/workflows/reusable-fbchefsync-bot.yml@bot
     with:
       python_version: '3.11'
+      line_cook_repo_url: https://github.com/jaymzh/chef-cookbooks
+      line_cook_repo_branch: bot
     secrets:
       gh_token: ${{ secrets.GITHUB_TOKEN }}

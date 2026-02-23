@@ -1,4 +1,4 @@
-name: FBChefSync Bot - Upstream Sync
+name: Line Cook - Upstream Sync
 
 on:
   workflow_dispatch:  # allow manual trigger from UI
@@ -22,5 +22,7 @@ jobs:
     uses: jaymzh/chef-cookbooks/.github/workflows/reusable-fbchefsync-bot.yml@bot
     with:
       python_version: '3.11'
+      line_cook_repo_url: https://github.com/jaymzh/chef-cookbooks
+      line_cook_repo_branch: bot
     secrets:
       gh_token: ${{ secrets.GITHUB_TOKEN }}
