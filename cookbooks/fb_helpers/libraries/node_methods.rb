@@ -206,6 +206,22 @@ class Chef
       self.rocky? && self.os_min_version?(version, full)
     end
 
+    def almalinux?
+      self['platform'] == 'almalinux'
+    end
+
+    def almalinux_max_version?(version, full = false)
+      self.almalinux? && self.os_max_version?(version, full)
+    end
+
+    def almalinux_min_version?(version, full = false)
+      self.almalinux? && self.os_min_version?(version, full)
+    end
+
+    def almalinux_version?(v)
+      self.almalinux? && self._platform_version_helper?(v)
+    end
+
     def redhat?
       self['platform'] == 'redhat'
     end
@@ -1251,7 +1267,7 @@ class Chef
     # returns the version-release of an rpm installed, or nil if not present
     def rpm_version(name)
       if (self.centos? && !self.centos7?) || self.fedora? || self.redhat_min_version?(8) ||
-          self.oracle_min_version?(8) || self.aristaeos_4_30_or_newer?
+          self.oracle_min_version?(8) || self.almalinux_min_version?(8) || self.aristaeos_4_30_or_newer?
         # returns epoch.version
         v = Chef::Provider::Package::Dnf::PythonHelper.instance.
             package_query(:whatinstalled, name).version
@@ -1451,7 +1467,7 @@ class Chef
       else
         return self.nw_changes_allowed? ||
           ['ip6tnl0', 'tunlany0', 'tunl0'].include?(interface) ||
-          interface.match(Regexp.new('^tunlany\d+:\d+'))
+          interface.match?(Regexp.new('^tunlany\d+:\d+'))
       end
     end
 
