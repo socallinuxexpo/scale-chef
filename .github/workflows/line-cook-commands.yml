@@ -12,10 +12,9 @@ concurrency:
 jobs:
   split:
     name: Handle '#linecook' commands
-    uses: jaymzh/chef-cookbooks/.github/workflows/reusable-line-cook.yml@bot
+    uses: jaymzh/line-cook/.github/workflows/reusable-line-cook.yml@initial_version
     with:
       python_version: '3.11'
-      line_cook_repo_url: https://github.com/jaymzh/chef-cookbooks
-      line_cook_repo_branch: bot
+      line_cook_repo_ref: initial_version
     secrets:
       gh_token: ${{ secrets.GITHUB_TOKEN }}

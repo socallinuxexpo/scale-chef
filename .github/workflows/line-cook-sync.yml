@@ -23,16 +23,16 @@ on:
 
 # Ensure only one bot run executes at a time across all triggers
 concurrency:
-  group: chef-sync-bot
+  group: line-cook
   cancel-in-progress: false  # Queue runs instead of canceling
 
 jobs:
   sync:
     name: Run sync
-    uses: jaymzh/chef-cookbooks/.github/workflows/reusable-line-cook.yml@bot
+    uses: jaymzh/line-cook/.github/workflows/reusable-line-cook.yml@initial_version
     with:
       python_version: '3.11'
-      line_cook_repo_url: https://github.com/jaymzh/chef-cookbooks
-      line_cook_repo_branch: bot
+      line_cook_repo_ref: initial_version
+      dry_run: ${{ github.event_name == 'pull_request' }}
     secrets:
       gh_token: ${{ secrets.GITHUB_TOKEN }}
