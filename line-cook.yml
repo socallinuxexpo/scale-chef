@@ -2,4 +2,4 @@
 universe_upstreams:
   pd-chef-cookbooks:
     prefix: pd
-    repo_url: https://github.com/jaymzh/chef-fb-api-cookbooks.git
+    repo_url: https://github.com/jaymzh/pd-chef-cookbooks.git
