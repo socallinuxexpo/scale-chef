@@ -3,7 +3,7 @@
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-SECRET_KEY = '<%= node['fb_init']['secrets']['reg_secret_key'] %>'
+SECRET_KEY = '<%= node['pd_lsecrets']['reg_secret_key'] %>'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
@@ -57,7 +57,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'scalereg',
         'USER': '<%= node['scale_reg']['db']['username'] %>',
-        'PASSWORD': '<%= node['fb_init']['secrets']['reg_db_password'] %>',
+        'PASSWORD': '<%= node['pd_lsecrets']['reg_db_password'] %>',
         'HOST': '<%= node['scale_reg']['db']['hostname'] %>',
         'PORT': '3306',
         'OPTIONS': {
@@ -129,10 +129,10 @@ SCALEREG_PAYFLOW_LOGIN = 'usclug'
 SCALEREG_PAYFLOW_PARTNER = 'verisign'
 
 # Secret used for express check-in and scanned badges.
-SCALEREG_EXPRESS_CHECKIN_SECRET = '<%= node['fb_init']['secrets']['reg_checkin_secret_key'] %>'
+SCALEREG_EXPRESS_CHECKIN_SECRET = '<%= node['pd_lsecrets']['reg_checkin_secret_key'] %>'
 
 # Secret used in browser user agent for identifying kiosks.
-SCALEREG_KIOSK_AGENT_SECRET = '<%= node['fb_init']['secrets']['reg_user_agent_secret'] %>'
+SCALEREG_KIOSK_AGENT_SECRET = '<%= node['pd_lsecrets']['reg_user_agent_secret'] %>'
 
 # URL for the sponsorship agreement document.
 SCALEREG_SPONSORSHIP_AGREEMENT_URL = 'https://register.socallinuxexpo.org/static/sponsorship/scale-sponsorship-contract.pdf'

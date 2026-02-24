@@ -2,16 +2,16 @@
   d = {
     'listmonk' => {
       'api_url' => 'https://listmonk.linuxfests.org/api',
-      'api_key' => node['fb_init']['secrets']['listmonk_api_key'],
+      'api_key' => node['pd_lsecrets']['listmonk_api_key'],
     },
     'datadog' => {
-      'api_key' => node['fb_init']['secrets']['datadog_api_key'],
+      'api_key' => node['pd_lsecrets']['datadog_api_key'],
     },
     'regdb' => {
       'host' => node['scale_reg']['db']['hostname'],
       'user' => node['scale_reg']['db']['username'],
       'database' => node['scale_reg']['db']['database'],
-      'password' => node['fb_init']['secrets']['reg_db_password'],
+      'password' => node['pd_lsecrets']['reg_db_password'],
     },
   }
 %>
