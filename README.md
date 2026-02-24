@@ -79,16 +79,17 @@ untest with:
 Production secrets
 ------------------
 
-Secrets are currently stored in the `scale-secrets` repo, but being migrated
-to 1Password.
+Secrets are stored in 1Password, and manually added to `/etc/chef_secrets`,
+which we access through `pd_lsecrets`.
 
-Any secrets added to `/etc/chef_secrets` will appear in `node['fb_init']['secrets']` with the key lowercased. For example:
+Any secrets added to `/etc/chef_secrets` will appear in `node['pd_lsecrets']`
+with the key lowercased. For example:
 
 ```text
 FOO='mysekret'
 ```
 
-Will be available in `node['fb_init']['secrets']['foo']`.
+Will be available in `node['pd_lsecrets']['foo']`.
 
 For the webserver, if you touch `/etc/httpd/need_dev_keys`, Chef will create
 self-signed certs for you.
