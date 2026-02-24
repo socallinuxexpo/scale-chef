@@ -38,8 +38,8 @@
  */
 $databases['default']['default'] = [
   'database' => '<%= node['scale_drupal']['drupal_database'] %>',
-  'username' => '<%= node['fb_init']['secrets']['drupal_username'] %>',
-  'password' => '<%= node['fb_init']['secrets']['drupal_password'] %>',
+  'username' => '<%= node['pd_lsecrets']['drupal_username'] %>',
+  'password' => '<%= node['pd_lsecrets']['drupal_password'] %>',
   'host' => '<%= node['scale_drupal']['mysql_host'] %>',
   'port' => '',
   'driver' => 'mysql',
@@ -68,4 +68,4 @@ $databases['default']['default'] = [
  *   $settings['hash_salt'] = file_get_contents('/home/example/salt.txt');
  * @endcode
  */
-$settings['hash_salt'] = '<%= node['fb_init']['secrets']['drupal_hash_salt'] %>';
+$settings['hash_salt'] = '<%= node['pd_lsecrets']['drupal_hash_salt'] %>';
