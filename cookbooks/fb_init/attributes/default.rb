@@ -11,6 +11,7 @@ tier = pieces[1]
 default['tier'] = tier
 default['env'] = env
 
+# Deprecated...
 d = {}
 if File.exist?('/etc/chef_secrets')
   File.read('/etc/chef_secrets').each_line do |line|
