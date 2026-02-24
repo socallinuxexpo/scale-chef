@@ -26,6 +26,7 @@ version '0.0.1'
   fb_sysctl
   fb_syslog
   fb_systemd
+  pd_lsecrets
   scale_chef_client
   scale_datadog
   scale_selinux

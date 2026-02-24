@@ -51,6 +51,6 @@ service 'datadog-agent' do
   # the normal ruby-stile exist-and-not-nil check makes Chef warn because a
   # string is returned inside of it, and it thinks you are trying to use a
   # shell-command-style only_if
-  only_if { node['fb_init']['secrets']['datadog_api_key'] }
+  not_if { node['fb_init']['secrets']['datadog_api_key'].nil? }
   action [:enable, :start]
 end

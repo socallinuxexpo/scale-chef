@@ -1,11 +1,7 @@
 # This is where you set your own stuff...
 
-# Make sure the perms for our secrets files are good
-file '/etc/chef_secrets' do
-  owner 'root'
-  group 'root'
-  mode '0600'
-end
+# protect secret files
+include_recipe 'pd_lsecrets'
 
 node.default['scale_chef_client']['cookbook_dirs'] = [
   '/var/chef/repo/cookbooks',
@@ -19,18 +15,13 @@ if node.vagrant?
   }
 end
 
-d = {}
-if File.exist?('/etc/datadog_secrets')
-  File.read('/etc/datadog_secrets').each_line do |line|
-    k, v = line.strip.split(/\s*=\s*/)
-    d[k.downcase] = v
-  end
-  if d['application_key']
-    node.default['scale_datadog']['config']['application_key'] =
-      d['application_key']
-  end
-  if d['api_key']
-    node.default['scale_datadog']['config']['api_key'] = d['api_key']
+%w{
+  application_key
+  api_key
+}.each do |key|
+  skey = "datadog_#{key}"
+  if node['pd_lsecrets'][skey]
+    node.default['scale_datadog']['config'][key] = node['pd_lsecrets'][skey]
   end
 end
 
