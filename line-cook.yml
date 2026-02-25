@@ -1,4 +1,9 @@
 ---
+upstream_overrides:
+  ignore_cookbooks:
+    - fb_init
+    - fb_init_sample
+    - fb_nginx
 universe_upstreams:
   pd-chef-cookbooks:
     prefix: pd
