@@ -1,10 +1,15 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
+#
+# Cookbook Name:: fb_init_sample
+# Recipe:: firstboot
+#
+# Copyright (c) 2019-present, Facebook, Inc.
+# All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+# http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,8 +18,4 @@
 # limitations under the License.
 #
 
-default['fb_letsencrypt'] = {
-  'manage_packages' => true,
-  'certbot_plugins' => [],
-  'enable_package_timer' => true,
-}
+# HERE: put any non-OS specific firstboot logic here
