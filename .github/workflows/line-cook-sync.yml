@@ -34,7 +34,6 @@ jobs:
     uses: jaymzh/line-cook/.github/workflows/reusable-line-cook.yml@main
     with:
       python_version: '3.11'
-      line_cook_repo_ref: initial_version
       dry_run: ${{ github.event_name == 'pull_request' }}
     secrets:
       gh_token: ${{ secrets.GITHUB_TOKEN }}
