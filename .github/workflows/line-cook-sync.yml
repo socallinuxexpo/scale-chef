@@ -31,7 +31,7 @@ concurrency:
 jobs:
   sync:
     name: Run sync
-    uses: jaymzh/line-cook/.github/workflows/reusable-line-cook.yml@initial_version
+    uses: jaymzh/line-cook/.github/workflows/reusable-line-cook.yml@main
     with:
       python_version: '3.11'
       line_cook_repo_ref: initial_version
