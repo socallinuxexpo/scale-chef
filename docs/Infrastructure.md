@@ -86,7 +86,7 @@ Mail can flow through several different paths:
     * External user's email provider -> Mailman -> Mailgun -> List subscribers
 * Email campaigns
     * Listmonk -> List subscribers (Does this go through Mailgun? Don't think so?)
-* Paypal receipts (doesn't use SCALE domains)
+* Paypal receipts (come from `linuxfests.org`)
     * Paypal -> User
 
 ### DMARC
