@@ -1,0 +1,6 @@
+name 'ci_fixes'
+maintainer 'SCALE'
+maintainer_email 'phil@socallinuxexpo.org'
+license 'Apache-2.0'
+description 'CI fixes'
+version '0.1.0'

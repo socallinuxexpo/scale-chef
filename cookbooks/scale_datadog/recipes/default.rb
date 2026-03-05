@@ -4,6 +4,8 @@
 # Recipe:: default
 #
 
+return if kitchen?
+
 cookbook_file '/etc/pki/rpm-gpg/DATADOG_RPM_KEY.public' do
   source 'DATADOG_RPM_KEY.public'
   owner 'root'

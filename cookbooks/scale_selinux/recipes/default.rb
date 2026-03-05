@@ -1,5 +1,7 @@
 # vim:shiftwidth=2:expandtab
 
+return if kitchen?
+
 template '/etc/sysconfig/selinux' do
   source 'selinux.erb'
   owner 'root'
