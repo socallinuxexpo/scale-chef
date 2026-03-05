@@ -46,7 +46,7 @@ class RegData:
         for row in reader:
             subscribers[row["email"]] = {
                 "id": row["id"],
-                "email": row["email"],
+                "email": row["email"].lower(),
                 "can_email": int(row["can_email"]),
             }
         return subscribers
@@ -71,7 +71,11 @@ class RegData:
         """
         )
         subscribers = {
-            row[0]: {"email": row[0], "name": row[1], "can_email": row[2]}
+            row[0]: {
+                "email": row[0].lower(),
+                "name": row[1],
+                "can_email": row[2],
+            }
             for row in cursor.fetchall()
         }
         return subscribers
@@ -318,11 +322,11 @@ class ListMonk:
     def get_expected_lists(self, subscriber_info):
         expected_lists = []
         level = subscriber_info["can_email"]
-        if level >= 1:
+        if level >= 0:
             expected_lists.append(self.list_ids["logistics"])
-        if level >= 2:
+        if level >= 1:
             expected_lists.append(self.list_ids["announce"])
-        if level >= 3:
+        if level >= 2:
             expected_lists.append(self.list_ids["sponsors"])
         return expected_lists
 
@@ -343,14 +347,18 @@ class ListMonk:
         current_subscribers = self.get_all_subscribers()
 
         for subscriber in current_subscribers:
+            email = subscriber["email"]
+            email_lc = email.lower()
             logging.debug(
-                f"Processing subscriber {subscriber['email']} with lists {[l['id'] for l in subscriber['lists']]}"
+                f"Processing subscriber {email} with lists {[l['id'] for l in subscriber['lists']]}"
             )
-            info = updated_subscribers.get(subscriber["email"])
+            # we lowercase emails when reading from the DB,
+            # we use LC email when pulling that data
+            info = updated_subscribers.get(email_lc)
             if info:
                 logging.debug(
                     "Subscriber %s found in CSV, checking lists",
-                    subscriber["email"],
+                    email,
                 )
                 lists = self.get_expected_lists(info)
                 missing = self.get_missing_lists(subscriber, lists)
@@ -358,7 +366,7 @@ class ListMonk:
                 if len(missing) > 0:
                     self.add_subscriber_to_lists(subscriber, missing)
 
-                del updated_subscribers[subscriber["email"]]
+                del updated_subscribers[email_lc]
             else:
                 to_remove = list(self.list_ids.values())
 
@@ -366,10 +374,7 @@ class ListMonk:
                 if self.remove:
                     self.remove_subscriber_from_lists(subscriber, to_remove)
                 else:
-                    logging.debug(
-                        "Subscriber %s not found in reg list",
-                        subscriber["email"],
-                    )
+                    logging.debug("Subscriber %s not found in reg list", email)
 
         for email, info in updated_subscribers.items():
             lists = self.get_expected_lists(info)
