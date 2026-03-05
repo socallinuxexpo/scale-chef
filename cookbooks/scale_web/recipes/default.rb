@@ -87,72 +87,74 @@ node.default['fb_apache']['extra_configs']['ServerLimit'] = 80
 # see if this helps with hung processes...
 node.default['fb_apache']['extra_configs']['KeepAlive'] = 'off'
 
-base_config = common_config.merge({
-                                    'Alias' => [
-                                      '/past /home/webroot/past',
-                                      '/scale5x /home/webroot/scale5x',
-                                      '/scale6x /home/webroot/scale6x',
-                                      '/scale7x /home/webroot/scale7x',
-                                      '/scale7x-audio /home/webroot/scale7x-audio',
-                                      '/scale8x /home/webroot/scale8x',
-                                      '/scale9x /hoce/webroot/scale9x',
-                                      '/scale9x-media /home/webroot/scale9x-media',
-                                      '/scale10x /home/webroot/scale10x',
-                                      '/scale10x-supporting /home/webroot/scale10x-supporting',
-                                      '/scale11x /home/webroot/scale11x',
-                                      '/scale11x-supporting /home/webroot/scale11x-supporting',
-                                      '/scale12x /home/webroot/scale12x',
-                                      '/scale12x-supporting /home/webroot/scale12x-supporting',
-                                      '/scale/13x /home/webroot/scale/13x',
-                                      '/scale/14x /home/webroot/scale/14x',
-                                      '/scale/15x /home/webroot/scale/15x',
-                                      '/scale/16x /home/webroot/scale/16x',
-                                      '/scale/17x /home/webroot/scale/17x',
-                                      '/scale/18x /home/webroot/scale/18x',
-                                      '/scale/19x /home/webroot/scale/19x',
-                                      '/scale/20x /home/webroot/scale/20x',
-                                      '/scale/21x /home/webroot/scale/21x',
-                                      '/scale/22x /home/webroot/scale/22x',
-                                      '/doc /usr/share/doc',
-                                    ],
-  'RewriteEngine' => 'On',
-  'DocumentRoot' => docroot,
-  'Directory /' => {
-    'Options' => 'FollowSymLinks',
-    'AllowOverride' => 'None',
+base_config = common_config.merge(
+  {
+    'Alias' => [
+      '/past /home/webroot/past',
+      '/scale5x /home/webroot/scale5x',
+      '/scale6x /home/webroot/scale6x',
+      '/scale7x /home/webroot/scale7x',
+      '/scale7x-audio /home/webroot/scale7x-audio',
+      '/scale8x /home/webroot/scale8x',
+      '/scale9x /hoce/webroot/scale9x',
+      '/scale9x-media /home/webroot/scale9x-media',
+      '/scale10x /home/webroot/scale10x',
+      '/scale10x-supporting /home/webroot/scale10x-supporting',
+      '/scale11x /home/webroot/scale11x',
+      '/scale11x-supporting /home/webroot/scale11x-supporting',
+      '/scale12x /home/webroot/scale12x',
+      '/scale12x-supporting /home/webroot/scale12x-supporting',
+      '/scale/13x /home/webroot/scale/13x',
+      '/scale/14x /home/webroot/scale/14x',
+      '/scale/15x /home/webroot/scale/15x',
+      '/scale/16x /home/webroot/scale/16x',
+      '/scale/17x /home/webroot/scale/17x',
+      '/scale/18x /home/webroot/scale/18x',
+      '/scale/19x /home/webroot/scale/19x',
+      '/scale/20x /home/webroot/scale/20x',
+      '/scale/21x /home/webroot/scale/21x',
+      '/scale/22x /home/webroot/scale/22x',
+      '/doc /usr/share/doc',
+    ],
+    'RewriteEngine' => 'On',
+    'DocumentRoot' => docroot,
+    'Directory /' => {
+      'Options' => 'FollowSymLinks',
+      'AllowOverride' => 'None',
+    },
+    "Directory #{docroot}" => {
+      'Options' => 'Indexes FollowSymLinks MultiViews',
+      'AllowOverride' => 'all',
+      'Order' => 'allow,deny',
+      'Allow' => 'from all',
+      'Require' => 'all granted',
+    },
+    'Directory /home/webroot' => {
+      'Options' => 'Indexes FollowSymLinks MultiViews',
+      'AllowOverride' => 'all',
+      'Order' => 'allow,deny',
+      'Allow' => 'from all',
+      'Require' => 'all granted',
+    },
+    'ScriptAlias' => '/cgi-bin/ /usr/lib/cgi-bin/',
+    'Directory /usr/lib/cgi-bin' => {
+      'AllowOverride' => 'None',
+      'Options' => '+ExecCGI -MultiViews +SymLinksIfOwnerMatch',
+      'Order' => 'allow,deny',
+      'Allow' => 'from all',
+    },
+    'ErrorLog' => '/var/log/httpd/error.log',
+    'LogLevel' => 'warn',
+    'CustomLog' => '/var/log/httpd/access.log combined',
+    'Directory /usr/share/doc/' => {
+      'Options' => 'Indexes MultiViews FollowSymLinks',
+      'AllowOverride' => 'None',
+      'Order' => 'deny,allow',
+      'Deny' => 'from all',
+      'Allow' => 'from 127.0.0.0/255.0.0.0 ::1/128',
+    },
   },
-  "Directory #{docroot}" => {
-    'Options' => 'Indexes FollowSymLinks MultiViews',
-    'AllowOverride' => 'all',
-    'Order' => 'allow,deny',
-    'Allow' => 'from all',
-    'Require' => 'all granted',
-  },
-  'Directory /home/webroot' => {
-    'Options' => 'Indexes FollowSymLinks MultiViews',
-    'AllowOverride' => 'all',
-    'Order' => 'allow,deny',
-    'Allow' => 'from all',
-    'Require' => 'all granted',
-  },
-  'ScriptAlias' => '/cgi-bin/ /usr/lib/cgi-bin/',
-  'Directory /usr/lib/cgi-bin' => {
-    'AllowOverride' => 'None',
-    'Options' => '+ExecCGI -MultiViews +SymLinksIfOwnerMatch',
-    'Order' => 'allow,deny',
-    'Allow' => 'from all',
-  },
-  'ErrorLog' => '/var/log/httpd/error.log',
-  'LogLevel' => 'warn',
-  'CustomLog' => '/var/log/httpd/access.log combined',
-  'Directory /usr/share/doc/' => {
-    'Options' => 'Indexes MultiViews FollowSymLinks',
-    'AllowOverride' => 'None',
-    'Order' => 'deny,allow',
-    'Deny' => 'from all',
-    'Allow' => 'from 127.0.0.0/255.0.0.0 ::1/128',
-  },
-                                  })
+)
 
 rewrites = {
   'CFPs' => {
@@ -181,6 +183,12 @@ rewrites = {
     'rule' => "^/(.*) https://#{server_name}/scale/23x [L,R,NE]",
     'conditions' => [
       '%{REQUEST_URI} ^/$',
+    ],
+  },
+  'safety' => {
+    'rule' => "^/safety https://#{server_name}/scale/23x/code-conduct",
+    'conditions' => [
+      '%{REQUEST_URI} ^/safety',
     ],
   },
   'year short url' => {
@@ -237,7 +245,6 @@ rewrites = {
       '%{REQUEST_URI} ^/scale2x/',
     ],
   },
-
   'redirect scale1x short url to past' => {
     'rule' =>
       "^/scale1x$ https://#{server_name}/past/2002/ [L,R,NE]",
