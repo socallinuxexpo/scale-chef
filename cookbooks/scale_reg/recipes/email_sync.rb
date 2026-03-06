@@ -1,8 +1,8 @@
-cookbook_file '/usr/local/bin/scale_email_sync' do
-  source 'scale_email_sync.py'
-  owner 'root'
-  group 'root'
-  mode '0755'
+git 'sync-scripts' do
+  repository 'https://github.com/socallinuxexpo/scale-sync-scripts.git'
+  revision 'main'
+  action :sync
+  destination '/usr/local/scale-sync-scripts'
 end
 
 template '/etc/scale_email_sync.yml' do
@@ -12,7 +12,8 @@ template '/etc/scale_email_sync.yml' do
 end
 
 node.default['fb_cron']['jobs']['scale_email_sync'] = {
-  'command' => '/usr/local/bin/scale_email_sync --prod-lists &>/dev/null',
+  'command' => '/usr/local/scale-sync-scripts/listmonk/scale_email_sync.py' +
+    ' --prod-lists &>/dev/null',
   'user' => 'apache',
   'time' => '5 * * * *',
 }
