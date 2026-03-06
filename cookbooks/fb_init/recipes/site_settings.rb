@@ -37,7 +37,7 @@ end
   node.default['fb_postfix']['aliases'][src] = dst
 end
 
-if File.exist?('/etc/postfix/skip_mailgun')
+if kitchen? || File.exist?('/etc/postfix/skip_mailgun')
   Chef::Log.warn('fb_init: Skipping mailgun postfix setup!')
 elsif File.exist?('/etc/sasl_passwd')
   if node.el_min_version?(10) || node.eln?
@@ -111,7 +111,7 @@ node.default['fb_sysctl'][
 
 cookbook_file '/etc/cloud/cloud.cfg.d/99-custom-networking.cfg' do
   # This should apply to 8+
-  not_if { node.centos6? || node.centos7? }
+  not_if { node.centos6? || node.centos7? || kitchen? }
   owner 'root'
   group 'root'
   mode '0644'

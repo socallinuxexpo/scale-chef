@@ -29,7 +29,7 @@ end
 
 package 'cinc' do
   # We need the gate otherwise whyrun breaks
-  only_if { ::File.exist?(rpmpath) }
+  only_if { ::File.exist?(rpmpath) && !kitchen? }
   source rpmpath
   action :upgrade
   notifies :run, 'ruby_block[reexec chef]', :immediately
@@ -41,6 +41,9 @@ if ::File.symlink?('/etc/cinc') && !::File.symlink?('/etc/chef')
 elsif ::File.symlink?('/etc/chef') && !::File.symlink?('/etc/cinc')
   symlink = '/etc/chef'
   confdir = '/etc/cinc'
+elsif !::File.directory?('/etc/cinc') && !::File.directory?('/etc/chef')
+  confdir = '/etc/cinc'
+  symlink = '/etc/chef'
 else
   fail 'Cannot determine which is the realdir /etc/cinc v /etc/chef'
 end
@@ -72,10 +75,20 @@ end
 end
 
 ruby_block 'reload_client_config' do
+  not_if { kitchen? }
   block do
     Chef::Config.from_file("#{confdir}/client.rb")
   end
   action :nothing
+end
+
+# link needs to be first, because when the file changes we reload
+# via the link
+link "#{confdir}/client.rb" do
+  # don't overwrite this if it's a link to somewhere else, because
+  # taste-tester
+  not_if { File.symlink?("#{confdir}/client.rb") }
+  to "#{confdir}/client-prod.rb"
 end
 
 template "#{confdir}/client-prod.rb" do
@@ -83,13 +96,6 @@ template "#{confdir}/client-prod.rb" do
   group 'root'
   mode '0644'
   notifies :create, 'ruby_block[reload_client_config]', :immediately
-end
-
-link "#{confdir}/client.rb" do
-  # don't overwrite this if it's a link ot somewhere else, because
-  # taste-tester
-  not_if { File.symlink?("#{confdir}/client.rb") }
-  to "#{confdir}/client-prod.rb"
 end
 
 link "#{confdir}/client.pem" do
