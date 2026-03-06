@@ -44,9 +44,10 @@ class RegData:
         reader = csv.DictReader(data.splitlines())
         subscribers = {}
         for row in reader:
-            subscribers[row["email"]] = {
+            email_lc = row["email"].lower()
+            subscribers[email_lc] = {
                 "id": row["id"],
-                "email": row["email"].lower(),
+                "email": email_lc,
                 "can_email": int(row["can_email"]),
             }
         return subscribers
@@ -71,7 +72,7 @@ class RegData:
         """
         )
         subscribers = {
-            row[0]: {
+            row[0].lower(): {
                 "email": row[0].lower(),
                 "name": row[1],
                 "can_email": row[2],
@@ -185,7 +186,9 @@ class ListMonk:
         return subscribers
 
     def list_ids_to_names(self, list_ids):
-        return ", ".join([self.list_ids.get(lid, str(lid)) for lid in list_ids])
+        return ", ".join(
+            [self.list_names.get(lid, str(lid)) for lid in list_ids]
+        )
 
     def add_subscriber(self, email, lists):
         logging.debug(
