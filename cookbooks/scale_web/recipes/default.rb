@@ -34,6 +34,7 @@ cookbook_file '/etc/php.ini' do
   owner 'root'
   group 'root'
   mode '0644'
+  notifies :restart, 'service[php-fpm]'
 end
 
 common_config = {
@@ -299,9 +300,7 @@ node.default['fb_apache']['sites']['_default_:443']['_rewrites'] = rewrites
 end
 
 node.default['fb_dnf']['config']['main']['exclude'] = 'php8.4*'
-pkgs = %w{
-  git
-  python3-boto3
+php_pkgs = %w{
   php
   php-gd
   php-pdo
@@ -314,9 +313,22 @@ pkgs = %w{
   composer
 }
 
-package pkgs do
+package php_pkgs do
   action :upgrade
-  notifies :restart, 'service[apache]'
+  notifies :restart, 'service[php-fpm]'
+end
+
+service 'php-fpm' do
+  action [:enable, :start]
+end
+
+other_pkgs = %w{
+  git
+  python3-boto3
+}
+
+package other_pkgs do
+  action :upgrade
 end
 
 directory '/home/drupal' do
