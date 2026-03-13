@@ -18,8 +18,10 @@ node.default['fb_postfix']['main.cf']['inet_interfaces'] = 'all'
 
 {
   'mydestination' =>
-    'lists.linuxfests.org, $myhostname, localhost.$mydomain, localhost',
-  'mydomain' => 'linuxfests.org',
+    'lists.linuxfests.org, $myhostname, $mydomain, localhost',
+  'mydomain' => 'lists.linuxfests.org',
+  'myorigin' => '$mydomain',
+  'smtp_helo_name' => '$mydomain',
 }.each do |conf, val|
   node.default['fb_postfix']['main.cf'][conf] = val
 end
