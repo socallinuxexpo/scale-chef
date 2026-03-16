@@ -146,6 +146,10 @@ cookbook_file '/etc/systemd/system/mailmanweb.service' do
   notifies :reload, 'fb_systemd_reload[system instance]', :immediately
 end
 
+service 'mailman3' do
+  action [:enable, :start]
+end
+
 service 'mailmanweb' do
   action [:enable, :start]
 end

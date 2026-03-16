@@ -37,23 +37,6 @@ end
 
 include_recipe '::mailman3'
 
-# some common stuff - backups, monitoring, service
-template '/usr/local/bin/backup-mailman.sh' do
-  owner 'root'
-  group 'root'
-  mode  '0755'
-end
-
-node.default['fb_cron']['jobs']['mailman_backups'] = {
-  'time' => '0 4,20 * * *',
-  'command' => '/usr/local/bin/backup-mailman.sh',
-  'user' => 'mailman',
-}
-
-service 'mailman3' do
-  action [:enable, :start]
-end
-
 node.default['scale_datadog']['monitors']['apache'] = {
   'init_config' => nil,
   'instances' => [{ 'apache_status_url' =>
