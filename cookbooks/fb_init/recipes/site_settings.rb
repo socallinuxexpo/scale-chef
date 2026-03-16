@@ -29,7 +29,7 @@ end
   'abuse' => 'postmaster',
   'decode' => 'root',
   'postmaster' => 'root',
-  'root' => 'root@socallinuxexpo.org',
+  'root' => 'scale-infra@lists.linuxfests.org',
   'scale-voicemail' => 'scale-chairs',
   'spam' => 'postmaster',
   'MAILER-DAEMON' => 'postmaster',
