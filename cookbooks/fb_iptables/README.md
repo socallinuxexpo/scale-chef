@@ -17,6 +17,7 @@ Attributes
 ----------
 * node['fb_iptables']['enable']
 * node['fb_iptables']['manage_packages']
+* node['fb_iptables']['manage_config']
 * node['fb_iptables']['sysconfig'][$KEY]
 * node['fb_iptables'][$TABLE][$CHAIN]['policy']
 * node['fb_iptables'][$TABLE][$CHAIN]['rules'][$RULE_NAME]['ip']
@@ -27,9 +28,18 @@ Attributes
 Usage
 -----
 Include `fb_iptables` to manage iptables on a machine. By default, the cookbook
-will manage the iptables packages; this can be opted out of by setting
-`node['fb_iptables']['manage_packages']`. The iptables service itself is
-disabled by default; to enable it set `node['fb_iptables']['enable']` to true.
+will manage the iptables packages and configuration; this can be opted out of
+by setting `node['fb_iptables']['manage_packages']` and
+`node['fb_iptables']['manage_config']` respectively. The iptables service
+itself is disabled by default; to enable it set `node['fb_iptables']['enable']`
+to true.
+
+The `node['fb_iptables']['manage_config']` attribute gives the user the option
+to manage the iptables configuration files separately. Opting out of config management
+is useful if the recipe is included in the runlist by a base role or wrapper
+cookbook but you want to manage rules via another mechanism. Together with the
+package and service toggles, this makes all components of the cookbook API fully
+managed and optional.
 
 On CentOS and Fedora, please be aware that `firewalld` interferes with directly
 managing IPTables rules; the `firewalld` service will be disabled and the
