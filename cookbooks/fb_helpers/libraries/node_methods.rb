@@ -19,12 +19,33 @@
 # Reference: Chef platform_family values
 # https://docs.chef.io/infra_language/checking_platforms/#platform_family-values
 
+class ChefUtilsProxy
+  include ChefUtils
+
+  def initialize(node)
+    @node = node
+  end
+
+  def __getnode(_skip_global = false)
+    @node
+  end
+end
+
 class Chef
   # Our extensions of the node object
   class Node
 
+    # A way to explicitly call a ChefUtils function instead of a
+    # fb_helpers function to aid in migration
+    def chefutils
+      # rubocop:disable Naming/MemoizedInstanceVariableName
+      @_fb_helpers_chefutils_proxy ||= ChefUtilsProxy.new(self)
+      # rubocop:enable Naming/MemoizedInstanceVariableName
+    end
+
     def linux?
-      self['os'] == 'linux'
+      return @_fb_helpers_linux unless @_fb_helpers_linux.nil?
+      @_fb_helpers_linux = self['os'] == 'linux'
     end
 
     def major_platform_version
@@ -89,7 +110,8 @@ class Chef
     end
 
     def rhel_family?
-      self['platform_family'] == 'rhel'
+      return @_fb_helpers_rhel_family unless @_fb_helpers_rhel_family.nil?
+      @_fb_helpers_rhel_family = self['platform_family'] == 'rhel'
     end
 
     # DEPRECATED: use rhel_family?
@@ -147,7 +169,8 @@ class Chef
     # DO NOT ADD anymore rhelXX? methods, use rhel_version?
 
     def centos?
-      self['platform'] == 'centos'
+      return @_fb_helpers_centos unless @_fb_helpers_centos.nil?
+      @_fb_helpers_centos = self['platform'] == 'centos'
     end
 
     def centos_min_version?(version, full = false)
@@ -195,7 +218,8 @@ class Chef
     # DO NOT ADD anymore centosXX? methods, use rhel_version?
 
     def rocky?
-      self['platform'] == 'rocky'
+      return @_fb_helpers_rocky unless @_fb_helpers_rocky.nil?
+      @_fb_helpers_rocky = self['platform'] == 'rocky'
     end
 
     def rocky_max_version?(version, full = false)
@@ -207,7 +231,8 @@ class Chef
     end
 
     def almalinux?
-      self['platform'] == 'almalinux'
+      return @_fb_helpers_almalinux unless @_fb_helpers_almalinux.nil?
+      @_fb_helpers_almalinux = self['platform'] == 'almalinux'
     end
 
     def almalinux_max_version?(version, full = false)
@@ -223,7 +248,8 @@ class Chef
     end
 
     def redhat?
-      self['platform'] == 'redhat'
+      return @_fb_helpers_redhat unless @_fb_helpers_redhat.nil?
+      @_fb_helpers_redhat = self['platform'] == 'redhat'
     end
 
     def redhat_max_version?(version, full = false)
@@ -266,7 +292,8 @@ class Chef
     # DO NOT ADD anymore redhatXX? methods, use redhat_version?
 
     def oracle?
-      self['platform'] == 'oracle'
+      return @_fb_helpers_oracle unless @_fb_helpers_oracle.nil?
+      @_fb_helpers_oracle = self['platform'] == 'oracle'
     end
 
     def oracle_max_version?(version, full = false)
@@ -314,11 +341,13 @@ class Chef
     # DO NOT ADD anymore redhatXX? methods, use _version?
 
     def fedora_family?
-      self['platform_family'] == 'fedora'
+      return @_fb_helpers_fedora_family unless @_fb_helpers_fedora_family.nil?
+      @_fb_helpers_fedora_family = self['platform_family'] == 'fedora'
     end
 
     def fedora?
-      self['platform'] == 'fedora'
+      return @_fb_helpers_fedora unless @_fb_helpers_fedora.nil?
+      @_fb_helpers_fedora = self['platform'] == 'fedora'
     end
 
     def fedora_version?(v)
@@ -406,6 +435,9 @@ class Chef
     end
 
     def eln?
+      # ELN recently changed to ship ID=eln in /etc/os-release, but we need to
+      # support this and the old scheme for detecting if this system is ELN
+      return true if self['platform'] == 'eln'
       self['platform'] == 'fedora' &&
         self['os_release'] &&
         self['os_release']['variant_id'] &&
@@ -413,11 +445,13 @@ class Chef
     end
 
     def debian_family?
-      self['platform_family'] == 'debian'
+      return @_fb_helpers_debian_family unless @_fb_helpers_debian_family.nil?
+      @_fb_helpers_debian_family = self['platform_family'] == 'debian'
     end
 
     def debian?
-      self['platform'] == 'debian'
+      return @_fb_helpers_debian unless @_fb_helpers_debian.nil?
+      @_fb_helpers_debian = self['platform'] == 'debian'
     end
 
     def debian_sid?
@@ -434,7 +468,8 @@ class Chef
     end
 
     def ubuntu?
-      self['platform'] == 'ubuntu'
+      return @_fb_helpers_ubuntu unless @_fb_helpers_ubuntu.nil?
+      @_fb_helpers_ubuntu = self['platform'] == 'ubuntu'
     end
 
     # If it includes a dot, compares version exactly.
@@ -528,19 +563,23 @@ class Chef
     # DO NOT ADD ADDITIONAL ubuntuXX? methods, use ubuntu_version?
 
     def linuxmint?
-      self['platform'] == 'linuxmint'
+      return @_fb_helpers_linuxmint unless @_fb_helpers_linuxmint.nil?
+      @_fb_helpers_linuxmint = self['platform'] == 'linuxmint'
     end
 
     def arch_family?
-      self['platform_family'] == 'arch'
+      return @_fb_helpers_arch_family unless @_fb_helpers_arch_family.nil?
+      @_fb_helpers_arch_family = self['platform_family'] == 'arch'
     end
 
     def arch?
-      self['platform'] == 'arch'
+      return @_fb_helpers_arch unless @_fb_helpers_arch.nil?
+      @_fb_helpers_arch = self['platform'] == 'arch'
     end
 
     def macos?
-      self['platform'] == 'mac_os_x'
+      return @_fb_helpers_macos unless @_fb_helpers_macos.nil?
+      @_fb_helpers_macos = self['platform'] == 'mac_os_x'
     end
 
     alias macosx? macos?
@@ -597,7 +636,8 @@ class Chef
     end
 
     def windows?
-      self['platform_family'] == 'windows'
+      return @_fb_helpers_windows unless @_fb_helpers_windows.nil?
+      @_fb_helpers_windows = self['platform_family'] == 'windows'
     end
 
     def windows_desktop?
@@ -749,7 +789,8 @@ class Chef
     end
 
     def aristaeos?
-      self['platform'] == 'arista_eos'
+      return @_fb_helpers_aristaeos unless @_fb_helpers_aristaeos.nil?
+      @_fb_helpers_aristaeos = self['platform'] == 'arista_eos'
     end
 
     def aristaeos_version_plus?(v)
@@ -780,7 +821,8 @@ class Chef
     end
 
     def freebsd?
-      self['platform_family'] == 'freebsd'
+      return @_fb_helpers_freebsd unless @_fb_helpers_freebsd.nil?
+      @_fb_helpers_freebsd = self['platform_family'] == 'freebsd'
     end
 
     def virtual?
@@ -1004,11 +1046,13 @@ class Chef
     end
 
     def aarch64?
-      self['kernel']['machine'] == 'aarch64'
+      return @_fb_helpers_aarch64 unless @_fb_helpers_aarch64.nil?
+      @_fb_helpers_aarch64 = self['kernel']['machine'] == 'aarch64'
     end
 
     def x64?
-      self['kernel']['machine'] == 'x86_64'
+      return @_fb_helpers_x64 unless @_fb_helpers_x64.nil?
+      @_fb_helpers_x64 = self['kernel']['machine'] == 'x86_64'
     end
 
     def cgroup_mounted?
