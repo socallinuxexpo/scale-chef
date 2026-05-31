@@ -18,7 +18,7 @@
 #
 
 # TODO: use fedora_derived? || debian?
-unless node.centos? || node.rhel? || node.fedora? || node.debian? ||
+unless node.centos? || node.redhat? || node.fedora? || node.debian? ||
     node.ubuntu?
   fail 'fb_iptables is only supported on Debian- and Fedora-based distros.'
 end
@@ -82,6 +82,7 @@ end
 
 ## iptables ##
 template '/etc/fb_iptables.conf' do
+  only_if { node['fb_iptables']['manage_config'] }
   owner node.root_user
   group node.root_group
   mode '0644'
@@ -93,6 +94,7 @@ template '/etc/fb_iptables.conf' do
 end
 # DO NOT MAKE THIS A TEMPLATE! USE THE CONFIG FILE TEMPLATED ABOVE!!
 cookbook_file '/usr/bin/fb_iptables_reload' do
+  only_if { node['fb_iptables']['manage_config'] }
   source 'fb_iptables_reload.sh'
   owner node.root_user
   group node.root_group
@@ -100,6 +102,7 @@ cookbook_file '/usr/bin/fb_iptables_reload' do
 end
 
 template "#{iptables_config_dir}/iptables-config" do
+  only_if { node['fb_iptables']['manage_config'] }
   owner node.root_user
   group node.root_group
   mode '0640'
@@ -107,6 +110,7 @@ template "#{iptables_config_dir}/iptables-config" do
 end
 
 template iptables_rules do
+  only_if { node['fb_iptables']['manage_config'] }
   source 'iptables.erb'
   owner node.root_user
   group node.root_group
@@ -129,6 +133,7 @@ template iptables_rules do
 end
 
 template "#{iptables_config_dir}/ip6tables-config" do
+  only_if { node['fb_iptables']['manage_config'] }
   source 'iptables-config.erb'
   owner node.root_user
   group node.root_group
@@ -137,6 +142,7 @@ template "#{iptables_config_dir}/ip6tables-config" do
 end
 
 template ip6tables_rules do
+  only_if { node['fb_iptables']['manage_config'] }
   source 'iptables.erb'
   owner node.root_user
   group node.root_group
