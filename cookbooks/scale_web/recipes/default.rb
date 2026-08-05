@@ -181,13 +181,13 @@ rewrites = {
     ],
   },
   'redirect / to current site' => {
-    'rule' => "^/(.*) https://#{server_name}/scale/23x [L,R,NE]",
+    'rule' => "^/(.*) https://#{server_name}/scale/24x [L,R,NE]",
     'conditions' => [
       '%{REQUEST_URI} ^/$',
     ],
   },
   'safety' => {
-    'rule' => "^/safety https://#{server_name}/scale/23x/code-conduct",
+    'rule' => "^/safety https://#{server_name}/scale/24x/code-conduct",
     'conditions' => [
       '%{REQUEST_URI} ^/safety',
     ],
