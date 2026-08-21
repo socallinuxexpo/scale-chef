@@ -21,6 +21,7 @@ admins = {
   'rothgar' => '1011',
   'cbsmith' => '1012',
   'karen' => '1013',
+  'celeste' => '1014',
 }
 
 admins.each do |user, uid|
@@ -98,5 +99,9 @@ node.default['scale_ssh']['keys']['cbsmith'] = [
 
 node.default['scale_ssh']['keys']['karen'] = [
   'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG3tfvvDtFh0I37XSJ0KA6bYzjW38XfOD2I2dfFvK7KJ kaquintanilla@UR-17VQ05N-LT',
+]
+
+node.default['scale_ssh']['keys']['celeste'] = [
+  'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGdpglLafRmQNR6mbFJSGPXuiIoPbsTXScMaioP8gtkw',
 ]
 # rubocop:enable Layout/LineLength
