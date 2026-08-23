@@ -90,6 +90,19 @@ node.default['scale_datadog']['monitors']['postfix'] = {
     'queues' => queues,
   }],
 }
+node.default['scale_datadog']['monitors']['journald']['logs'] = [
+  {
+    'type' => 'journald',
+    'source' => 'journald',
+    'service' => 'infra',
+  },
+]
+
+group 'systemd-journal' do
+  not_if { node.dig('etc', 'passwd', 'dd-agent').nil? }
+  append true
+  members ['dd-agent']
+end
 
 queues.each do |q|
   # the docs say they use /usr/bin/find, but they seem to use /bin/find
