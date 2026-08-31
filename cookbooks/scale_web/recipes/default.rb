@@ -97,7 +97,7 @@ base_config = common_config.merge(
       '/scale7x /home/webroot/scale7x',
       '/scale7x-audio /home/webroot/scale7x-audio',
       '/scale8x /home/webroot/scale8x',
-      '/scale9x /hoce/webroot/scale9x',
+      '/scale9x /home/webroot/scale9x',
       '/scale9x-media /home/webroot/scale9x-media',
       '/scale10x /home/webroot/scale10x',
       '/scale10x-supporting /home/webroot/scale10x-supporting',
