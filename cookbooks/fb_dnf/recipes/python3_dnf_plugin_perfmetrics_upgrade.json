@@ -1,0 +1,12 @@
+{
+  "resources": [
+    {
+      "type": "package",
+      "name": "python3-dnf-plugin-perfmetrics",
+      "action": ["upgrade"],
+      "exception": "hardware-specific",
+      "oncall": "prod_chef",
+      "exception_firstboot": false
+    }
+  ]
+}
