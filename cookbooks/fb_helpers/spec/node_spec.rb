@@ -315,35 +315,6 @@ describe 'Chef::Node' do
     end
   end
 
-  context 'Chef::Node.chefutils' do
-    it 'returns true for debian? when platform_family is debian' do
-      node.automatic['platform'] = 'debian'
-      node.automatic['platform_family'] = 'debian'
-      expect(node.chefutils.debian?).to be(true)
-    end
-
-    it 'returns false for debian? when platform_family is not debian' do
-      node.automatic['platform'] = 'centos'
-      node.automatic['platform_family'] = 'rhel'
-      expect(node.chefutils.debian?).to be(false)
-    end
-
-    it 'differs from node.debian? for ubuntu (platform_family=debian, platform=ubuntu)' do
-      node.automatic['platform'] = 'ubuntu'
-      node.automatic['platform_family'] = 'debian'
-      # fb_helpers checks platform == 'debian', so ubuntu is false
-      expect(node.debian?).to be(false)
-      # ChefUtils checks platform_family == 'debian', so ubuntu is true
-      expect(node.chefutils.debian?).to be(true)
-    end
-
-    it 'returns true for rhel? when platform_family is rhel' do
-      node.automatic['platform'] = 'centos'
-      node.automatic['platform_family'] = 'rhel'
-      expect(node.chefutils.rhel?).to be(true)
-    end
-  end
-
   context 'Chef::Node.disruptable?' do
     it 'is not disruptable by default' do
       expect(node.disruptable?).to be(false)
@@ -365,6 +336,105 @@ describe 'Chef::Node' do
       allow(node).to receive(:firstboot_any_phase?).and_return(false)
       ENV.stub(:[]).with('CHEF_BOOT_SERVICE').and_return 'true'
       expect(node.disruptable?).to be(true)
+    end
+  end
+
+  context 'Chef::Node.domain_controller?' do
+    before(:each) do
+      node.default['kernel'] = {
+        'os_info' => {},
+        'cs_info' => {},
+      }
+    end
+
+    it 'should return false on non-windows nodes' do
+      node.default['platform_family'] = 'linux'
+      node.domain_controller?.should eq(false)
+    end
+
+    it 'should return false on a Windows member server' do
+      node.default['platform_family'] = 'windows'
+      node.default['kernel']['os_info']['product_type'] = 3
+      node.default['kernel']['cs_info']['domain_role'] = 3
+      expect(node.domain_controller?).to eq(false)
+    end
+
+    it 'should return true on `Domain Controller` product type' do
+      node.default['platform_family'] = 'windows'
+      node.default['kernel']['os_info']['product_type'] = 2
+      expect(node.domain_controller?).to eq(true)
+    end
+
+    it 'should return true for the PDC Win32_ComputerSystem domain role' do
+      node.default['platform_family'] = 'windows'
+      node.default['kernel']['cs_info']['domain_role'] = 4
+      expect(node.domain_controller?).to eq(true)
+    end
+
+    it 'should return true for the backup DC Win32_ComputerSystem domain role' do
+      node.default['platform_family'] = 'windows'
+      node.default['kernel']['cs_info']['domain_role'] = 5
+      expect(node.domain_controller?).to eq(true)
+    end
+  end
+
+  context 'Chef::Node.rpm_version_from_ohai' do
+    it 'should join version and release the way rpm_version does' do
+      node.automatic['packages']['python3-rpm'] = {
+        'epoch' => '0',
+        'version' => '4.19.1.1',
+        'release' => '14.1.hsx.el10',
+        'arch' => 'x86_64',
+      }
+      expect(node.rpm_version_from_ohai('python3-rpm')).
+        to eq('4.19.1.1-14.1.hsx.el10')
+    end
+
+    it 'should return just the version when release is empty' do
+      node.automatic['packages']['somepkg'] = {
+        'version' => '1.2.3',
+        'release' => '',
+      }
+      expect(node.rpm_version_from_ohai('somepkg')).to eq('1.2.3')
+    end
+
+    it 'should return just the version when release is missing' do
+      node.automatic['packages']['somepkg'] = { 'version' => '1.2.3' }
+      expect(node.rpm_version_from_ohai('somepkg')).to eq('1.2.3')
+    end
+
+    it 'should return nil for a package that is not installed' do
+      node.automatic['packages']['somepkg'] = {
+        'version' => '1.2.3',
+        'release' => '1',
+      }
+      expect(node.rpm_version_from_ohai('otherpkg')).to eq(nil)
+    end
+
+    it 'should return nil when ohai collected no package data' do
+      expect(node.rpm_version_from_ohai('somepkg')).to eq(nil)
+    end
+
+    it 'should return nil when the entry has no version' do
+      node.automatic['packages']['somepkg'] = { 'arch' => 'x86_64' }
+      expect(node.rpm_version_from_ohai('somepkg')).to eq(nil)
+    end
+
+    # When more than one version/arch of a package is installed ohai keeps a
+    # 'versions' array and the top-level keys hold whichever entry `rpm -qa`
+    # emitted last. We deliberately read the top-level keys and do not try to
+    # pick a "best" one - callers that care must look at 'versions' themselves.
+    it 'should use the top-level keys for a multi-arch package' do
+      node.automatic['packages']['openssl'] = {
+        'version' => '3.5.5',
+        'release' => '1',
+        'arch' => 'i686',
+        'versions' => [
+          { 'version' => '3.5.5', 'release' => '1', 'arch' => 'x86_64' },
+          { 'version' => '3.5.5', 'release' => '1', 'arch' => 'i686' },
+        ],
+      }
+      expect(node.rpm_version_from_ohai('openssl')).to eq('3.5.5-1')
     end
   end
 end

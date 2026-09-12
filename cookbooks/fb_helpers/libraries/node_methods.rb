@@ -19,29 +19,9 @@
 # Reference: Chef platform_family values
 # https://docs.chef.io/infra_language/checking_platforms/#platform_family-values
 
-class ChefUtilsProxy
-  include ChefUtils
-
-  def initialize(node)
-    @node = node
-  end
-
-  def __getnode(_skip_global = false)
-    @node
-  end
-end
-
 class Chef
   # Our extensions of the node object
   class Node
-
-    # A way to explicitly call a ChefUtils function instead of a
-    # fb_helpers function to aid in migration
-    def chefutils
-      # rubocop:disable Naming/MemoizedInstanceVariableName
-      @_fb_helpers_chefutils_proxy ||= ChefUtilsProxy.new(self)
-      # rubocop:enable Naming/MemoizedInstanceVariableName
-    end
 
     def linux?
       return @_fb_helpers_linux unless @_fb_helpers_linux.nil?
@@ -1333,6 +1313,21 @@ class Chef
       end
     end
 
+    # Returns the version-release of an rpm installed, or nil if not present,
+    # read from the package snapshot ohai took at the start of the run.
+    #
+    # Unlike `rpm_version` this does not follow changes made to the rpm
+    # database during the run, but it also does not talk to the package
+    # manager. The first `rpm_version` call in a run has to build the whole
+    # package manager cache, which is expensive, so prefer this whenever a
+    # snapshot is good enough - see the `rpm_version` entry in the README.
+    def rpm_version_from_ohai(name)
+      pkg = self['packages']&.dig(name)
+      return nil unless pkg && pkg['version']
+
+      [pkg['version'], pkg['release']].compact.reject(&:empty?).join('-')
+    end
+
     def selinux_mode
       self['selinux']['status']['current_mode'] || 'unknown'
     end
@@ -1346,7 +1341,7 @@ class Chef
     end
 
     def host_chef_base_path
-      if self.windows?
+      if ChefUtils.windows?
         File.join('C:', 'chef')
       else
         File.join('/var', 'chef')
@@ -1354,7 +1349,7 @@ class Chef
     end
 
     def solo_chef_base_path
-      if self.windows?
+      if ChefUtils.windows?
         File.join('C:', 'chef', 'solo')
       else
         File.join('/opt', 'chef-solo')
@@ -1576,6 +1571,13 @@ class Chef
         end
       end
       unowned_files
+    end
+
+    def domain_controller?
+      windows? && (
+        self['kernel']['os_info']['product_type'] == 2 ||
+        [4, 5].include?(self['kernel']['cs_info']['domain_role'])
+      )
     end
   end
 end
