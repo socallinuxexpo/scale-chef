@@ -18,9 +18,9 @@
 # limitations under the License.
 #
 
-package 'python3-dnf-plugin-perfmetrics' do
+include_recipe_at_converge_time 'install python3-dnf-plugin-perfmetrics' do
   only_if { node['fb_dnf']['perfmetrics'] }
-  action :upgrade
+  recipe 'fb_dnf::python3_dnf_plugin_perfmetrics_upgrade'
 end
 
 config = '/etc/dnf/plugins/perfmetrics.conf'
@@ -38,9 +38,4 @@ template config do
   owner node.root_user
   group node.root_group
   mode '0644'
-end
-
-file config do
-  not_if { node['fb_dnf']['perfmetrics'] }
-  action :delete
 end
