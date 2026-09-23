@@ -86,6 +86,7 @@ include_recipe 'fb_limits'
 include_recipe 'fb_hostconf'
 include_recipe 'fb_sysctl'
 # HERE: networking
+include_recipe '::networking_hack'
 include_recipe 'scale_users'
 include_recipe 'fb_syslog'
 #if node.linux? && !node.container?
