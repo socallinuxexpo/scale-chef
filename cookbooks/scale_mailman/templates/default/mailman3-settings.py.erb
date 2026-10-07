@@ -4,6 +4,9 @@ from mailman_web.settings.mailman import *
 
 # Settings below supplement or override the defaults.
 
+# Default django-q poll is 0.2s, which hammers Aurora; 5s is plenty for archiving/indexing
+Q_CLUSTER = {**Q_CLUSTER, 'poll': 5}
+
 #: Default list of admins who receive the emails from error logging.
 ADMINS = (
     ('Mailman Suite Admin', 'root@localhost'),
