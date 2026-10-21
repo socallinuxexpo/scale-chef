@@ -72,6 +72,7 @@ pkgs = %w{
   cyrus-sasl-plain
   cyrus-sasl-md5
   openssl
+  ca-certificates
 }
 
 if node.el_max_version?(8)
