@@ -37,6 +37,13 @@ cookbook_file '/etc/php.ini' do
   notifies :restart, 'service[php-fpm]'
 end
 
+cookbook_file '/etc/php.d/10-opcache.ini' do
+  owner 'root'
+  group 'root'
+  mode '0644'
+  notifies :restart, 'service[php-fpm]'
+end
+
 common_config = {
   'ServerName' => server_name,
   'ServerAdmin' => 'webmaster@socallinuxexpo.org',
