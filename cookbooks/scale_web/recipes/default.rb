@@ -435,3 +435,12 @@ node.default['scale_datadog']['monitors']['linux_proc_extras'] = {
     },
   ],
 }
+
+fb_systemd_override 'restart-logind-with-dbus' do
+  unit_name 'systemd-logind.service'
+  content({
+            'Unit' => {
+              'PartOf' => 'dbus.service',
+            },
+          })
+end

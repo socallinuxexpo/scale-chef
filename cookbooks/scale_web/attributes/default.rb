@@ -1,2 +1,1 @@
-default['scale_web'] = {
-}
+default['scale_web'] = {}
