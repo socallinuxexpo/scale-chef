@@ -15,7 +15,8 @@ if node['hostname'] == 'scale-web-centos10'
     'scale-drupal-newsite.cluster-c19nohpiwnoo.us-east-1.rds.amazonaws.com'
 elsif node['hostname'] == 'scale-web-centos10-staging'
   node.default['scale_drupal']['mysql_host'] =
-    'scale-drupal-newsite-staging1.cluster-c19nohpiwnoo.us-east-1.rds.amazonaws.com'
+    'scale-drupal-newsite-staging1.cluster-c19nohpiwnoo.us-east-1.' +
+    'rds.amazonaws.com'
 end
 settings_dest = "#{base_dir}/sites/default/#{settings_dst_file}"
 

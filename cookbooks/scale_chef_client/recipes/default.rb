@@ -143,7 +143,8 @@ end
   'remove override files' => {
     'time' => '*/5 * * * *',
     'command' => '/usr/bin/find /var/chef/ -maxdepth 1 ' +
-      '-name cron.default.override -mmin +60 -exec /bin/rm -f {} \; &>/dev/null',
+      '-name cron.default.override -mmin +60 -exec ' +
+      '/bin/rm -f {} \; &>/dev/null',
   },
   # keep two weeks of chef run logs
   'cleanup chef logs' => {

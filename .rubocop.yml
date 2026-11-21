@@ -5,6 +5,17 @@ AllCops:
     # template files named `rb` instead of `erb` are a sin against ruby-nature.
     - '**/templates/**/*.rb'
 
+# One rule were we differ from upstream
+Layout/LineLength:
+  Max: 80
+  Exclude:
+    # upstream uses 120
+    - cookbooks/fb_*/**/*
+    # upstream uses 120
+    - cookstyle/**/*
+    # largely a copy if internal chef code that has long lines
+    - generators/**/*
+
 Bundler/DuplicatedGem:
   Enabled: true
 
@@ -190,10 +201,6 @@ Layout/LeadingCommentSpace:
 
 Layout/LeadingEmptyLines:
   Enabled: true
-
-# Modern terminals are usually capable to show more than 80 columns
-Layout/LineLength:
-  Max: 120
 
 Layout/MultilineArrayBraceLayout:
   Enabled: true
@@ -1317,6 +1324,7 @@ Style/SymbolProc:
 
 Style/TernaryParentheses:
   Enabled: true
+  EnforcedStyle: require_parentheses_when_complex
 
 Style/TrailingBodyOnClass:
   Enabled: true
