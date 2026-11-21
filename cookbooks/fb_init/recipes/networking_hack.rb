@@ -17,6 +17,19 @@ package 'dbus-broker' do
   action :upgrade
 end
 
+# In the event dbus crashes or is restarted, make sure logind
+# gets restarted with it
+fb_systemd_override 'restart-logind-with-dbus' do
+  unit_name 'systemd-logind.service'
+  content(
+    {
+      'Unit' => {
+        'PartOf' => 'dbus.service',
+      },
+    },
+  )
+end
+
 service 'NetworkManager' do
   # don't break CI
   only_if { ::File.exist?('/usr/lib/systemd/system/NetworkManager.service') }
