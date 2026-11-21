@@ -39,10 +39,12 @@ directories_to_create += if context.use_policy
                          end
 
 directories_to_create.each do |tlo|
+  # rubocop:disable Chef/Meta/RemoteDirectoryWithoutPurge
   remote_directory "#{repo_dir}/#{tlo}" do
     source "repo/#{tlo}"
     action :create_if_missing
   end
+  # rubocop:enable Chef/Meta/RemoteDirectoryWithoutPurge
 end
 
 cookbook_file "#{repo_dir}/cookbooks/README.md" do
